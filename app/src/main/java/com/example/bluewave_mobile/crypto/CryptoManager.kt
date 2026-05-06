@@ -1,7 +1,9 @@
 package com.example.bluewave_mobile.crypto
 
+import javax.crypto.AEADBadTagException
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
 
 /**
  * High-level facade over [KeyManager] that exposes plaintext-friendly
@@ -41,6 +43,36 @@ class CryptoManager(private val keyManager: KeyManager = KeyManager()) {
             "Unexpected GCM IV length: ${iv.size}"
         }
         return iv to ciphertext
+    }
+
+    /**
+     * Decrypts [ciphertext] (which must include the trailing GCM
+     * authentication tag) using the supplied [iv].
+     *
+     * GCM is an Authenticated Encryption mode: if the ciphertext or the
+     * IV have been tampered with — even by a single bit — the underlying
+     * provider raises [AEADBadTagException] from [Cipher.doFinal]. We
+     * intercept that exception and surface the failure as a typed
+     * [DecryptionResult.Tampered] value, rather than letting the caller
+     * deal with raw JCE plumbing.
+     *
+     * @return [DecryptionResult.Success] containing the recovered
+     *         plaintext on success, or [DecryptionResult.Tampered] when
+     *         the authentication tag does not match.
+     */
+    fun decrypt(iv: ByteArray, ciphertext: ByteArray): DecryptionResult {
+        require(iv.size == GCM_IV_LENGTH_BYTES) {
+            "GCM IV must be exactly $GCM_IV_LENGTH_BYTES bytes, got ${iv.size}"
+        }
+        val key: SecretKey = keyManager.getOrCreateAesKey()
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        val spec = GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv)
+        cipher.init(Cipher.DECRYPT_MODE, key, spec)
+        return try {
+            DecryptionResult.Success(cipher.doFinal(ciphertext))
+        } catch (e: AEADBadTagException) {
+            DecryptionResult.Tampered(e)
+        }
     }
 
     companion object {
