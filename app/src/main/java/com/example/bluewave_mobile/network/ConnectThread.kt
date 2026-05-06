@@ -17,16 +17,37 @@ import java.io.IOException
  * is responsible for opening an RFCOMM client socket against the chosen
  * peer using the shared [BluetoothConstants.APP_UUID].
  *
- * **Critical:** `BluetoothAdapter.startDiscovery()` is an extremely
- * heavyweight radio operation. Leaving it running while we attempt a
- * connection will cause the connect to fail intermittently or take many
- * seconds longer than necessary. The Android Bluetooth guide explicitly
- * warns against this, so [start] always calls
- * [BluetoothAdapter.cancelDiscovery] before invoking `connect()`.
+ * ## Why `cancelDiscovery()` first
  *
- * The blocking connect() call runs on [Dispatchers.IO] inside a
- * [SupervisorJob]-backed scope so a connection failure never tears down
- * the parent (e.g. the repository) coroutine tree.
+ * `BluetoothAdapter.startDiscovery()` is an extremely heavyweight radio
+ * operation that occupies the chipset for ~12 seconds. Leaving it
+ * running while we attempt a connection causes `connect()` to either
+ * fail intermittently with `IOException` or take an order of magnitude
+ * longer than necessary — Google's official Bluetooth developer guide
+ * explicitly warns about this. [start] therefore always invokes
+ * [BluetoothAdapter.cancelDiscovery] before calling `connect()`.
+ *
+ * ## Structured Concurrency
+ *
+ * The class accepts an externally-supplied [CoroutineScope] (defaults
+ * to one produced by [BluetoothScopeFactory.createNetworkScope], which
+ * combines a [kotlinx.coroutines.SupervisorJob],
+ * [kotlinx.coroutines.Dispatchers.IO] and a shared
+ * [kotlinx.coroutines.CoroutineExceptionHandler]). This guarantees:
+ *
+ *  * a failed connection does NOT cancel sibling coroutines in the
+ *    repository — the radio link dropping is an expected condition;
+ *  * the blocking `connect()` call runs on [Dispatchers.IO];
+ *  * uncaught exceptions are logged through the shared handler instead
+ *    of crashing the app.
+ *
+ * ## Lifecycle
+ *
+ * Cancellation must go through [cancel], which closes the underlying
+ * client socket (unblocking any in-flight `connect()`), nulls out the
+ * reference and cancels the coroutine scope inside a `try/finally` so
+ * the scope is **always** torn down — even when `socket.close()` itself
+ * throws.
  */
 class ConnectThread(
     private val adapter: BluetoothAdapter?,
