@@ -1,6 +1,7 @@
 package com.example.bluewave_mobile.data
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
@@ -9,6 +10,15 @@ import androidx.room.PrimaryKey
  * Each message stores the encrypted payload along with its initialization vector (IV)
  * required for AES-256-GCM decryption. The [macAddress] field links the message
  * to a specific paired Bluetooth device.
+ *
+ * **Indexing.** [MessageDao.getMessagesByDevice] and
+ * [MessageDao.getLatestMessagePerDevice] both filter / group on
+ * [macAddress]. Without an explicit index Room/SQLite would fall back to
+ * a full table scan for every chat-screen open, which is O(N) in the
+ * total number of stored messages. The `@Index(value = ["macAddress"])`
+ * declaration below creates a B-tree index covering that column,
+ * dropping these lookups to O(log N) and producing a noticeable
+ * improvement on devices with several thousand persisted rows.
  *
  * @property id Auto-generated unique identifier (primary key).
  * @property macAddress MAC address of the remote Bluetooth device.
@@ -20,7 +30,10 @@ import androidx.room.PrimaryKey
  * @property isOutgoing True if the message was sent by this device, false if received.
  * @property senderName Display name of the sender device.
  */
-@Entity(tableName = "messages")
+@Entity(
+    tableName = "messages",
+    indices = [Index(value = ["macAddress"])]
+)
 data class MessageEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
