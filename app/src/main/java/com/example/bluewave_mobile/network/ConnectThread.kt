@@ -5,11 +5,7 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
 import android.util.Log
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.io.IOException
@@ -37,10 +33,8 @@ class ConnectThread(
     private val device: BluetoothDevice,
     private val onConnected: suspend (BluetoothSocket) -> Unit,
     private val onConnectionFailed: suspend (Throwable) -> Unit = {},
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val scope: CoroutineScope = BluetoothScopeFactory.createNetworkScope()
 ) {
-    private val supervisorJob: Job = SupervisorJob()
-    private val scope: CoroutineScope = CoroutineScope(supervisorJob + ioDispatcher)
 
     @Volatile
     private var clientSocket: BluetoothSocket? = null
