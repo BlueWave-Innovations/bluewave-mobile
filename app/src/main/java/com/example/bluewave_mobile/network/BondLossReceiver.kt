@@ -11,7 +11,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * BroadcastReceiver that handles **Android 16** bond / encryption events.
+ * BroadcastReceiver that handles the **Android 16** bond / encryption
+ * lifecycle events for a single peer.
  *
  * Android 16 introduced "Improved bond loss handling": when the local
  * adapter detects that the encryption keys for a previously-bonded peer
@@ -20,43 +21,63 @@ import kotlinx.coroutines.launch
  *  1. keeps the bond metadata so the user can re-pair without going
  *     through the full pairing dialog again;
  *  2. tears down the active ACL connection;
- *  3. broadcasts `BluetoothDevice.ACTION_KEY_MISSING` (this step), and
- *     later `BluetoothDevice.ACTION_ENCRYPTION_CHANGE` once a valid key
- *     is re-established (handled in step 31).
+ *  3. broadcasts `BluetoothDevice.ACTION_KEY_MISSING` (handled here by
+ *     pausing traffic), and later
+ *     `BluetoothDevice.ACTION_ENCRYPTION_CHANGE` once a valid key is
+ *     re-established — at which point we resume traffic and ask the
+ *     caller to restart the [ConnectThread] for that peer.
  *
  * On `ACTION_KEY_MISSING` we MUST NOT call any
  * `removeBond()`-style API — the OS already preserves the metadata for
  * us. Instead we tell the [MessageRepository] to pause traffic for that
  * peer; transmission resumes once the encryption key is back.
+ *
+ * The [onEncryptionRestored] callback is invoked from the
+ * receiver's dispatch thread; the caller decides which background scope
+ * to use to spawn a fresh [ConnectThread] against the peer.
  */
 class BondLossReceiver(
     private val repository: MessageRepository,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val onEncryptionRestored: (BluetoothDevice) -> Unit = { /* no-op */ }
 ) : BroadcastReceiver() {
 
     override fun onReceive(context: Context?, intent: Intent?) {
         val action = intent?.action ?: return
-        if (action != ACTION_KEY_MISSING) return
-
         val device: BluetoothDevice? =
             intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
         val mac = device?.address ?: run {
             Log.w(TAG, "$action received without EXTRA_DEVICE")
             return
         }
-
-        Log.i(TAG, "ACTION_KEY_MISSING for $mac — pausing network operations")
-        scope.launch {
-            repository.pauseNetworkOperations(mac)
+        when (action) {
+            ACTION_KEY_MISSING -> {
+                Log.i(TAG, "ACTION_KEY_MISSING for $mac — pausing network operations")
+                scope.launch {
+                    repository.pauseNetworkOperations(mac)
+                }
+            }
+            ACTION_ENCRYPTION_CHANGE -> {
+                Log.i(TAG, "ACTION_ENCRYPTION_CHANGE for $mac — resuming and restarting ConnectThread")
+                scope.launch {
+                    repository.resumeNetworkOperations(mac)
+                }
+                onEncryptionRestored(device)
+            }
+            else -> Unit
         }
     }
 
     /**
-     * Convenience method: registers this receiver against the standard
-     * `ACTION_KEY_MISSING` intent filter on the supplied [context].
+     * Convenience method: registers this receiver against both the
+     * `ACTION_KEY_MISSING` and `ACTION_ENCRYPTION_CHANGE` intent filters
+     * on the supplied [context].
      */
     fun register(context: Context) {
-        val filter = IntentFilter(ACTION_KEY_MISSING)
+        val filter = IntentFilter().apply {
+            addAction(ACTION_KEY_MISSING)
+            addAction(ACTION_ENCRYPTION_CHANGE)
+        }
         context.registerReceiver(this, filter)
     }
 
@@ -72,5 +93,13 @@ class BondLossReceiver(
          */
         const val ACTION_KEY_MISSING: String =
             "android.bluetooth.device.action.KEY_MISSING"
+
+        /**
+         * Fully-qualified action name for `BluetoothDevice.ACTION_ENCRYPTION_CHANGE`.
+         *
+         * Same compatibility rationale as [ACTION_KEY_MISSING].
+         */
+        const val ACTION_ENCRYPTION_CHANGE: String =
+            "android.bluetooth.device.action.ENCRYPTION_CHANGE"
     }
 }
