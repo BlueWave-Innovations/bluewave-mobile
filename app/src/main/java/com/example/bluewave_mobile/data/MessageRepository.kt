@@ -64,4 +64,35 @@ interface MessageRepository {
      * @param macAddress MAC address of the device.
      */
     suspend fun deleteMessagesByDevice(macAddress: String)
+
+    /**
+     * Suspends all network activity towards a peer whose bond/encryption
+     * keys went missing on Android 16
+     * (`BluetoothDevice.ACTION_KEY_MISSING`).
+     *
+     * Implementations are expected to:
+     *  * close any [java.io.InputStream] / [java.io.OutputStream] /
+     *    [android.bluetooth.BluetoothSocket] currently held for that peer;
+     *  * stop dispatching new outbound messages to that peer until
+     *    [resumeNetworkOperations] is invoked.
+     *
+     * The method must NOT delete the bond programmatically — Android 16
+     * keeps the metadata around so that a re-bond will succeed
+     * automatically as soon as the user (or system) brings the peer back
+     * online.
+     *
+     * @param macAddress MAC address of the affected peer.
+     */
+    suspend fun pauseNetworkOperations(macAddress: String)
+
+    /**
+     * Resumes network operations for a peer after a successful re-bond
+     * (`BluetoothDevice.ACTION_ENCRYPTION_CHANGE`). Re-establishes the
+     * RFCOMM client socket and flushes any messages that were enqueued
+     * locally while the peer was offline.
+     *
+     * @param macAddress MAC address of the peer that just regained
+     *                   a valid encryption key.
+     */
+    suspend fun resumeNetworkOperations(macAddress: String)
 }

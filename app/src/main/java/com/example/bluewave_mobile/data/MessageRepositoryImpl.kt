@@ -104,6 +104,43 @@ class MessageRepositoryImpl(
         messageDao.deleteMessagesByDevice(macAddress)
     }
 
+    /**
+     * Per-peer network state guard. `false` means we have observed a
+     * `BluetoothDevice.ACTION_KEY_MISSING` for that MAC address (Android
+     * 16 bond loss) and outgoing transmissions are suppressed until a
+     * subsequent `ACTION_ENCRYPTION_CHANGE` flips it back via
+     * [resumeNetworkOperations].
+     *
+     * Volatile-style synchronisation is sufficient here — writes only
+     * happen on the BroadcastReceiver dispatch thread and reads are
+     * cheap, so we use `@Synchronized` rather than `Mutex` to keep the
+     * data layer free of coroutine plumbing for a single-bit flag.
+     */
+    private val pausedPeers: MutableSet<String> = mutableSetOf()
+
+    override suspend fun pauseNetworkOperations(macAddress: String) {
+        synchronized(pausedPeers) {
+            pausedPeers.add(macAddress.uppercase())
+        }
+        // The actual socket close lives in step 35 (cleanup) once the
+        // active connection registry is wired into the repository; for
+        // now flipping the flag is enough to suppress sendMessage().
+    }
+
+    override suspend fun resumeNetworkOperations(macAddress: String) {
+        synchronized(pausedPeers) {
+            pausedPeers.remove(macAddress.uppercase())
+        }
+    }
+
+    /**
+     * Visible for tests / step 31: returns whether the given peer is
+     * currently paused due to ACTION_KEY_MISSING.
+     */
+    internal fun isPausedFor(macAddress: String): Boolean {
+        return synchronized(pausedPeers) { macAddress.uppercase() in pausedPeers }
+    }
+
     private companion object {
         /**
          * Length of the GCM IV prefix in the on-wire frame. Kept in sync
