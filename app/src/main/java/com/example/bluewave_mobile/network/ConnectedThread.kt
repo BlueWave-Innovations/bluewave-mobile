@@ -2,11 +2,8 @@ package com.example.bluewave_mobile.network
 
 import android.bluetooth.BluetoothSocket
 import android.util.Log
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -40,11 +37,9 @@ import java.io.OutputStream
  */
 class ConnectedThread(
     private val socket: BluetoothSocket,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val scope: CoroutineScope = BluetoothScopeFactory.createNetworkScope(),
     private val readBufferSize: Int = DEFAULT_BUFFER_BYTES
 ) {
-    private val supervisorJob: Job = SupervisorJob()
-    private val scope: CoroutineScope = CoroutineScope(supervisorJob + ioDispatcher)
     private val writeMutex: Mutex = Mutex()
 
     private val _incomingBytes: MutableSharedFlow<ByteArray> =
@@ -94,7 +89,7 @@ class ConnectedThread(
      *         underlying socket has already been closed or errored.
      */
     suspend fun write(bytes: ByteArray): Boolean = writeMutex.withLock {
-        withContext(ioDispatcher) {
+        withContext(Dispatchers.IO) {
             try {
                 val output: OutputStream = socket.outputStream
                 output.write(bytes)

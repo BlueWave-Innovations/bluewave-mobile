@@ -5,11 +5,7 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothServerSocket
 import android.bluetooth.BluetoothSocket
 import android.util.Log
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -37,10 +33,8 @@ import java.io.IOException
 class AcceptThread(
     private val adapter: BluetoothAdapter?,
     private val onSocketAccepted: suspend (BluetoothSocket) -> Unit,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val scope: CoroutineScope = BluetoothScopeFactory.createNetworkScope()
 ) {
-    private val supervisorJob: Job = SupervisorJob()
-    private val scope: CoroutineScope = CoroutineScope(supervisorJob + ioDispatcher)
 
     @Volatile
     private var serverSocket: BluetoothServerSocket? = null
