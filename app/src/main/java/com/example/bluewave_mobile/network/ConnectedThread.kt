@@ -103,15 +103,36 @@ class ConnectedThread(
     }
 
     /**
-     * Cancels the read loop and closes the underlying socket. Idempotent.
+     * Cancels the read loop and closes the underlying [BluetoothSocket]
+     * along with both its [InputStream] and [OutputStream]. Idempotent.
+     *
+     * Each of the three close calls is independently wrapped in a
+     * try/catch so that one failing close does not prevent the others.
+     * The coroutine scope is cancelled inside the outer `finally`, which
+     * means it is **always** torn down even when one or more streams
+     * throw on close — without that guarantee the read loop would
+     * remain pinned in memory and leak a file descriptor.
      */
     fun cancel() {
         try {
-            socket.close()
-        } catch (e: IOException) {
-            Log.w(TAG, "Error closing socket", e)
+            try {
+                socket.inputStream?.close()
+            } catch (e: IOException) {
+                Log.w(TAG, "Error closing input stream", e)
+            }
+            try {
+                socket.outputStream?.close()
+            } catch (e: IOException) {
+                Log.w(TAG, "Error closing output stream", e)
+            }
+            try {
+                socket.close()
+            } catch (e: IOException) {
+                Log.w(TAG, "Error closing socket", e)
+            }
+        } finally {
+            scope.cancel()
         }
-        scope.cancel()
     }
 
     private companion object {

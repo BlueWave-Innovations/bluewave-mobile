@@ -81,6 +81,25 @@ class BondLossReceiver(
         context.registerReceiver(this, filter)
     }
 
+    /**
+     * De-registers this receiver from the supplied [context]. Must be
+     * called from the matching `Activity.onDestroy()` or
+     * `ViewModel.onCleared()` to avoid leaking the receiver across
+     * configuration changes.
+     *
+     * The unregister call swallows [IllegalArgumentException] thrown when
+     * the receiver was never registered (e.g. when the user navigated
+     * away before [register] ran), making this safe to call
+     * unconditionally during teardown.
+     */
+    fun unregister(context: Context) {
+        try {
+            context.unregisterReceiver(this)
+        } catch (_: IllegalArgumentException) {
+            // Already unregistered — nothing to do.
+        }
+    }
+
     companion object {
         private const val TAG = "BondLossReceiver"
 

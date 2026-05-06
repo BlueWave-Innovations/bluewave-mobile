@@ -76,17 +76,25 @@ class AcceptThread(
 
     /**
      * Cancels the listening loop, closes the server socket and tears down
-     * the supervisor scope. Safe to call multiple times.
+     * the supervisor scope. Safe to call multiple times — the underlying
+     * `close()` is wrapped in a try/finally so the scope is **always**
+     * cancelled even if the close throws.
+     *
+     * Calling this from `Activity.onDestroy()` (or the matching ViewModel
+     * `onCleared()`) is the canonical way to prevent leaking the
+     * BluetoothServerSocket file descriptor across configuration changes.
      */
     fun cancel() {
         try {
-            serverSocket?.close()
-        } catch (e: IOException) {
-            Log.w(TAG, "Error while closing server socket", e)
+            try {
+                serverSocket?.close()
+            } catch (e: IOException) {
+                Log.w(TAG, "Error while closing server socket", e)
+            }
         } finally {
             serverSocket = null
+            scope.cancel()
         }
-        scope.cancel()
     }
 
     private companion object {
