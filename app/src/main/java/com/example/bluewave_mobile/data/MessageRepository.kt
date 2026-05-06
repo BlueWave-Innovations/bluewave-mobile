@@ -3,11 +3,47 @@ package com.example.bluewave_mobile.data
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Repository interface that acts as the Single Source of Truth for message data.
+ * Single Source of Truth for everything message-related.
  *
- * Abstracts data sources (Room database, Bluetooth network) from the ViewModel layer.
- * The ViewModel should depend on this interface, not on concrete implementations,
- * enabling testability through mock implementations.
+ * BlueWave is a peer-to-peer Bluetooth messenger and the data flows in
+ * **two** directions through this repository:
+ *
+ *  * **Outbound** — UI calls [sendMessage] with a plaintext string. The
+ *    implementation encrypts it with AES-256-GCM (a fresh IV per call,
+ *    see [com.example.bluewave_mobile.crypto.CryptoManager]) and persists
+ *    the resulting ciphertext into the Room database **before** any
+ *    radio transmission. The UI subscribes to [getMessagesByDevice] /
+ *    [getLatestMessagePerDevice] and is updated automatically through
+ *    Room's invalidation tracker once the row lands. The actual byte
+ *    transmission over the BluetoothSocket is delegated to the network
+ *    layer (`ConnectedThread`) — this interface intentionally does not
+ *    expose any network primitives so the ViewModels never take a hard
+ *    dependency on `android.bluetooth`.
+ *
+ *  * **Inbound** — the network layer hands raw bytes to
+ *    [processIncomingMessage]. The implementation parses the on-wire
+ *    frame `[12-byte IV || ciphertext+GCM-tag]`, decrypts it through
+ *    [com.example.bluewave_mobile.crypto.CryptoManager.decrypt] and
+ *    inserts the resulting [MessageEntity] into Room. Tampered frames
+ *    are persisted with their IV so the UI can render them with the
+ *    Material `errorContainer` treatment.
+ *
+ * **Structured Concurrency.** Every `suspend` function on this
+ * interface MUST be cancellable. Implementations should rely on Room's
+ * built-in cancellation support and NOT block the calling coroutine on
+ * I/O — the UI layer composes these calls via
+ * `viewModelScope.launch { … }` and a hung repository call would freeze
+ * the chat screen.
+ *
+ * **Android 16 bond loss.** Android 16 introduced
+ * `BluetoothDevice.ACTION_KEY_MISSING` /
+ * `BluetoothDevice.ACTION_ENCRYPTION_CHANGE` lifecycle events. The
+ * repository is the single owner of the per-peer paused-state set
+ * (see [pauseNetworkOperations] / [resumeNetworkOperations]) so the
+ * UI layer can stay completely oblivious to the radio link state.
+ *
+ * The interface is the public contract; ViewModels and tests MUST
+ * depend on it rather than on [MessageRepositoryImpl].
  */
 interface MessageRepository {
 
