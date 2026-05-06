@@ -85,16 +85,23 @@ class ConnectThread(
      * Aborts an in-flight connection attempt by closing the underlying
      * socket. Safe to call from any thread; the launched coroutine will
      * exit through its IOException catch block.
+     *
+     * The close()/cancel() sequence is wrapped in try/finally so the
+     * coroutine scope is **always** cancelled even when socket.close()
+     * throws — which happens routinely on Android when the radio link
+     * was already torn down by the peer or by the OS bond loss handler.
      */
     fun cancel() {
         try {
-            clientSocket?.close()
-        } catch (e: IOException) {
-            Log.w(TAG, "Error closing client socket", e)
+            try {
+                clientSocket?.close()
+            } catch (e: IOException) {
+                Log.w(TAG, "Error closing client socket", e)
+            }
         } finally {
             clientSocket = null
+            scope.cancel()
         }
-        scope.cancel()
     }
 
     private companion object {
