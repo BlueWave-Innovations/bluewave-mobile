@@ -22,12 +22,16 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -42,9 +46,11 @@ import com.example.bluewave_mobile.BlueWaveApplication
 import com.example.bluewave_mobile.crypto.CryptoManager
 import com.example.bluewave_mobile.crypto.DecryptionResult
 import com.example.bluewave_mobile.data.MessageEntity
+import com.example.bluewave_mobile.data.MessageRepositoryImpl
 import com.example.bluewave_mobile.ui.components.ChatMessage
 import com.example.bluewave_mobile.ui.components.EmptyStateView
 import com.example.bluewave_mobile.ui.components.MessageBubble
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -97,6 +103,40 @@ fun ChatScreen(
 
     var draft: String by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Polled view of MessageRepositoryImpl.isPausedFor(mac). The repository
+    // does not yet expose a Flow for the bond/encryption pause flag
+    // (Android 16 ACTION_KEY_MISSING / ACTION_ENCRYPTION_CHANGE) so the UI
+    // bridges it via produceState — step 28 will replace this with a
+    // proper StateFlow exposed by ChatViewModel.
+    val isPaused by produceState(initialValue = false, deviceMac, container) {
+        val impl = container.messageRepository as? MessageRepositoryImpl
+        if (impl == null) {
+            value = false
+            return@produceState
+        }
+        while (true) {
+            value = impl.isPausedFor(deviceMac)
+            delay(POLL_PAUSE_INTERVAL_MS)
+        }
+    }
+    // Surface bond loss / restore as a Snackbar. The first composition
+    // skips the message so users do not see a spurious "Connected" pop
+    // every time they open the chat.
+    var lastSeenPaused by remember { mutableStateOf<Boolean?>(null) }
+    LaunchedEffect(isPaused, deviceMac) {
+        if (lastSeenPaused != null && lastSeenPaused != isPaused) {
+            snackbarHostState.showSnackbar(
+                message = if (isPaused) {
+                    "Connection lost — waiting for re-bond"
+                } else {
+                    "Connection restored"
+                },
+            )
+        }
+        lastSeenPaused = isPaused
+    }
 
     Scaffold(
         modifier = modifier,
@@ -117,6 +157,7 @@ fun ChatScreen(
                 },
             )
         },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -220,6 +261,15 @@ private fun ChatInputRow(
  * can be relocated to `ChatViewModel` in step 28 without behavioural
  * change.
  */
+/**
+ * Polling cadence (ms) for [MessageRepositoryImpl.isPausedFor] until the
+ * repository exposes a Flow for the Android 16 bond / encryption pause
+ * flag. The 500 ms interval keeps the snackbar latency low while
+ * remaining negligible compared with a Bluetooth re-bond cycle (which
+ * takes seconds).
+ */
+private const val POLL_PAUSE_INTERVAL_MS: Long = 500L
+
 private fun MessageEntity.toChatMessage(crypto: CryptoManager): ChatMessage {
     if (iv.isEmpty()) {
         return ChatMessage(
