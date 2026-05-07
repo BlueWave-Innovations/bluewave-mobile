@@ -41,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -114,7 +115,12 @@ fun ChatScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
+                    Column(
+                        modifier = Modifier.semantics(mergeDescendants = true) {
+                            heading()
+                            contentDescription = "Chat with $deviceMac"
+                        },
+                    ) {
                         Text(
                             text = "Chat",
                             style = MaterialTheme.typography.titleMedium,

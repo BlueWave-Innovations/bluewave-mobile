@@ -21,6 +21,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bluewave_mobile.ui.components.DeviceGrid
@@ -82,8 +84,15 @@ fun DeviceListScreen(
         contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
-                title = { Text(text = "BlueWave") },
-                colors = TopAppBarDefaults.topAppBarColors()
+                title = {
+                    // `heading()` lets TalkBack users jump between
+                    // screens via the heading-navigation gesture.
+                    Text(
+                        text = "BlueWave",
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(),
             )
         },
         floatingActionButton = {
