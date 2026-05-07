@@ -25,34 +25,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.example.bluewave_mobile.ui.state.ChatMessage
 import java.text.DateFormat
 import java.util.Date
-
-/**
- * UI model surfaced by `ChatScreen` for a single message line.
- *
- * The data layer ([com.example.bluewave_mobile.data.MessageEntity]) holds the
- * encrypted payload and IV; the chat presentation layer is responsible for
- * decrypting via [com.example.bluewave_mobile.crypto.CryptoManager.decrypt]
- * and mapping the result to one of the cases below. Keeping this UI model
- * decoupled from the database entity lets the LazyColumn diff stable items
- * without leaking ByteArray identity into the recomposition graph.
- *
- * @property id Stable Room row id used as the LazyColumn key.
- * @property text Decrypted plaintext to render. Empty when [isCorrupted] is true.
- * @property isOutgoing True if this device authored the message.
- * @property timestamp Unix epoch ms; formatted at render time.
- * @property isCorrupted True if the GCM tag rejected the ciphertext — step 26
- *                       refines the rendering of this case via
- *                       [androidx.compose.material3.ColorScheme.errorContainer].
- */
-data class ChatMessage(
-    val id: Long,
-    val text: String,
-    val isOutgoing: Boolean,
-    val timestamp: Long,
-    val isCorrupted: Boolean = false,
-)
 
 /**
  * Renders a single chat bubble aligned to the start (incoming) or end
