@@ -1,6 +1,7 @@
 package com.example.bluewave_mobile.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -111,19 +113,55 @@ fun MessageBubble(
             .padding(horizontal = 12.dp, vertical = 4.dp),
         horizontalArrangement = if (message.isOutgoing) Arrangement.End else Arrangement.Start,
     ) {
+        val bubbleModifier = Modifier
+            .widthIn(max = 320.dp)
+            .background(containerColor, RoundedCornerShape(16.dp))
+            .let { base ->
+                if (message.isCorrupted) {
+                    base.border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.error,
+                        shape = RoundedCornerShape(16.dp),
+                    )
+                } else {
+                    base
+                }
+            }
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .semantics { contentDescription = description }
+
         Column(
             horizontalAlignment = if (message.isOutgoing) Alignment.End else Alignment.Start,
-            modifier = Modifier
-                .widthIn(max = 320.dp)
-                .background(containerColor, RoundedCornerShape(16.dp))
-                .padding(horizontal = 12.dp, vertical = 8.dp)
-                .semantics { contentDescription = description },
+            modifier = bubbleModifier,
         ) {
-            Text(
-                text = if (message.isCorrupted) "[Message could not be decrypted]" else message.text,
-                color = contentColor,
-                style = MaterialTheme.typography.bodyMedium,
-            )
+            if (message.isCorrupted) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Filled.WarningAmber,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Text(
+                        text = "Authenticity check failed",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(start = 6.dp),
+                    )
+                }
+                Text(
+                    text = "This message was tampered with in transit and cannot be displayed.",
+                    color = contentColor,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            } else {
+                Text(
+                    text = message.text,
+                    color = contentColor,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(top = 4.dp),
