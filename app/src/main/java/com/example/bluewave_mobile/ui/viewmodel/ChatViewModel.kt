@@ -16,12 +16,15 @@ import com.example.bluewave_mobile.ui.intent.ChatIntent
 import com.example.bluewave_mobile.ui.state.ChatMessage
 import com.example.bluewave_mobile.ui.state.ChatUiState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -102,6 +105,29 @@ class ChatViewModel(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000L),
             initialValue = ChatUiState.Loading,
+        )
+
+    /**
+     * Auto-hiding visibility flag for the bond-loss banner.
+     *
+     * The raw `isPeerPaused` flag inside [uiState] flips on every
+     * `ACTION_KEY_MISSING` / `ACTION_ENCRYPTION_CHANGE` broadcast, and
+     * Android can interleave two of those within a few hundred
+     * milliseconds during a normal re-pair. To keep the banner from
+     * flickering we [debounce] both directions by
+     * [BANNER_DEBOUNCE_MS] — the banner is only shown if the peer
+     * stays paused for that long, and is only hidden if the peer
+     * stays restored for that long.
+     */
+    @OptIn(FlowPreview::class)
+    val bondLossBannerVisible: StateFlow<Boolean> = uiState
+        .map { state -> state is ChatUiState.Success && state.isPeerPaused }
+        .distinctUntilChanged()
+        .debounce(BANNER_DEBOUNCE_MS)
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000L),
+            initialValue = false,
         )
 
     /**
@@ -248,6 +274,16 @@ class ChatViewModel(
     companion object {
         /** SavedStateHandle key for the active peer MAC address. */
         const val ARG_DEVICE_MAC: String = "deviceMac"
+
+        /**
+         * Debounce window applied in both directions to the bond-loss
+         * banner visibility flag. 600 ms is a comfortable middle ground:
+         * shorter than a typical re-bond cycle so the banner does
+         * appear during a real outage, but long enough to swallow the
+         * sub-second interleaving that the Android 16 broadcasts emit
+         * during a normal re-pair.
+         */
+        private const val BANNER_DEBOUNCE_MS: Long = 600L
 
         /**
          * `ViewModelProvider.Factory` that pulls dependencies from the
