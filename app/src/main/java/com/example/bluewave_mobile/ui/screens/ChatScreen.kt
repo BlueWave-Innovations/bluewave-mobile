@@ -15,10 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
-import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -50,6 +47,7 @@ import com.example.bluewave_mobile.data.MessageRepositoryImpl
 import com.example.bluewave_mobile.ui.components.ChatMessage
 import com.example.bluewave_mobile.ui.components.EmptyStateView
 import com.example.bluewave_mobile.ui.components.MessageBubble
+import com.example.bluewave_mobile.ui.components.SendButton
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -235,19 +233,11 @@ private fun ChatInputRow(
                 .weight(1f)
                 .semantics { contentDescription = "Message input" },
         )
-        IconButton(
+        SendButton(
             onClick = onSend,
             enabled = draft.isNotBlank(),
-            modifier = Modifier
-                .padding(start = 8.dp)
-                .semantics { contentDescription = "Send message" },
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.Send,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        }
+            modifier = Modifier.padding(start = 8.dp),
+        )
     }
 }
 
