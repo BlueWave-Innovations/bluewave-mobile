@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.bluewave_mobile.MainDispatcherRule
 import com.example.bluewave_mobile.crypto.CryptoManager
 import com.example.bluewave_mobile.crypto.DecryptionResult
+import com.example.bluewave_mobile.data.E2EEState
 import com.example.bluewave_mobile.data.MessageEntity
 import com.example.bluewave_mobile.data.MessageRepository
 import com.example.bluewave_mobile.ui.intent.ChatIntent
@@ -17,6 +18,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -54,6 +56,11 @@ class ChatViewModelTest {
         crypto: CryptoManager,
         deviceMac: String = "AA:BB",
     ): ChatViewModel {
+        // ChatViewModel.uiState combines the message stream with the
+        // E2EE-state stream; every test mock therefore needs a default
+        // answer for `observeSessionState` so the combine never
+        // suspends forever (which would deadlock `messages.first {…}`).
+        every { repository.observeSessionState(any()) } returns flowOf(E2EEState.PENDING)
         val vm = ChatViewModel(deviceMac = deviceMac, repository = repository, crypto = crypto)
         openScopes += vm
         return vm

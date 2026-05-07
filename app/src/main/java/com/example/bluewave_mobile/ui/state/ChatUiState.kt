@@ -1,5 +1,6 @@
 package com.example.bluewave_mobile.ui.state
 
+import com.example.bluewave_mobile.data.E2EEState
 import com.example.bluewave_mobile.data.MessageEntity
 
 /**
@@ -41,7 +42,8 @@ sealed interface ChatUiState {
      */
     data class Success(
         val messages: List<MessageEntity>,
-        val isPeerPaused: Boolean = false
+        val isPeerPaused: Boolean = false,
+        val e2eeState: E2EEState = E2EEState.PENDING,
     ) : ChatUiState
 
     /**

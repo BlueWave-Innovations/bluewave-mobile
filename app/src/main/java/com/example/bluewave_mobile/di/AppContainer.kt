@@ -5,6 +5,8 @@ import android.bluetooth.BluetoothManager
 import android.content.Context
 import com.example.bluewave_mobile.crypto.CryptoManager
 import com.example.bluewave_mobile.crypto.KeyManager
+import com.example.bluewave_mobile.crypto.LibSignalEngine
+import com.example.bluewave_mobile.crypto.SignalEngine
 import com.example.bluewave_mobile.data.AppDatabase
 import com.example.bluewave_mobile.data.DatabaseProvider
 import com.example.bluewave_mobile.data.MessageDao
@@ -72,7 +74,22 @@ class AppContainer(applicationContext: Context) {
      * over RFCOMM and incoming frames flow back into Room.
      */
     val messageRepository: MessageRepository by lazy {
-        MessageRepositoryImpl(messageDao, cryptoManager, transport = bluetoothSessionManager)
+        MessageRepositoryImpl(
+            messageDao = messageDao,
+            cryptoManager = cryptoManager,
+            transport = bluetoothSessionManager,
+            signalEngine = signalEngine,
+        )
+    }
+
+    /**
+     * Process-wide [SignalEngine] backed by libsignal's X3DH +
+     * Double Ratchet primitives. The engine owns a fresh identity
+     * key pair per cold launch (in-memory store — see
+     * [LibSignalEngine] for the persistence trade-off).
+     */
+    val signalEngine: SignalEngine by lazy {
+        LibSignalEngine.create()
     }
 
     /**

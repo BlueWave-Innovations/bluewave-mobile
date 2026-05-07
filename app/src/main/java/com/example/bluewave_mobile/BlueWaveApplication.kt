@@ -93,6 +93,22 @@ class BlueWaveApplication : Application() {
                 }
             }
         }
+
+        // Drive the symmetric libsignal X3DH handshake: every fresh
+        // RFCOMM session — whether we initiated the connect or the
+        // accept loop produced it — triggers the repository to push
+        // its local key bundle to the peer. The repository keeps a
+        // per-peer "already sent" guard so we never duplicate the
+        // bundle within a session.
+        applicationScope.launch {
+            container.bluetoothSessionManager.sessionAttached.collect { mac ->
+                runCatching {
+                    container.messageRepository.onPeerLinkUp(mac)
+                }.onFailure { e ->
+                    Log.w(TAG, "onPeerLinkUp failed for $mac", e)
+                }
+            }
+        }
     }
 
     override fun onTerminate() {

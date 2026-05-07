@@ -52,6 +52,15 @@ interface MessageTransport {
     val incoming: Flow<IncomingPeerMessage>
 
     /**
+     * Cold stream of MAC addresses for which a fresh RFCOMM session
+     * has just been attached. The repository subscribes to this flow
+     * to fire its E2EE handshake (push the local libsignal key
+     * bundle) the moment the link is up — clients of this interface
+     * never observe the underlying socket lifecycle directly.
+     */
+    val sessionAttached: Flow<String>
+
+    /**
      * Initiates an outgoing connection to [macAddress] if no live
      * session exists for that peer yet. Idempotent: calling it on a
      * peer that is already connected is a no-op.

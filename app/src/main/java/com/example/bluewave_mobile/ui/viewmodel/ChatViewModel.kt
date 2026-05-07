@@ -9,6 +9,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.bluewave_mobile.crypto.CryptoManager
 import com.example.bluewave_mobile.crypto.DecryptionResult
+import com.example.bluewave_mobile.data.E2EEState
 import com.example.bluewave_mobile.data.MessageEntity
 import com.example.bluewave_mobile.data.MessageRepository
 import com.example.bluewave_mobile.data.MessageRepositoryImpl
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
@@ -88,18 +90,18 @@ class ChatViewModel(
      * [ChatUiState.Error]; the screen surfaces a retry CTA that
      * dispatches [ChatIntent.Retry].
      */
-    val uiState: StateFlow<ChatUiState> = repository
-        .getMessagesByDevice(deviceMac)
-        .map(::decryptAll)
-        .flowOn(Dispatchers.Default)
-        .map<List<ChatMessage>, ChatUiState> { persisted ->
-            val combined = (persisted + optimistic.value)
-                .sortedBy(ChatMessage::timestamp)
-            ChatUiState.Success(
-                messages = combined.map(::toEntityShim),
-                isPeerPaused = isPaused(),
-            )
-        }
+    val uiState: StateFlow<ChatUiState> = combine(
+        repository.getMessagesByDevice(deviceMac).map(::decryptAll).flowOn(Dispatchers.Default),
+        repository.observeSessionState(deviceMac).distinctUntilChanged(),
+    ) { persisted: List<ChatMessage>, e2eeState: E2EEState ->
+        val merged = (persisted + optimistic.value)
+            .sortedBy(ChatMessage::timestamp)
+        ChatUiState.Success(
+            messages = merged.map(::toEntityShim),
+            isPeerPaused = isPaused(),
+            e2eeState = e2eeState,
+        ) as ChatUiState
+    }
         .catch { throwable ->
             emit(ChatUiState.Error(throwable.message ?: "Failed to load chat history"))
         }
