@@ -103,7 +103,12 @@ fun MessageBubble(
                 }
             }
             .padding(horizontal = 12.dp, vertical = 8.dp)
-            .semantics { contentDescription = description }
+            // mergeDescendants collapses every nested Text / Icon
+            // (timestamp, security indicator, warning row) into a
+            // single TalkBack node. Without it, screen readers narrate
+            // the bubble as half a dozen separate elements, which is
+            // particularly noisy on the corrupted-message variant.
+            .semantics(mergeDescendants = true) { contentDescription = description }
 
         Column(
             horizontalAlignment = if (message.isOutgoing) Alignment.End else Alignment.Start,

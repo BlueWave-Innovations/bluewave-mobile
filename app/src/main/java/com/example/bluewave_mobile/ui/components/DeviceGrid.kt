@@ -89,13 +89,18 @@ private fun DeviceCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .semantics {
+            // mergeDescendants exposes the card to TalkBack as a
+            // single Button — the device name, MAC address and
+            // bonded-state icon are folded into [contentDesc]
+            // explicitly, so we explicitly suppress the per-Text
+            // narration that would otherwise occur.
+            .semantics(mergeDescendants = true) {
                 role = Role.Button
                 contentDescription = contentDesc
             },
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
     ) {
         Column(
             modifier = Modifier
