@@ -43,4 +43,23 @@
     <!-- Device list screen — extra states -->
     <string name="device_list_error_title">Discovery failed</string>
     <string name="device_list_retry">Retry</string>
+
+    <!-- Device list — sectioned contact list -->
+    <string name="contacts_section_chats">Chats</string>
+    <string name="contacts_section_can_chat">Can start chat</string>
+    <string name="contacts_section_install_suggest">No app yet</string>
+    <string name="contacts_chat_empty_preview">No messages yet</string>
+    <string name="contacts_install_suggest_action">Send app via Bluetooth</string>
+    <string name="contacts_install_suggest_subtitle">BlueWave not detected — share the app</string>
+    <string name="contacts_chat_unread_badge_cd">%1$d unread messages</string>
+    <string name="contacts_online_label">Online</string>
+    <string name="contacts_paired_label">Paired</string>
+    <string name="contacts_install_suggested">Bluetooth share opened. Confirm on the other device.</string>
+    <string name="contacts_install_failed">No Bluetooth share app found on this device.</string>
+    <string name="action_suggest_install">Send BlueWave via Bluetooth</string>
+
+    <!-- Encryption indicators -->
+    <string name="chat_security_pending_cd">Establishing secure session</string>
+    <string name="chat_security_pending_label">Securing…</string>
+    <string name="chat_security_handshake_failed">Couldn\'t establish a secure session — message delivery is paused.</string>
 </resources>

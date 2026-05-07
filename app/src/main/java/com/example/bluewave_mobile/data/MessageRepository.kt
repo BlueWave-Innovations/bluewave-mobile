@@ -58,6 +58,24 @@ interface MessageRepository {
     fun getMessagesByDevice(macAddress: String): Flow<List<MessageEntity>>
 
     /**
+     * Returns one [ConversationSummary] per peer with whom there is at
+     * least one persisted message, ordered by the timestamp of the last
+     * message (newest first).
+     *
+     * The device-list screen consumes this flow to populate the
+     * "Chats" section of its sectioned contact list. The unread count
+     * is computed from inbound rows where `isRead = false` — see
+     * [MessageDao.observeUnreadCounts] for the underlying SQL.
+     */
+    fun observeAllConversations(): Flow<List<ConversationSummary>>
+
+    /**
+     * Marks every inbound message from [macAddress] as read. Idempotent.
+     * Called when the user opens the corresponding chat.
+     */
+    suspend fun markPeerAsRead(macAddress: String)
+
+    /**
      * Retrieves the latest message per device for building a conversation list.
      *
      * @return A [Flow] emitting a list of the most recent message from each conversation.

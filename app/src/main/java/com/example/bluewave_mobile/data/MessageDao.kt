@@ -77,4 +77,41 @@ interface MessageDao {
      */
     @Query("SELECT COUNT(*) FROM messages")
     suspend fun getMessageCount(): Int
+
+    /**
+     * Streams `(macAddress, unreadCount)` rows where `unreadCount` is the
+     * number of inbound, not-yet-read messages for that peer. Outgoing
+     * rows are excluded by construction (they are inserted with
+     * `isRead = true`).
+     *
+     * Used by the device-list screen to render the unread badge next to
+     * each existing-chat row.
+     */
+    @Query(
+        """
+        SELECT macAddress AS macAddress, COUNT(*) AS unreadCount
+        FROM messages
+        WHERE isOutgoing = 0 AND isRead = 0
+        GROUP BY macAddress
+        """,
+    )
+    fun observeUnreadCounts(): Flow<List<UnreadByPeer>>
+
+    /**
+     * Marks every inbound message from [macAddress] as read. Idempotent
+     * — subsequent invocations on a fully-read peer are no-ops on the
+     * SQLite write path.
+     */
+    @Query("UPDATE messages SET isRead = 1 WHERE macAddress = :macAddress AND isOutgoing = 0 AND isRead = 0")
+    suspend fun markPeerAsRead(macAddress: String)
 }
+
+/**
+ * Projection row for [MessageDao.observeUnreadCounts]. Kept as a
+ * top-level data class (instead of a `Pair`) so Room can map columns
+ * by name without reflection-on-generics tricks.
+ */
+data class UnreadByPeer(
+    val macAddress: String,
+    val unreadCount: Int,
+)

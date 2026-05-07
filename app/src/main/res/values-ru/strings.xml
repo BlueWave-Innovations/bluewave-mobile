@@ -43,4 +43,23 @@
     <!-- Device list screen — extra states -->
     <string name="device_list_error_title">Ошибка поиска</string>
     <string name="device_list_retry">Повторить</string>
+
+    <!-- Device list — секционированный список контактов -->
+    <string name="contacts_section_chats">Чаты</string>
+    <string name="contacts_section_can_chat">Можно написать</string>
+    <string name="contacts_section_install_suggest">Без приложения</string>
+    <string name="contacts_chat_empty_preview">Сообщений ещё нет</string>
+    <string name="contacts_install_suggest_action">Отправить приложение по Bluetooth</string>
+    <string name="contacts_install_suggest_subtitle">BlueWave не обнаружен — поделитесь приложением</string>
+    <string name="contacts_chat_unread_badge_cd">Непрочитанных сообщений: %1$d</string>
+    <string name="contacts_online_label">В сети</string>
+    <string name="contacts_paired_label">Сопряжено</string>
+    <string name="contacts_install_suggested">Открыта передача по Bluetooth. Подтвердите на другом устройстве.</string>
+    <string name="contacts_install_failed">На устройстве не нашлось приложения для передачи по Bluetooth.</string>
+    <string name="action_suggest_install">Отправить BlueWave по Bluetooth</string>
+
+    <!-- Индикаторы шифрования -->
+    <string name="chat_security_pending_cd">Идёт установка защищённого сеанса</string>
+    <string name="chat_security_pending_label">Защита…</string>
+    <string name="chat_security_handshake_failed">Не удалось установить защищённый сеанс — отправка приостановлена.</string>
 </resources>

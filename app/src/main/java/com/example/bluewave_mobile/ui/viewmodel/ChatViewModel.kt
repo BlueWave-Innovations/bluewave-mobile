@@ -175,6 +175,13 @@ class ChatViewModel(
                 }
             }
         }
+        // Mark every inbound message from this peer as read. The
+        // device-list unread badge keys off `MessageEntity.isRead`
+        // so opening a chat must clear the badge regardless of which
+        // bubble the user actually scrolls past.
+        viewModelScope.launch {
+            runCatching { repository.markPeerAsRead(deviceMac) }
+        }
         // Best-effort RFCOMM auto-connect on chat entry. The transport
         // is null in unit tests and idempotent in production: calling
         // `connect` for a peer with an active session is a no-op, and

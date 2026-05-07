@@ -3,13 +3,22 @@ package com.example.bluewave_mobile.ui.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.example.bluewave_mobile.MainDispatcherRule
 import com.example.bluewave_mobile.data.BluetoothDeviceInfo
+import com.example.bluewave_mobile.data.ConversationSummary
+import com.example.bluewave_mobile.data.MessageEntity
+import com.example.bluewave_mobile.data.MessageRepository
+import com.example.bluewave_mobile.network.ApkSender
+import com.example.bluewave_mobile.network.BlueWaveSdpProber
 import com.example.bluewave_mobile.network.BluetoothDiscovery
 import com.example.bluewave_mobile.ui.intent.DeviceListIntent
+import com.example.bluewave_mobile.ui.model.ContactRow
 import com.example.bluewave_mobile.ui.state.DeviceListUiState
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -23,9 +32,16 @@ import org.junit.Test
 /**
  * Pure-JVM unit tests for [DeviceListViewModel].
  *
- * The reducer is intentionally a [kotlinx.coroutines.flow.Flow] so we
- * can drive it deterministically from a fake [BluetoothDiscovery] —
- * no Robolectric, no Android runtime, no emulator.
+ * Two layers are exercised:
+ *
+ *  * The reducer is intentionally a [kotlinx.coroutines.flow.Flow] so
+ *    we can drive it deterministically from a fake
+ *    [BluetoothDiscovery] / [MessageRepository] / [BlueWaveSdpProber]
+ *    triplet — no Robolectric, no Android runtime, no emulator.
+ *  * The pure projection [DeviceListViewModel.buildRows] is exercised
+ *    in isolation through the package-internal entry point so the
+ *    section ordering invariants are pinned without spinning the full
+ *    state machine.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class DeviceListViewModelTest {
@@ -35,11 +51,31 @@ class DeviceListViewModelTest {
 
     private val openScopes = mutableListOf<DeviceListViewModel>()
 
-    private fun trackedVm(discovery: BluetoothDiscovery): DeviceListViewModel {
-        val vm = DeviceListViewModel(discovery)
+    private fun trackedVm(
+        discovery: BluetoothDiscovery,
+        repository: MessageRepository = noopRepository(),
+        sdp: BlueWaveSdpProber = noopProber(),
+        apk: ApkSender = noopApk(),
+    ): DeviceListViewModel {
+        val vm = DeviceListViewModel(
+            bluetoothDiscovery = discovery,
+            messageRepository = repository,
+            sdpProber = sdp,
+            apkSender = apk,
+        )
         openScopes += vm
         return vm
     }
+
+    private fun noopRepository(): MessageRepository = mockk(relaxed = true) {
+        every { observeAllConversations() } returns flowOf(emptyList())
+    }
+
+    private fun noopProber(): BlueWaveSdpProber = mockk(relaxed = true) {
+        every { appPresence } returns MutableStateFlow(emptyMap())
+    }
+
+    private fun noopApk(): ApkSender = mockk(relaxed = true)
 
     @After
     fun cancelViewModelScopes() {
@@ -64,7 +100,7 @@ class DeviceListViewModelTest {
     }
 
     @Test
-    fun `StartScan emits Scanning then Loaded once discovery completes`() = runTest {
+    fun `StartScan emits Scanning rows for discovered peers`() = runTest {
         val discovery = mockk<BluetoothDiscovery>()
         every { discovery.bondedDevices() } returns emptyList()
         every { discovery.discoverDevices() } returns flowOf(
@@ -75,28 +111,27 @@ class DeviceListViewModelTest {
         val vm = trackedVm(discovery)
         vm.handleIntent(DeviceListIntent.StartScan)
 
-        val loaded = vm.uiState.first { it is DeviceListUiState.Loaded } as DeviceListUiState.Loaded
-        assertEquals(2, loaded.devices.size)
-        assertEquals("AA", loaded.devices[0].macAddress)
-        assertEquals("BB", loaded.devices[1].macAddress)
+        val scanning = vm.uiState.first { it is DeviceListUiState.Scanning && it.rows.isNotEmpty() }
+            as DeviceListUiState.Scanning
+        val macs = scanning.rows.mapTo(HashSet()) { it.macAddress }
+        assertTrue("Alice missing", "AA" in macs)
+        assertTrue("Bob missing", "BB" in macs)
     }
 
     @Test
-    fun `bonded devices are merged into the scan results`() = runTest {
+    fun `bonded devices appear in the scan rows immediately`() = runTest {
         val discovery = mockk<BluetoothDiscovery>()
         every { discovery.bondedDevices() } returns listOf(
             BluetoothDeviceInfo(name = "Paired", macAddress = "PP", isPaired = true),
         )
-        every { discovery.discoverDevices() } returns flowOf(
-            BluetoothDeviceInfo(name = "Alice", macAddress = "AA"),
-        )
+        every { discovery.discoverDevices() } returns flowOf()
 
         val vm = trackedVm(discovery)
         vm.handleIntent(DeviceListIntent.StartScan)
 
-        val loaded = vm.uiState.first { it is DeviceListUiState.Loaded } as DeviceListUiState.Loaded
-        assertEquals(2, loaded.devices.size)
-        assertEquals(setOf("PP", "AA"), loaded.devices.map { it.macAddress }.toSet())
+        val scanning = vm.uiState.first { it is DeviceListUiState.Scanning && it.rows.isNotEmpty() }
+            as DeviceListUiState.Scanning
+        assertTrue(scanning.rows.any { it.macAddress == "PP" })
     }
 
     @Test
@@ -140,5 +175,71 @@ class DeviceListViewModelTest {
 
         val state = vm.uiState.first { it is DeviceListUiState.Idle }
         assertTrue(state is DeviceListUiState.Idle)
+    }
+
+    @Test
+    fun `DeviceSelected fires markPeerAsRead on the repository`() = runTest {
+        val discovery = mockk<BluetoothDiscovery>(relaxed = true)
+        every { discovery.bondedDevices() } returns emptyList()
+        every { discovery.discoverDevices() } returns flowOf()
+        val repository: MessageRepository = mockk(relaxed = true) {
+            every { observeAllConversations() } returns flowOf(emptyList())
+            coEvery { markPeerAsRead(any()) } returns Unit
+        }
+
+        val vm = trackedVm(discovery, repository = repository)
+        vm.handleIntent(DeviceListIntent.DeviceSelected("AA:BB:CC"))
+
+        // Drain pending coroutines so the side-effect coroutine launched
+        // by the reducer has a chance to run.
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+        coVerify(atLeast = 1) { repository.markPeerAsRead("AA:BB:CC") }
+    }
+
+    @Test
+    fun `buildRows orders chats first, then candidates, then install suggestions`() = runTest {
+        val discovery = mockk<BluetoothDiscovery>(relaxed = true)
+        every { discovery.bondedDevices() } returns emptyList()
+        every { discovery.discoverDevices() } returns flowOf()
+        val vm = trackedVm(discovery)
+
+        val rows = vm.buildRows(
+            peers = mapOf(
+                "AA" to BluetoothDeviceInfo(name = "Alice", macAddress = "AA"),
+                "BB" to BluetoothDeviceInfo(name = "Bob", macAddress = "BB"),
+                "CC" to BluetoothDeviceInfo(name = "Carla", macAddress = "CC"),
+            ),
+            conversations = listOf(
+                ConversationSummary(
+                    macAddress = "DD",
+                    lastMessage = MessageEntity(
+                        id = 1L,
+                        macAddress = "DD",
+                        encryptedPayload = ByteArray(0),
+                        iv = ByteArray(0),
+                        timestamp = 100L,
+                        isOutgoing = true,
+                    ),
+                    unreadCount = 0,
+                ),
+            ),
+            presence = mapOf(
+                "AA" to true,
+                "BB" to false,
+                // CC is unknown — should land in candidates per the
+                // optimistic default.
+            ),
+        )
+
+        // 1) Existing chat for DD, then 2) candidates (AA + CC),
+        // then 3) install suggestion for BB.
+        assertEquals(4, rows.size)
+        assertTrue(rows[0] is ContactRow.ExistingChat)
+        assertEquals("DD", rows[0].macAddress)
+        val middle = rows.subList(1, 3)
+        assertTrue(middle.all { it is ContactRow.StartChatCandidate })
+        assertEquals(setOf("AA", "CC"), middle.map { it.macAddress }.toSet())
+        assertTrue(rows[3] is ContactRow.InstallSuggestion)
+        assertEquals("BB", rows[3].macAddress)
     }
 }

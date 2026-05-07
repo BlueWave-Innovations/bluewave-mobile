@@ -29,6 +29,11 @@ import androidx.room.PrimaryKey
  * @property timestamp Unix epoch milliseconds when the message was created.
  * @property isOutgoing True if the message was sent by this device, false if received.
  * @property senderName Display name of the sender device.
+ * @property isRead `true` when the message has been displayed in the chat
+ *                  screen by the local user. Outgoing messages default to
+ *                  `true`; incoming messages start as `false` and flip to
+ *                  `true` once the user opens the matching conversation.
+ *                  Drives the `unreadCount` badge on the device list.
  */
 @Entity(
     tableName = "messages",
@@ -42,7 +47,8 @@ data class MessageEntity(
     val iv: ByteArray,
     val timestamp: Long = System.currentTimeMillis(),
     val isOutgoing: Boolean,
-    val senderName: String = ""
+    val senderName: String = "",
+    val isRead: Boolean = false,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -57,6 +63,7 @@ data class MessageEntity(
         if (timestamp != other.timestamp) return false
         if (isOutgoing != other.isOutgoing) return false
         if (senderName != other.senderName) return false
+        if (isRead != other.isRead) return false
 
         return true
     }
@@ -69,6 +76,7 @@ data class MessageEntity(
         result = 31 * result + timestamp.hashCode()
         result = 31 * result + isOutgoing.hashCode()
         result = 31 * result + senderName.hashCode()
+        result = 31 * result + isRead.hashCode()
         return result
     }
 }

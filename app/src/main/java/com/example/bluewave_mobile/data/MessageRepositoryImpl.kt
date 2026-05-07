@@ -3,6 +3,8 @@ package com.example.bluewave_mobile.data
 import com.example.bluewave_mobile.crypto.CryptoManager
 import com.example.bluewave_mobile.network.MessageTransport
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * Concrete implementation of [MessageRepository] serving as the Single Source of Truth.
@@ -34,6 +36,30 @@ class MessageRepositoryImpl(
 
     override fun getLatestMessagePerDevice(): Flow<List<MessageEntity>> {
         return messageDao.getLatestMessagePerDevice()
+    }
+
+    override fun observeAllConversations(): Flow<List<ConversationSummary>> {
+        return combine(
+            messageDao.getLatestMessagePerDevice(),
+            messageDao.observeUnreadCounts(),
+        ) { lasts, unread ->
+            // Index unread counts by uppercase MAC for stable lookups.
+            val unreadByMac: Map<String, Int> = unread.associate {
+                it.macAddress.uppercase() to it.unreadCount
+            }
+            lasts.map { last ->
+                val key = last.macAddress.uppercase()
+                ConversationSummary(
+                    macAddress = key,
+                    lastMessage = last,
+                    unreadCount = unreadByMac[key] ?: 0,
+                )
+            }
+        }.distinctUntilChanged()
+    }
+
+    override suspend fun markPeerAsRead(macAddress: String) {
+        messageDao.markPeerAsRead(macAddress.uppercase())
     }
 
     override suspend fun insertMessage(message: MessageEntity): Long {
