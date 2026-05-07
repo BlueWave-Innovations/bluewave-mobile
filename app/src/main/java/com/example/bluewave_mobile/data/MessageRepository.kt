@@ -12,21 +12,23 @@ import kotlinx.coroutines.flow.Flow
  *    implementation encrypts it with AES-256-GCM (a fresh IV per call,
  *    see [com.example.bluewave_mobile.crypto.CryptoManager]) and persists
  *    the resulting ciphertext into the Room database **before** any
- *    radio transmission. The UI subscribes to [getMessagesByDevice] /
+ *    radio transmission so the UI subscribes to [getMessagesByDevice] /
  *    [getLatestMessagePerDevice] and is updated automatically through
- *    Room's invalidation tracker once the row lands. The actual byte
- *    transmission over the BluetoothSocket is delegated to the network
- *    layer (`ConnectedThread`) — this interface intentionally does not
- *    expose any network primitives so the ViewModels never take a hard
- *    dependency on `android.bluetooth`.
+ *    Room's invalidation tracker once the row lands. The plaintext UTF-8
+ *    bytes are then handed to the network layer
+ *    ([com.example.bluewave_mobile.network.MessageTransport]) which
+ *    frames them with the BlueWave length-prefix wire format and writes
+ *    them to the peer's `BluetoothSocket`. The interface intentionally
+ *    does not expose any network primitives so the ViewModels never
+ *    take a hard dependency on `android.bluetooth`.
  *
- *  * **Inbound** — the network layer hands raw bytes to
- *    [processIncomingMessage]. The implementation parses the on-wire
- *    frame `[12-byte IV || ciphertext+GCM-tag]`, decrypts it through
- *    [com.example.bluewave_mobile.crypto.CryptoManager.decrypt] and
- *    inserts the resulting [MessageEntity] into Room. Tampered frames
- *    are persisted with their IV so the UI can render them with the
- *    Material `errorContainer` treatment.
+ *  * **Inbound** — the network layer hands plaintext UTF-8 bytes from a
+ *    fully-reassembled frame to [processIncomingMessage]. The
+ *    implementation re-encrypts them with the local AES-256-GCM key for
+ *    encryption-at-rest and inserts the resulting [MessageEntity] into
+ *    Room. Note that BlueWave's e2e wire format is plaintext on top of
+ *    classic Bluetooth's link-level encryption — the local AES key is
+ *    used only for at-rest storage and is **not** shared between peers.
  *
  * **Structured Concurrency.** Every `suspend` function on this
  * interface MUST be cancellable. Implementations should rely on Room's
