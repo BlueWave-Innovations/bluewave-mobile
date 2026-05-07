@@ -18,10 +18,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BluetoothDisabled
+import com.example.bluewave_mobile.ui.preview.PreviewFontScales
+import com.example.bluewave_mobile.ui.preview.PreviewLightDark
 import com.example.bluewave_mobile.ui.theme.BlueWaveTheme
 
 /**
@@ -109,7 +110,8 @@ fun EmptyStateView(
     }
 }
 
-@Preview(showBackground = true)
+@PreviewLightDark
+@PreviewFontScales
 @Composable
 private fun EmptyStateViewPreview() {
     BlueWaveTheme {
