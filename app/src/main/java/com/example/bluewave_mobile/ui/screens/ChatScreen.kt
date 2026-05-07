@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -170,18 +171,27 @@ private fun ChatBody(
             )
         }
         else -> {
-            LazyColumn(
-                state = listState,
-                reverseLayout = true,
-                contentPadding = PaddingValues(vertical = 8.dp),
-                verticalArrangement = Arrangement.Top,
-                modifier = modifier.fillMaxSize(),
-            ) {
-                items(
-                    items = messages.asReversed(),
-                    key = ChatMessage::id,
-                ) { message ->
-                    MessageBubble(message = message)
+            // SelectionContainer turns the LazyColumn into a single
+            // selectable region so a user with a hardware keyboard,
+            // mouse, or trackpad (Chromebook / Android-on-laptop) can
+            // drag-select message text and copy it. The container
+            // gracefully degrades on touch devices: long-press
+            // selection and the standard floating action menu still
+            // work as on any other Compose Text.
+            SelectionContainer(modifier = modifier.fillMaxSize()) {
+                LazyColumn(
+                    state = listState,
+                    reverseLayout = true,
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                    verticalArrangement = Arrangement.Top,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    items(
+                        items = messages.asReversed(),
+                        key = ChatMessage::id,
+                    ) { message ->
+                        MessageBubble(message = message)
+                    }
                 }
             }
         }
