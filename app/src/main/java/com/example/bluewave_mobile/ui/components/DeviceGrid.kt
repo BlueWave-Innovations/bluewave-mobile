@@ -28,10 +28,10 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.clickable
 import com.example.bluewave_mobile.data.BluetoothDeviceInfo
+import com.example.bluewave_mobile.ui.preview.PreviewLightDark
 import com.example.bluewave_mobile.ui.theme.BlueWaveTheme
 
 /**
@@ -149,7 +149,7 @@ private fun DeviceCard(
     }
 }
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
 private fun DeviceGridPreview() {
     BlueWaveTheme {
