@@ -37,6 +37,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.bluewave_mobile.ui.components.BondLossBanner
 import com.example.bluewave_mobile.ui.components.EmptyStateView
 import com.example.bluewave_mobile.ui.components.MessageBubble
 import com.example.bluewave_mobile.ui.components.SendButton
@@ -120,6 +121,7 @@ fun ChatScreen(
                 .padding(innerPadding)
                 .imePadding(),
         ) {
+            BondLossBanner(visible = isPaused)
             Box(
                 modifier = Modifier
                     .weight(1f)
