@@ -1,3 +1,37 @@
 <resources>
-    <string name="app_name">bluewave-mobile</string>
+    <string name="app_name">BlueWave</string>
+
+    <!-- Device list screen -->
+    <string name="device_list_title">BlueWave</string>
+    <string name="device_list_rescan_cd">Rescan for nearby devices</string>
+    <string name="device_list_empty_title">No devices nearby</string>
+    <string name="device_list_empty_message">Move closer to a paired phone or tap the button below to start a fresh scan.</string>
+    <string name="device_list_scan_again">Scan again</string>
+    <string name="device_list_bluetooth_off_title">Bluetooth is off</string>
+    <string name="device_list_bluetooth_off_message">Turn on Bluetooth in system settings, then come back to BlueWave to discover nearby peers.</string>
+    <string name="device_list_try_again">Try again</string>
+
+    <!-- Permissions -->
+    <string name="permission_title">Bluetooth permission required</string>
+    <string name="permission_message">BlueWave needs Bluetooth access to discover nearby peers and exchange messages over a local radio link.</string>
+    <string name="permission_grant">Grant permission</string>
+    <string name="permission_combined_cd">Bluetooth permission required. Grant Bluetooth access to discover nearby peers and exchange messages.</string>
+
+    <!-- Chat screen -->
+    <string name="chat_title">Chat</string>
+    <string name="chat_with_cd">Chat with %1$s</string>
+    <string name="chat_input_placeholder">Message</string>
+    <string name="chat_input_cd">Message input</string>
+    <string name="chat_send_cd">Send message</string>
+    <string name="chat_jump_to_bottom_cd">Scroll to latest message</string>
+    <string name="chat_empty_title">No messages yet</string>
+    <string name="chat_empty_message">Start the conversation by sending a message below.</string>
+    <string name="chat_history_error_title">Couldn\'t load history</string>
+    <string name="chat_connection_lost">Connection lost</string>
+    <string name="chat_connection_restored">Connection restored</string>
+    <string name="chat_corrupted_label">Authenticity check failed</string>
+    <string name="chat_security_encrypted_cd">End-to-end encrypted</string>
+    <string name="chat_security_failed_cd">Authentication failed</string>
+    <string name="chat_no_selection_title">No conversation selected</string>
+    <string name="chat_no_selection_message">Pick a device on the left to start chatting.</string>
 </resources>
