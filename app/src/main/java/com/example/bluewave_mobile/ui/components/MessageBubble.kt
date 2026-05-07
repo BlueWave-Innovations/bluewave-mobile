@@ -22,9 +22,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.example.bluewave_mobile.R
 import com.example.bluewave_mobile.ui.state.ChatMessage
 import java.text.DateFormat
 import java.util.Date
@@ -62,14 +64,17 @@ fun MessageBubble(
     val formattedTime = remember(message.timestamp) {
         timeFormatter.format(Date(message.timestamp))
     }
-    val description = remember(message) {
-        val direction = if (message.isOutgoing) "Sent" else "Received"
-        if (message.isCorrupted) {
-            "$direction at $formattedTime, message corrupted"
-        } else {
-            "$direction at $formattedTime: ${message.text}"
-        }
+    val descriptionTemplate = when {
+        message.isOutgoing && message.isCorrupted ->
+            stringResource(R.string.chat_message_sent_corrupted_cd, formattedTime)
+        !message.isOutgoing && message.isCorrupted ->
+            stringResource(R.string.chat_message_received_corrupted_cd, formattedTime)
+        message.isOutgoing ->
+            stringResource(R.string.chat_message_sent_at_cd, formattedTime, message.text)
+        else ->
+            stringResource(R.string.chat_message_received_at_cd, formattedTime, message.text)
     }
+    val description = remember(message, descriptionTemplate) { descriptionTemplate }
 
     val securityIcon: ImageVector = if (message.isCorrupted) {
         Icons.Outlined.LockOpen
@@ -77,10 +82,12 @@ fun MessageBubble(
         Icons.Filled.Lock
     }
     val securityDescription = if (message.isCorrupted) {
-        "Authentication failed"
+        stringResource(R.string.chat_security_failed_cd)
     } else {
-        "End-to-end encrypted"
+        stringResource(R.string.chat_security_encrypted_cd)
     }
+    val corruptedLabel = stringResource(R.string.chat_corrupted_label)
+    val corruptedMessage = stringResource(R.string.chat_corrupted_message)
 
     Row(
         modifier = modifier
@@ -123,14 +130,14 @@ fun MessageBubble(
                         modifier = Modifier.size(16.dp),
                     )
                     Text(
-                        text = "Authenticity check failed",
+                        text = corruptedLabel,
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.padding(start = 6.dp),
                     )
                 }
                 Text(
-                    text = "This message was tampered with in transit and cannot be displayed.",
+                    text = corruptedMessage,
                     color = contentColor,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(top = 4.dp),

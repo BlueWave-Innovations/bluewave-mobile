@@ -30,8 +30,17 @@
     <string name="chat_connection_lost">Соединение потеряно</string>
     <string name="chat_connection_restored">Соединение восстановлено</string>
     <string name="chat_corrupted_label">Проверка подлинности не пройдена</string>
+    <string name="chat_corrupted_message">Сообщение было изменено при передаче и не может быть отображено.</string>
     <string name="chat_security_encrypted_cd">Сквозное шифрование</string>
     <string name="chat_security_failed_cd">Ошибка аутентификации</string>
     <string name="chat_no_selection_title">Чат не выбран</string>
     <string name="chat_no_selection_message">Выберите устройство слева, чтобы начать переписку.</string>
+    <string name="chat_message_sent_at_cd">Отправлено в %1$s: %2$s</string>
+    <string name="chat_message_received_at_cd">Получено в %1$s: %2$s</string>
+    <string name="chat_message_sent_corrupted_cd">Отправлено в %1$s, сообщение повреждено</string>
+    <string name="chat_message_received_corrupted_cd">Получено в %1$s, сообщение повреждено</string>
+
+    <!-- Device list screen — extra states -->
+    <string name="device_list_error_title">Ошибка поиска</string>
+    <string name="device_list_retry">Повторить</string>
 </resources>

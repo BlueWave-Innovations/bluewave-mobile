@@ -30,8 +30,17 @@
     <string name="chat_connection_lost">Connection lost</string>
     <string name="chat_connection_restored">Connection restored</string>
     <string name="chat_corrupted_label">Authenticity check failed</string>
+    <string name="chat_corrupted_message">This message was tampered with in transit and cannot be displayed.</string>
     <string name="chat_security_encrypted_cd">End-to-end encrypted</string>
     <string name="chat_security_failed_cd">Authentication failed</string>
     <string name="chat_no_selection_title">No conversation selected</string>
     <string name="chat_no_selection_message">Pick a device on the left to start chatting.</string>
+    <string name="chat_message_sent_at_cd">Sent at %1$s: %2$s</string>
+    <string name="chat_message_received_at_cd">Received at %1$s: %2$s</string>
+    <string name="chat_message_sent_corrupted_cd">Sent at %1$s, message corrupted</string>
+    <string name="chat_message_received_corrupted_cd">Received at %1$s, message corrupted</string>
+
+    <!-- Device list screen — extra states -->
+    <string name="device_list_error_title">Discovery failed</string>
+    <string name="device_list_retry">Retry</string>
 </resources>

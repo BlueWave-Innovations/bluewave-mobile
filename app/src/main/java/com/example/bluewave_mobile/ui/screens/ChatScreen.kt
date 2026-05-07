@@ -40,6 +40,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -47,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.bluewave_mobile.R
 import com.example.bluewave_mobile.ui.components.BondLossBanner
 import com.example.bluewave_mobile.ui.components.EmptyStateView
 import com.example.bluewave_mobile.ui.components.MessageBubble
@@ -102,9 +104,10 @@ fun ChatScreen(
 
     val isPaused = (uiState as? ChatUiState.Success)?.isPeerPaused == true
     var lastSeenBanner: Boolean? by remember { mutableStateOf<Boolean?>(null) }
+    val connectionRestoredMessage = stringResource(id = R.string.chat_connection_restored)
     LaunchedEffect(bannerVisible, deviceMac) {
         if (lastSeenBanner != null && lastSeenBanner != bannerVisible && !bannerVisible) {
-            snackbarHostState.showSnackbar(message = "Connection restored")
+            snackbarHostState.showSnackbar(message = connectionRestoredMessage)
         }
         lastSeenBanner = bannerVisible
     }
@@ -113,16 +116,17 @@ fun ChatScreen(
         modifier = modifier,
         contentWindowInsets = WindowInsets(0),
         topBar = {
+            val chatWithCd = stringResource(id = R.string.chat_with_cd, deviceMac)
             TopAppBar(
                 title = {
                     Column(
                         modifier = Modifier.semantics(mergeDescendants = true) {
                             heading()
-                            contentDescription = "Chat with $deviceMac"
+                            contentDescription = chatWithCd
                         },
                     ) {
                         Text(
-                            text = "Chat",
+                            text = stringResource(id = R.string.chat_title),
                             style = MaterialTheme.typography.titleMedium,
                         )
                         Text(
@@ -153,6 +157,7 @@ fun ChatScreen(
                     listState = listState,
                 )
                 if (showJumpToBottom) {
+                    val jumpToBottomCd = stringResource(id = R.string.chat_jump_to_bottom_cd)
                     FloatingActionButton(
                         onClick = {
                             scope.launch { listState.animateScrollToItem(0) }
@@ -161,7 +166,7 @@ fun ChatScreen(
                             .align(Alignment.BottomEnd)
                             .padding(16.dp)
                             .size(40.dp)
-                            .semantics { contentDescription = "Scroll to latest message" },
+                            .semantics { contentDescription = jumpToBottomCd },
                     ) {
                         Icon(
                             imageVector = Icons.Filled.KeyboardArrowDown,
@@ -207,7 +212,7 @@ private fun ChatBody(
         state is ChatUiState.Error -> {
             EmptyStateView(
                 icon = Icons.AutoMirrored.Filled.Chat,
-                title = "Couldn't load history",
+                title = stringResource(id = R.string.chat_history_error_title),
                 message = state.message,
                 modifier = modifier.fillMaxSize(),
             )
@@ -215,8 +220,8 @@ private fun ChatBody(
         messages.isEmpty() -> {
             EmptyStateView(
                 icon = Icons.AutoMirrored.Filled.Chat,
-                title = "No messages yet",
-                message = "Start the conversation by sending a message below.",
+                title = stringResource(id = R.string.chat_empty_title),
+                message = stringResource(id = R.string.chat_empty_message),
                 modifier = modifier.fillMaxSize(),
             )
         }
@@ -262,16 +267,17 @@ private fun ChatInputRow(
             .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val inputCd = stringResource(id = R.string.chat_input_cd)
         OutlinedTextField(
             value = draft,
             onValueChange = onDraftChange,
-            placeholder = { Text("Message") },
+            placeholder = { Text(stringResource(id = R.string.chat_input_placeholder)) },
             singleLine = false,
             maxLines = 4,
             enabled = enabled,
             modifier = Modifier
                 .weight(1f)
-                .semantics { contentDescription = "Message input" },
+                .semantics { contentDescription = inputCd },
         )
         SendButton(
             onClick = onSend,

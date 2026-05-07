@@ -136,9 +136,9 @@ fun DeviceListScreen(
                 uiState is DeviceListUiState.Error -> {
                     EmptyStateView(
                         icon = Icons.Filled.BluetoothDisabled,
-                        title = "Discovery failed",
+                        title = stringResource(id = R.string.device_list_error_title),
                         message = (uiState as DeviceListUiState.Error).message,
-                        actionLabel = "Retry",
+                        actionLabel = stringResource(id = R.string.device_list_retry),
                         onAction = { viewModel.handleIntent(DeviceListIntent.StartScan) }
                     )
                 }

@@ -17,6 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -75,8 +76,8 @@ fun AdaptiveAppRoot() {
                     if (mac == null) {
                         EmptyStateView(
                             icon = Icons.AutoMirrored.Filled.Chat,
-                            title = "No conversation selected",
-                            message = "Pick a device on the left to start chatting.",
+                            title = stringResource(id = R.string.chat_no_selection_title),
+                            message = stringResource(id = R.string.chat_no_selection_message),
                         )
                     } else {
                         ChatScreen(deviceMac = mac)

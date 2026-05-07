@@ -22,11 +22,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.example.bluewave_mobile.R
 
 /**
  * Compose-styled send button with explicit hover / pressed / disabled
@@ -99,6 +101,7 @@ fun SendButton(
         label = "SendButtonIconTint",
     )
 
+    val sendCd = stringResource(id = R.string.chat_send_cd)
     Box(
         modifier = modifier
             .size(animatedSize)
@@ -111,7 +114,7 @@ fun SendButton(
             )
             .semantics {
                 role = Role.Button
-                contentDescription = "Send message"
+                contentDescription = sendCd
             },
         contentAlignment = Alignment.Center,
     ) {
