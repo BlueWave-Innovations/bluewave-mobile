@@ -19,6 +19,9 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -49,6 +52,7 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bluewave_mobile.R
+import com.example.bluewave_mobile.data.E2EEState
 import com.example.bluewave_mobile.ui.components.BondLossBanner
 import com.example.bluewave_mobile.ui.components.EmptyStateView
 import com.example.bluewave_mobile.ui.components.MessageBubble
@@ -103,6 +107,7 @@ fun ChatScreen(
     }
 
     val isPaused = (uiState as? ChatUiState.Success)?.isPeerPaused == true
+    val e2eeState: E2EEState = (uiState as? ChatUiState.Success)?.e2eeState ?: E2EEState.PENDING
     var lastSeenBanner: Boolean? by remember { mutableStateOf<Boolean?>(null) }
     val connectionRestoredMessage = stringResource(id = R.string.chat_connection_restored)
     LaunchedEffect(bannerVisible, deviceMac) {
@@ -119,20 +124,24 @@ fun ChatScreen(
             val chatWithCd = stringResource(id = R.string.chat_with_cd, deviceMac)
             TopAppBar(
                 title = {
-                    Column(
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.semantics(mergeDescendants = true) {
                             heading()
                             contentDescription = chatWithCd
                         },
                     ) {
-                        Text(
-                            text = stringResource(id = R.string.chat_title),
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                        Text(
-                            text = deviceMac,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(id = R.string.chat_title),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(
+                                text = deviceMac,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        E2EEIndicator(state = e2eeState)
                     }
                 },
             )
@@ -251,6 +260,38 @@ private fun ChatBody(
             }
         }
     }
+}
+
+/**
+ * Tiny lock indicator surfaced in the chat top-bar. The icon
+ * (and its `contentDescription`) tracks the current
+ * [E2EEState]:
+ *
+ *  * [E2EEState.SECURE]  — closed lock, "End-to-end encrypted";
+ *  * [E2EEState.PENDING] — sync arrows, "Establishing secure session";
+ *  * [E2EEState.FAILED]  — open lock, "Authentication failed".
+ *
+ * Kept intentionally minimal — anything fancier (animation,
+ * banner) would compete with the bond-loss banner that already
+ * lives at the top of the screen.
+ */
+@Composable
+private fun E2EEIndicator(
+    state: E2EEState,
+    modifier: Modifier = Modifier,
+) {
+    val (icon, descriptionRes) = when (state) {
+        E2EEState.SECURE -> Icons.Filled.Lock to R.string.chat_security_encrypted_cd
+        E2EEState.PENDING -> Icons.Filled.Sync to R.string.chat_security_pending_cd
+        E2EEState.FAILED -> Icons.Filled.LockOpen to R.string.chat_security_failed_cd
+    }
+    Icon(
+        imageVector = icon,
+        contentDescription = stringResource(id = descriptionRes),
+        modifier = modifier
+            .padding(start = 8.dp)
+            .size(20.dp),
+    )
 }
 
 @Composable

@@ -65,6 +65,10 @@ class BluetoothSessionManager(
         MutableSharedFlow(replay = 0, extraBufferCapacity = 64)
     override val incoming: Flow<IncomingPeerMessage> = _incoming.asSharedFlow()
 
+    private val _sessionAttached: MutableSharedFlow<String> =
+        MutableSharedFlow(replay = 0, extraBufferCapacity = 16)
+    override val sessionAttached: Flow<String> = _sessionAttached.asSharedFlow()
+
     @Volatile
     private var serverSocket: BluetoothServerSocket? = null
 

@@ -58,6 +58,48 @@ interface MessageRepository {
     fun getMessagesByDevice(macAddress: String): Flow<List<MessageEntity>>
 
     /**
+     * Returns one [ConversationSummary] per peer with whom there is at
+     * least one persisted message, ordered by the timestamp of the last
+     * message (newest first).
+     *
+     * The device-list screen consumes this flow to populate the
+     * "Chats" section of its sectioned contact list. The unread count
+     * is computed from inbound rows where `isRead = false` — see
+     * [MessageDao.observeUnreadCounts] for the underlying SQL.
+     */
+    fun observeAllConversations(): Flow<List<ConversationSummary>>
+
+    /**
+     * Marks every inbound message from [macAddress] as read. Idempotent.
+     * Called when the user opens the corresponding chat.
+     */
+    suspend fun markPeerAsRead(macAddress: String)
+
+    /**
+     * Reactive view of the per-peer end-to-end encryption posture,
+     * consumed by the chat screen to render the lock indicator next
+     * to the peer's name. See [E2EEState] for the meaning of each
+     * value.
+     *
+     * The flow always emits the latest state for the peer
+     * immediately on subscription so a freshly recreated chat screen
+     * does not stay in a perpetual "loading" placeholder.
+     */
+    fun observeSessionState(macAddress: String): Flow<E2EEState>
+
+    /**
+     * Hook called by `BlueWaveApplication` whenever the underlying
+     * [com.example.bluewave_mobile.network.MessageTransport] reports a
+     * fresh RFCOMM session for [macAddress].
+     *
+     * The repository pushes its libsignal `KEY_BUNDLE` frame at this
+     * point so the peer can build a Signal session against us — this
+     * is what makes the X3DH handshake symmetric in the absence of a
+     * central key directory.
+     */
+    suspend fun onPeerLinkUp(macAddress: String)
+
+    /**
      * Retrieves the latest message per device for building a conversation list.
      *
      * @return A [Flow] emitting a list of the most recent message from each conversation.

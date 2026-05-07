@@ -16,6 +16,8 @@ junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 mockk = "1.13.17"
 ktlint = "12.1.1"
+libsignal = "0.46.0"
+desugarJdkLibs = "2.1.5"
 
 [libraries]
 # Compose BOM
@@ -59,6 +61,18 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+
+# Signal Protocol — libsignal-android bundles the JNI .so for arm/x86,
+# and provides X3DH + Double Ratchet for E2EE chat. The pure-JVM
+# `libsignal-client` artifact is consumed in unit tests so the same
+# code runs on the host JVM and on the device.
+libsignal-android = { group = "org.signal", name = "libsignal-android", version.ref = "libsignal" }
+libsignal-client = { group = "org.signal", name = "libsignal-client", version.ref = "libsignal" }
+
+# Core library desugaring backport — required by libsignal-android
+# because libsignal touches `java.time` / `java.util.function`
+# classes that are not available in Android < 26.
+desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugarJdkLibs" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

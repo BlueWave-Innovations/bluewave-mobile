@@ -16,8 +16,8 @@ import androidx.room.RoomDatabase
  */
 @Database(
     entities = [MessageEntity::class],
-    version = 2,
-    exportSchema = false
+    version = 3,
+    exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
 

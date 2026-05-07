@@ -13,7 +13,11 @@ android {
 
     defaultConfig {
         applicationId = "com.example.bluewave_mobile"
-        minSdk = 28
+        // Android 12+ — runtime BLUETOOTH_CONNECT/SCAN landed in API 31, and
+        // the legacy ACCESS_FINE_LOCATION-for-discovery dance is gone above
+        // that level. Keeping minSdk = 31 lets the permission gate stay on
+        // the modern split-permission code path only.
+        minSdk = 31
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -33,6 +37,13 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // libsignal-android targets bytecode that includes
+        // java.time / java.util.function APIs not present in
+        // Android < 26. Core library desugaring lets the
+        // existing minSdk = 31 build pull those classes from a
+        // backport JAR rather than requiring an even higher
+        // minSdk.
+        isCoreLibraryDesugaringEnabled = true
     }
     buildFeatures {
         compose = true
@@ -85,10 +96,20 @@ dependencies {
     // Serialization
     implementation(libs.kotlinx.serialization.json)
 
+    // Signal Protocol — used by `SignalEngine` to drive X3DH + Double
+    // Ratchet between two BlueWave peers. The Android variant ships
+    // the JNI .so files for arm64 / armv7 / x86_64 so on-device
+    // crypto runs natively; the pure-JVM client is wired into the
+    // unit-test classpath so the same protocol round-trips on the
+    // host JVM as well.
+    implementation(libs.libsignal.android)
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
+
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.libsignal.client)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.ui.test.junit4)
