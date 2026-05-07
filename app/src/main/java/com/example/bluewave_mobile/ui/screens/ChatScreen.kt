@@ -74,24 +74,19 @@ fun ChatScreen(
 ) {
     val messages by viewModel.messages.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val bannerVisible by viewModel.bondLossBannerVisible.collectAsStateWithLifecycle()
 
     var draft: String by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     val isPaused = (uiState as? ChatUiState.Success)?.isPeerPaused == true
-    var lastSeenPaused: Boolean? by remember { mutableStateOf<Boolean?>(null) }
-    LaunchedEffect(isPaused, deviceMac) {
-        if (lastSeenPaused != null && lastSeenPaused != isPaused) {
-            snackbarHostState.showSnackbar(
-                message = if (isPaused) {
-                    "Connection lost — waiting for re-bond"
-                } else {
-                    "Connection restored"
-                },
-            )
+    var lastSeenBanner: Boolean? by remember { mutableStateOf<Boolean?>(null) }
+    LaunchedEffect(bannerVisible, deviceMac) {
+        if (lastSeenBanner != null && lastSeenBanner != bannerVisible && !bannerVisible) {
+            snackbarHostState.showSnackbar(message = "Connection restored")
         }
-        lastSeenPaused = isPaused
+        lastSeenBanner = bannerVisible
     }
 
     Scaffold(
@@ -121,7 +116,7 @@ fun ChatScreen(
                 .padding(innerPadding)
                 .imePadding(),
         ) {
-            BondLossBanner(visible = isPaused)
+            BondLossBanner(visible = bannerVisible)
             Box(
                 modifier = Modifier
                     .weight(1f)
