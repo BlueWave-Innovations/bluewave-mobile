@@ -21,10 +21,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.bluewave_mobile.R
 import com.example.bluewave_mobile.ui.components.DeviceGrid
 import com.example.bluewave_mobile.ui.components.EmptyStateView
 import com.example.bluewave_mobile.ui.intent.DeviceListIntent
@@ -88,7 +90,7 @@ fun DeviceListScreen(
                     // `heading()` lets TalkBack users jump between
                     // screens via the heading-navigation gesture.
                     Text(
-                        text = "BlueWave",
+                        text = stringResource(id = R.string.device_list_title),
                         modifier = Modifier.semantics { heading() },
                     )
                 },
@@ -102,7 +104,9 @@ fun DeviceListScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Refresh,
-                        contentDescription = "Rescan for nearby devices"
+                        contentDescription = stringResource(
+                            id = R.string.device_list_rescan_cd,
+                        ),
                     )
                 }
             }
@@ -123,10 +127,10 @@ fun DeviceListScreen(
                 uiState is DeviceListUiState.BluetoothDisabled -> {
                     EmptyStateView(
                         icon = Icons.Filled.BluetoothDisabled,
-                        title = "Bluetooth is turned off",
-                        message = "Enable Bluetooth in system settings, then tap Try again.",
-                        actionLabel = "Try again",
-                        onAction = { viewModel.handleIntent(DeviceListIntent.StartScan) }
+                        title = stringResource(id = R.string.device_list_bluetooth_off_title),
+                        message = stringResource(id = R.string.device_list_bluetooth_off_message),
+                        actionLabel = stringResource(id = R.string.device_list_try_again),
+                        onAction = { viewModel.handleIntent(DeviceListIntent.StartScan) },
                     )
                 }
                 uiState is DeviceListUiState.Error -> {
@@ -147,10 +151,10 @@ fun DeviceListScreen(
                     if (devices.isEmpty() && uiState is DeviceListUiState.Loaded) {
                         EmptyStateView(
                             icon = Icons.AutoMirrored.Filled.BluetoothSearching,
-                            title = "No devices nearby",
-                            message = "Move closer to a paired phone or tap Scan to retry.",
-                            actionLabel = "Scan again",
-                            onAction = { viewModel.handleIntent(DeviceListIntent.StartScan) }
+                            title = stringResource(id = R.string.device_list_empty_title),
+                            message = stringResource(id = R.string.device_list_empty_message),
+                            actionLabel = stringResource(id = R.string.device_list_scan_again),
+                            onAction = { viewModel.handleIntent(DeviceListIntent.StartScan) },
                         )
                     } else {
                         if (uiState is DeviceListUiState.Idle) {
