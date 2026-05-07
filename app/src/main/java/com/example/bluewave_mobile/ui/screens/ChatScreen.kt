@@ -10,13 +10,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -26,9 +31,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -36,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bluewave_mobile.ui.components.BondLossBanner
@@ -80,6 +88,16 @@ fun ChatScreen(
     var draft: String by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    // `derivedStateOf` collapses every scroll-position change inside
+    // the LazyColumn into a single boolean. Without it, every pixel of
+    // scrolling would invalidate any composable that observed the raw
+    // `firstVisibleItemIndex`. With it, the jump-to-bottom FAB only
+    // recomposes when the threshold is crossed (~once per page).
+    val showJumpToBottom: Boolean by remember(listState) {
+        derivedStateOf { listState.firstVisibleItemIndex > JUMP_TO_BOTTOM_THRESHOLD }
+    }
 
     val isPaused = (uiState as? ChatUiState.Success)?.isPeerPaused == true
     var lastSeenBanner: Boolean? by remember { mutableStateOf<Boolean?>(null) }
@@ -128,6 +146,23 @@ fun ChatScreen(
                     messages = messages,
                     listState = listState,
                 )
+                if (showJumpToBottom) {
+                    FloatingActionButton(
+                        onClick = {
+                            scope.launch { listState.animateScrollToItem(0) }
+                        },
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(16.dp)
+                            .size(40.dp)
+                            .semantics { contentDescription = "Scroll to latest message" },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.KeyboardArrowDown,
+                            contentDescription = null,
+                        )
+                    }
+                }
             }
 
             ChatInputRow(
@@ -146,11 +181,20 @@ fun ChatScreen(
     }
 }
 
+/**
+ * Number of items the user has to scroll *up* (in `reverseLayout`
+ * coordinates the bottom item is index 0) before the jump-to-bottom
+ * FAB appears. 5 keeps the FAB out of the way for typical
+ * conversations and only surfaces it when the user is meaningfully
+ * lost in history.
+ */
+private const val JUMP_TO_BOTTOM_THRESHOLD: Int = 5
+
 @Composable
 private fun ChatBody(
     state: ChatUiState,
     messages: List<ChatMessage>,
-    listState: androidx.compose.foundation.lazy.LazyListState,
+    listState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
     when {
