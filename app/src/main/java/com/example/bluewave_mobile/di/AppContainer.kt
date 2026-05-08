@@ -17,6 +17,8 @@ import com.example.bluewave_mobile.network.BlueWaveSdpProber
 import com.example.bluewave_mobile.network.BluetoothDiscovery
 import com.example.bluewave_mobile.network.BluetoothSessionManager
 import com.example.bluewave_mobile.network.MessageTransport
+import com.example.bluewave_mobile.preferences.UserPreferencesRepository
+import com.example.bluewave_mobile.preferences.bluewavePreferencesDataStore
 
 /**
  * Manual dependency injection container — the BlueWave equivalent of a
@@ -139,5 +141,17 @@ class AppContainer(applicationContext: Context) {
      */
     val apkSender: ApkSender by lazy {
         ApkSender(appContext)
+    }
+
+    /**
+     * DataStore-backed source of truth for user preferences —
+     * theme mode, UI language, the local profile card, and the
+     * Bluetooth-visibility timer. ViewModels for the Settings and
+     * Profile tabs pull this in directly through the
+     * [androidx.lifecycle.viewmodel.viewmodel.compose.viewModel]
+     * factory.
+     */
+    val userPreferencesRepository: UserPreferencesRepository by lazy {
+        UserPreferencesRepository(appContext.bluewavePreferencesDataStore)
     }
 }

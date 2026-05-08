@@ -67,11 +67,20 @@ import com.example.bluewave_mobile.ui.viewmodel.DeviceListViewModel
  *                      user picked. The caller is expected to navigate
  *                      to the chat destination defined in
  *                      [com.example.bluewave_mobile.ui.navigation.ChatRoute].
+ * @param onCreateGroupClick Invoked when the user taps the "create
+ *                           group" CTA in the top bar; the caller is
+ *                           expected to push the
+ *                           [com.example.bluewave_mobile.ui.navigation.CreateGroupRoute].
+ * @param onShareQrClick Invoked when the user taps the QR icon in
+ *                       the top bar; the caller pushes
+ *                       [com.example.bluewave_mobile.ui.navigation.QrShareRoute].
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeviceListScreen(
     onDeviceClick: (String) -> Unit,
+    onCreateGroupClick: () -> Unit = {},
+    onShareQrClick: () -> Unit = {},
     viewModel: DeviceListViewModel = viewModel(factory = DeviceListViewModel.Factory),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()

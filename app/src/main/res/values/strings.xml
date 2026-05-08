@@ -62,4 +62,117 @@
     <string name="chat_security_pending_cd">Establishing secure session</string>
     <string name="chat_security_pending_label">Securing…</string>
     <string name="chat_security_handshake_failed">Couldn\'t establish a secure session — message delivery is paused.</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_chats">Chats</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_profile">Profile</string>
+
+    <!-- Generic actions -->
+    <string name="action_back">Back</string>
+    <string name="action_close">Close</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_rename">Rename</string>
+    <string name="action_create">Create</string>
+    <string name="action_done">Done</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_placeholder">Settings will live here.</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_section_connectivity">Connectivity</string>
+    <string name="settings_section_organization">Organisation</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">System default</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_system">System default</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_russian">Русский</string>
+    <string name="settings_bt_visibility">Bluetooth visibility</string>
+    <string name="settings_bt_visibility_off">Off</string>
+    <string name="settings_bt_visibility_5min">For 5 minutes</string>
+    <string name="settings_bt_visibility_30min">For 30 minutes</string>
+    <string name="settings_bt_visibility_120min">For 2 hours</string>
+    <string name="settings_bt_visibility_summary">Lets nearby devices discover this phone over Bluetooth.</string>
+    <string name="settings_open_folders">Chat folders</string>
+    <string name="settings_open_folders_summary">Group chats by Work, Family, or your own labels.</string>
+
+    <!-- Profile screen -->
+    <string name="profile_title">Profile</string>
+    <string name="profile_placeholder">Profile editor will live here.</string>
+    <string name="profile_display_name">Display name</string>
+    <string name="profile_display_name_placeholder">Your name</string>
+    <string name="profile_handle">@handle</string>
+    <string name="profile_handle_placeholder">@your_tag</string>
+    <string name="profile_bio">Bio</string>
+    <string name="profile_bio_placeholder">Tell others a little about yourself</string>
+    <string name="profile_avatar_action">Change avatar</string>
+    <string name="profile_share_qr">Share my QR</string>
+    <string name="profile_default_name">My profile</string>
+
+    <!-- Folders -->
+    <string name="folders_title">Folders</string>
+    <string name="folders_placeholder">Manage built-in and custom folders here.</string>
+    <string name="folders_builtin_all">All chats</string>
+    <string name="folders_builtin_nearby">Nearby</string>
+    <string name="folders_builtin_no_app">Without app</string>
+    <string name="folders_builtin_work">Work</string>
+    <string name="folders_builtin_family">Family</string>
+    <string name="folders_add">New folder</string>
+    <string name="folders_create_dialog_title">New folder</string>
+    <string name="folders_rename_dialog_title">Rename folder</string>
+    <string name="folders_delete_dialog_title">Delete folder?</string>
+    <string name="folders_delete_dialog_message">Removes this label from every contact. Messages stay intact.</string>
+    <string name="folders_member_picker_title">Pick contacts</string>
+    <string name="folders_chip_all">All</string>
+    <string name="folders_chip_nearby">Nearby</string>
+    <string name="folders_chip_no_app">Without app</string>
+    <string name="folders_assign_action">Assign to folder</string>
+    <string name="folders_empty_section">No contacts in this folder yet.</string>
+    <string name="folders_unassign_action">Remove from folder</string>
+
+    <!-- Groups -->
+    <string name="create_group_title">New group</string>
+    <string name="create_group_placeholder">Pick members and a name to start a group.</string>
+    <string name="create_group_name_placeholder">Group name</string>
+    <string name="create_group_members_label">Members (%1$d selected)</string>
+    <string name="create_group_create">Create</string>
+    <string name="group_chat_title">Group chat</string>
+    <string name="group_chat_placeholder">Group chat content will live here.</string>
+    <string name="group_chat_member_count">%1$d members</string>
+    <string name="group_chat_status_online">Online via Bluetooth</string>
+    <string name="group_chat_status_offline">Offline</string>
+    <string name="group_chat_message_received_at_cd">Received from %1$s at %2$s: %3$s</string>
+    <string name="contacts_groups_section">Groups</string>
+    <string name="action_create_group">New group</string>
+    <string name="action_share_qr">Share my QR</string>
+    <string name="action_search">Search</string>
+
+    <!-- QR -->
+    <string name="qr_share_title">Share contact</string>
+    <string name="qr_share_placeholder">QR code and scanner will live here.</string>
+    <string name="qr_share_explainer">Show this code to your friend to add you as a contact.</string>
+    <string name="qr_share_no_profile">Set your display name in the Profile tab to share a QR.</string>
+    <string name="qr_share_share_button">Share</string>
+    <string name="qr_share_copy_link">Copy link</string>
+    <string name="qr_share_copied">Link copied</string>
+    <string name="qr_share_scan_action">Scan a QR</string>
+    <string name="qr_share_scan_title">Scan a contact QR</string>
+    <string name="qr_share_camera_required">Camera access is required to scan a QR code.</string>
+    <string name="qr_share_camera_grant">Grant camera</string>
+    <string name="qr_share_invalid">This QR isn\'t a BlueWave contact.</string>
+
+    <!-- Chat redesign -->
+    <string name="chat_status_online">Online via Bluetooth</string>
+    <string name="chat_status_offline">Offline</string>
+    <string name="chat_date_today">Today</string>
+    <string name="chat_date_yesterday">Yesterday</string>
+
+    <!-- Search -->
+    <string name="search_hint">Search by name or message</string>
+    <string name="search_no_results">Nothing matches your search.</string>
 </resources>

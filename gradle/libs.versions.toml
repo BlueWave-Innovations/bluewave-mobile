@@ -18,6 +18,10 @@ mockk = "1.13.17"
 ktlint = "12.1.1"
 libsignal = "0.46.0"
 desugarJdkLibs = "2.1.5"
+datastore = "1.1.7"
+appcompat = "1.7.1"
+zxingCore = "3.5.3"
+coil = "2.7.0"
 
 [libraries]
 # Compose BOM
@@ -73,6 +77,28 @@ libsignal-client = { group = "org.signal", name = "libsignal-client", version.re
 # because libsignal touches `java.time` / `java.util.function`
 # classes that are not available in Android < 26.
 desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugarJdkLibs" }
+
+# DataStore (Preferences) — small, async, type-safe persistence for
+# user preferences such as theme mode, language and the local
+# profile card (name / @tag / bio). Preferences flavour is enough
+# for the data shapes we need; we do not ship a Proto schema.
+androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+
+# AppCompat — required by `AppCompatDelegate.setApplicationLocales`
+# which is the official, backwards-compatible way to drive a
+# per-app language switch on API 31+. We don't extend
+# AppCompatActivity (we keep ComponentActivity for Compose), but
+# the delegate API itself ships in this artifact.
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+
+# ZXing core — pure-Java QR code encoder we use to render the
+# user's profile contact card as a sharable QR image.
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxingCore" }
+
+# Coil for Compose — async image loader used to render local
+# avatar URIs picked from the Photo Picker without blocking the
+# UI thread on Bitmap decode.
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
