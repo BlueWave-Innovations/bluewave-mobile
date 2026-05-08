@@ -61,6 +61,10 @@ class ChatViewModelTest {
         // answer for `observeSessionState` so the combine never
         // suspends forever (which would deadlock `messages.first {…}`).
         every { repository.observeSessionState(any()) } returns flowOf(E2EEState.PENDING)
+        // ChatViewModel.peerProfile observes the peer-profile cache;
+        // an empty default is fine — tests don't rely on the chat
+        // top-bar friendly name.
+        every { repository.observePeerProfile(any()) } returns flowOf(null)
         val vm = ChatViewModel(deviceMac = deviceMac, repository = repository, crypto = crypto)
         openScopes += vm
         return vm

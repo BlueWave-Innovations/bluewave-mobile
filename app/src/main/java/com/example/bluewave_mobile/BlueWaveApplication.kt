@@ -8,6 +8,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
 /**
@@ -108,6 +110,25 @@ class BlueWaveApplication : Application() {
                     Log.w(TAG, "onPeerLinkUp failed for $mac", e)
                 }
             }
+        }
+
+        // Re-broadcast the local profile card to every peer with a
+        // SECURE Signal session whenever the user edits their name /
+        // handle / bio / avatar in the Profile tab. `drop(1)` skips
+        // the initial DataStore replay so we don't push on cold
+        // launch — the per-session push driven by `onPeerLinkUp` is
+        // sufficient for fresh sessions.
+        applicationScope.launch {
+            container.userPreferencesRepository.localProfile
+                .distinctUntilChanged()
+                .drop(1)
+                .collect {
+                    runCatching {
+                        container.messageRepository.onLocalProfileChanged()
+                    }.onFailure { e ->
+                        Log.w(TAG, "onLocalProfileChanged failed", e)
+                    }
+                }
         }
     }
 

@@ -37,6 +37,30 @@ object DatabaseProvider {
     }
 
     /**
+     * v3 → v4: adds the `peer_profile` cache populated from inbound
+     * `PROFILE_METADATA` frames. The schema mirrors the
+     * [PeerProfileEntity] data class one-to-one — Room enforces the
+     * shape at first read and would crash on mismatch, so the SQL
+     * here is the source of truth for runtime upgrades.
+     */
+    private val MIGRATION_3_4: Migration = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS peer_profile (
+                    macAddress TEXT NOT NULL PRIMARY KEY,
+                    displayName TEXT NOT NULL DEFAULT '',
+                    handle TEXT NOT NULL DEFAULT '',
+                    bio TEXT NOT NULL DEFAULT '',
+                    avatarUri TEXT NOT NULL DEFAULT '',
+                    updatedAt INTEGER NOT NULL DEFAULT 0
+                )
+                """.trimIndent(),
+            )
+        }
+    }
+
+    /**
      * Returns the singleton [AppDatabase] instance, creating it if necessary.
      *
      * @param context Application context (not Activity context) to prevent memory leaks.
@@ -49,10 +73,10 @@ object DatabaseProvider {
                 AppDatabase::class.java,
                 "bluewave_messages.db",
             )
-                .addMigrations(MIGRATION_2_3)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
                 // Destructive fallback as a last-resort net for older
-                // unreleased schema revisions; production v2+ → v3 always
-                // uses the explicit migration above.
+                // unreleased schema revisions; production v2+ → v4 always
+                // uses the explicit migrations above.
                 .fallbackToDestructiveMigration(dropAllTables = true)
                 .build()
             INSTANCE = instance

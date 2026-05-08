@@ -69,6 +69,7 @@ class DeviceListViewModelTest {
 
     private fun noopRepository(): MessageRepository = mockk(relaxed = true) {
         every { observeAllConversations() } returns flowOf(emptyList())
+        every { observeAllPeerProfiles() } returns flowOf(emptyList())
     }
 
     private fun noopProber(): BlueWaveSdpProber = mockk(relaxed = true) {

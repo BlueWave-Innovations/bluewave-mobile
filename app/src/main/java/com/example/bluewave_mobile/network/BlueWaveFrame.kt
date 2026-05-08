@@ -17,7 +17,15 @@ package com.example.bluewave_mobile.network
  *  * `PREKEY_SIGNAL_MESSAGE` (0x03) — the very first encrypted
  *    message after a fresh handshake; carries enough information
  *    inside the libsignal envelope to bootstrap a session on the
- *    other side as well.
+ *    other side as well;
+ *  * `PROFILE_METADATA` (0x04) — encrypted profile-card update
+ *    (display name / @handle / bio / avatar URI) pushed by the
+ *    peer once the Signal session is `SECURE`. The body is
+ *    `[1B subtype][libsignal ciphertext]` where the subtype byte
+ *    is `0x02` for `SignalMessage` and `0x03` for
+ *    `PreKeySignalMessage` — same encoding as the corresponding
+ *    standalone `Type` tags so the inner payload is symmetric
+ *    with the regular text-message path.
  *
  * A single byte tag is intentionally minimal: every frame already
  * paid the length prefix overhead, so anything more than one byte
@@ -35,6 +43,7 @@ object BlueWaveFrame {
         KEY_BUNDLE(0x01),
         SIGNAL_MESSAGE(0x02),
         PREKEY_SIGNAL_MESSAGE(0x03),
+        PROFILE_METADATA(0x04),
         ;
 
         companion object {
@@ -89,5 +98,68 @@ object BlueWaveFrame {
         val body = ByteArray(bytes.size - 1)
         System.arraycopy(bytes, 1, body, 0, body.size)
         return Frame(type, body)
+    }
+
+    /**
+     * Inner codec for the body of a [Type.PROFILE_METADATA] frame.
+     *
+     * The body is `[1B subtype tag][libsignal ciphertext]` where the
+     * subtype tag re-uses [Type.SIGNAL_MESSAGE] (0x02) and
+     * [Type.PREKEY_SIGNAL_MESSAGE] (0x03) — exactly the two
+     * top-level frame kinds that the regular text-message path uses.
+     *
+     * Splitting the codec out keeps `MessageRepositoryImpl` free of
+     * byte-fiddling and lets the unit tests round-trip the inner
+     * envelope independently of the libsignal wire format.
+     */
+    object ProfileEnvelope {
+
+        /**
+         * Subtypes a [Type.PROFILE_METADATA] body can hold. They
+         * mirror the corresponding top-level frame tags so the wire
+         * format stays self-explanatory when read out of a packet
+         * dump.
+         */
+        enum class Subtype(val tag: Byte) {
+            SIGNAL_MESSAGE(Type.SIGNAL_MESSAGE.tag),
+            PREKEY_SIGNAL_MESSAGE(Type.PREKEY_SIGNAL_MESSAGE.tag),
+            ;
+
+            companion object {
+                fun fromTag(tag: Byte): Subtype? = entries.firstOrNull { it.tag == tag }
+            }
+        }
+
+        /** Decoded view of a [Type.PROFILE_METADATA] body. */
+        data class Inner(val subtype: Subtype, val ciphertext: ByteArray) {
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (other !is Inner) return false
+                return subtype == other.subtype && ciphertext.contentEquals(other.ciphertext)
+            }
+
+            override fun hashCode(): Int = 31 * subtype.hashCode() + ciphertext.contentHashCode()
+        }
+
+        /** Encode `[subtype][ciphertext]`. */
+        fun encode(subtype: Subtype, ciphertext: ByteArray): ByteArray {
+            val out = ByteArray(ciphertext.size + 1)
+            out[0] = subtype.tag
+            System.arraycopy(ciphertext, 0, out, 1, ciphertext.size)
+            return out
+        }
+
+        /**
+         * Decode `[subtype][ciphertext]`. Returns `null` for empty
+         * bodies and for unknown subtype tags — the caller is
+         * expected to drop the frame in that case.
+         */
+        fun decode(body: ByteArray): Inner? {
+            if (body.isEmpty()) return null
+            val subtype = Subtype.fromTag(body[0]) ?: return null
+            val ciphertext = ByteArray(body.size - 1)
+            System.arraycopy(body, 1, ciphertext, 0, ciphertext.size)
+            return Inner(subtype, ciphertext)
+        }
     }
 }

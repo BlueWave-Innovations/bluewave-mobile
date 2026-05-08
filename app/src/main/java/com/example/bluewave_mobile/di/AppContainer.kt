@@ -12,13 +12,16 @@ import com.example.bluewave_mobile.data.DatabaseProvider
 import com.example.bluewave_mobile.data.MessageDao
 import com.example.bluewave_mobile.data.MessageRepository
 import com.example.bluewave_mobile.data.MessageRepositoryImpl
+import com.example.bluewave_mobile.data.PeerProfileDao
 import com.example.bluewave_mobile.network.ApkSender
 import com.example.bluewave_mobile.network.BlueWaveSdpProber
 import com.example.bluewave_mobile.network.BluetoothDiscovery
 import com.example.bluewave_mobile.network.BluetoothSessionManager
 import com.example.bluewave_mobile.network.MessageTransport
+import com.example.bluewave_mobile.preferences.LocalProfile
 import com.example.bluewave_mobile.preferences.UserPreferencesRepository
 import com.example.bluewave_mobile.preferences.bluewavePreferencesDataStore
+import kotlinx.coroutines.flow.first
 
 /**
  * Manual dependency injection container — the BlueWave equivalent of a
@@ -56,6 +59,14 @@ class AppContainer(applicationContext: Context) {
         database.messageDao()
     }
 
+    /**
+     * DAO handle for the cached profile cards peers have pushed to
+     * us through `PROFILE_METADATA` frames.
+     */
+    val peerProfileDao: PeerProfileDao by lazy {
+        database.peerProfileDao()
+    }
+
     /** Android Keystore-backed AES-256 key holder. */
     val keyManager: KeyManager by lazy {
         KeyManager()
@@ -81,6 +92,12 @@ class AppContainer(applicationContext: Context) {
             cryptoManager = cryptoManager,
             transport = bluetoothSessionManager,
             signalEngine = signalEngine,
+            peerProfileDao = peerProfileDao,
+            // Pull the latest local profile lazily on every push —
+            // DataStore reads are cheap and this keeps the
+            // repository decoupled from the long-lived flow
+            // collector that drives [onLocalProfileChanged].
+            localProfileProvider = { userPreferencesRepository.localProfile.first() },
         )
     }
 

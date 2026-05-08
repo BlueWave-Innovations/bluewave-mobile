@@ -12,6 +12,7 @@ import com.example.bluewave_mobile.crypto.DecryptionResult
 import com.example.bluewave_mobile.data.BluetoothDeviceInfo
 import com.example.bluewave_mobile.data.ConversationSummary
 import com.example.bluewave_mobile.data.MessageRepository
+import com.example.bluewave_mobile.data.PeerProfileEntity
 import com.example.bluewave_mobile.network.ApkSender
 import com.example.bluewave_mobile.network.BlueWaveSdpProber
 import com.example.bluewave_mobile.network.BluetoothDiscovery
@@ -207,8 +208,9 @@ class DeviceListViewModel(
             radioPeers,
             messageRepository.observeAllConversations(),
             sdpProber.appPresence,
-        ) { peers, conversations, presence ->
-            buildRows(peers, conversations, presence)
+            messageRepository.observeAllPeerProfiles(),
+        ) { peers, conversations, presence, peerProfiles ->
+            buildRows(peers, conversations, presence, peerProfiles)
         }
             .map<List<ContactRow>, DeviceListUiState> { rows -> DeviceListUiState.Scanning(rows) }
             .catch { throwable ->
@@ -221,7 +223,7 @@ class DeviceListViewModel(
     }
 
     /**
-     * Pure projection: combine the three input flows into the flat
+     * Pure projection: combine the four input flows into the flat
      * sectioned list consumed by the screen.
      *
      *  * [peers] — MAC → metadata for everything visible on the radio
@@ -230,6 +232,11 @@ class DeviceListViewModel(
      *    persisted chat history with.
      *  * [presence] — MAC → did we observe the BlueWave UUID in the
      *    SDP record yet? Missing keys mean "not probed yet".
+     *  * [peerProfiles] — cached profile cards pushed to us by peers
+     *    over the `PROFILE_METADATA` Bluetooth frame; takes
+     *    precedence over the radio-side device name when populated
+     *    so the chat list shows the user-set "Алекс Иванов" rather
+     *    than the OS-side device alias.
      *
      * Visible, "BlueWave-on-board" peers without history go to the
      * "Can start chat" section. Visible peers without the BlueWave
@@ -241,14 +248,19 @@ class DeviceListViewModel(
         peers: Map<String, BluetoothDeviceInfo>,
         conversations: List<ConversationSummary>,
         presence: Map<String, Boolean>,
+        peerProfiles: List<PeerProfileEntity> = emptyList(),
     ): List<ContactRow> {
+        val profilesByMac: Map<String, PeerProfileEntity> =
+            peerProfiles.associateBy { it.macAddress.uppercase() }
         val chatMacs: MutableSet<String> = HashSet()
         val chatRows: MutableList<ContactRow.ExistingChat> = ArrayList(conversations.size)
 
         for (summary in conversations) {
             val mac = summary.macAddress.uppercase()
             chatMacs += mac
-            val displayName: String = peers[mac]?.name?.takeUnless(String::isBlank)
+            val profileName = profilesByMac[mac]?.displayName?.takeUnless(String::isBlank)
+            val displayName: String = profileName
+                ?: peers[mac]?.name?.takeUnless(String::isBlank)
                 ?: summary.lastMessage.senderName.takeUnless(String::isBlank)
                 ?: mac
             chatRows += ContactRow.ExistingChat(
@@ -266,16 +278,18 @@ class DeviceListViewModel(
 
         for ((mac, peer) in peers) {
             if (mac in chatMacs) continue
+            val profileName = profilesByMac[mac]?.displayName?.takeUnless(String::isBlank)
+            val name: String = profileName ?: peer.name.ifBlank { mac }
             val hasApp: Boolean? = presence[mac]
             if (hasApp == true) {
                 candidateRows += ContactRow.StartChatCandidate(
-                    displayName = peer.name.ifBlank { mac },
+                    displayName = name,
                     macAddress = mac,
                     isBonded = peer.isPaired,
                 )
             } else if (hasApp == false) {
                 installRows += ContactRow.InstallSuggestion(
-                    displayName = peer.name.ifBlank { mac },
+                    displayName = name,
                     macAddress = mac,
                 )
             } else {
@@ -285,7 +299,7 @@ class DeviceListViewModel(
                 // re-route to "no app yet" automatically once the
                 // negative answer lands through `presence`.
                 candidateRows += ContactRow.StartChatCandidate(
-                    displayName = peer.name.ifBlank { mac },
+                    displayName = name,
                     macAddress = mac,
                     isBonded = peer.isPaired,
                 )

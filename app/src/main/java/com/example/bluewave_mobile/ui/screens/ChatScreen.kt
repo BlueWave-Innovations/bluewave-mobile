@@ -91,6 +91,7 @@ fun ChatScreen(
     val messages by viewModel.messages.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val bannerVisible by viewModel.bondLossBannerVisible.collectAsStateWithLifecycle()
+    val peerProfile by viewModel.peerProfile.collectAsStateWithLifecycle()
 
     var draft: String by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
@@ -121,7 +122,10 @@ fun ChatScreen(
         modifier = modifier,
         contentWindowInsets = WindowInsets(0),
         topBar = {
-            val chatWithCd = stringResource(id = R.string.chat_with_cd, deviceMac)
+            val displayName: String = peerProfile?.displayName?.takeUnless(String::isBlank)
+                ?: stringResource(id = R.string.chat_title)
+            val subtitle: String = peerProfile?.handle?.takeUnless(String::isBlank) ?: deviceMac
+            val chatWithCd = stringResource(id = R.string.chat_with_cd, displayName)
             TopAppBar(
                 title = {
                     Row(
@@ -133,11 +137,11 @@ fun ChatScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = stringResource(id = R.string.chat_title),
+                                text = displayName,
                                 style = MaterialTheme.typography.titleMedium,
                             )
                             Text(
-                                text = deviceMac,
+                                text = subtitle,
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         }

@@ -88,6 +88,33 @@ interface MessageRepository {
     fun observeSessionState(macAddress: String): Flow<E2EEState>
 
     /**
+     * Reactive view of the locally cached profile card a peer has
+     * pushed via a
+     * [com.example.bluewave_mobile.network.BlueWaveFrame.Type.PROFILE_METADATA]
+     * frame. Emits `null` until the first profile is received.
+     *
+     * The chat top bar and contact-list row consume this through
+     * the per-peer flow; the device-list screen consumes the bulk
+     * variant via [observeAllPeerProfiles] to render every chat
+     * row's friendly name without an extra DB roundtrip per row.
+     */
+    fun observePeerProfile(macAddress: String): Flow<PeerProfileEntity?>
+
+    /** Reactive view of every cached peer profile, keyed by MAC. */
+    fun observeAllPeerProfiles(): Flow<List<PeerProfileEntity>>
+
+    /**
+     * Hook called whenever the local user updates their own profile
+     * card. The repository re-broadcasts the latest profile to every
+     * peer it currently has a `SECURE` libsignal session with so
+     * the peer's cached `peer_profile` row stays fresh.
+     *
+     * Idempotent — calling it twice in a row with the same profile
+     * is fine, the wire-level push de-dupes.
+     */
+    suspend fun onLocalProfileChanged()
+
+    /**
      * Hook called by `BlueWaveApplication` whenever the underlying
      * [com.example.bluewave_mobile.network.MessageTransport] reports a
      * fresh RFCOMM session for [macAddress].
