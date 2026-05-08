@@ -134,6 +134,8 @@
     <string name="folders_assign_action">Assign to folder</string>
     <string name="folders_empty_section">No contacts in this folder yet.</string>
     <string name="folders_unassign_action">Remove from folder</string>
+    <string name="folders_member_count">%1$d contacts</string>
+    <string name="folders_name_placeholder">Folder name</string>
 
     <!-- Groups -->
     <string name="create_group_title">New group</string>

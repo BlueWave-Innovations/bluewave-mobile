@@ -1,15 +1,21 @@
 package com.example.bluewave_mobile.ui.screens
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.BluetoothSearching
 import androidx.compose.material.icons.filled.BluetoothDisabled
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
@@ -27,9 +33,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bluewave_mobile.R
+import com.example.bluewave_mobile.data.BuiltInFolder
+import com.example.bluewave_mobile.data.ChatFolderEntity
 import com.example.bluewave_mobile.ui.components.ContactsList
 import com.example.bluewave_mobile.ui.components.EmptyStateView
 import com.example.bluewave_mobile.ui.intent.DeviceListIntent
@@ -84,6 +93,8 @@ fun DeviceListScreen(
     viewModel: DeviceListViewModel = viewModel(factory = DeviceListViewModel.Factory),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val availableFolders by viewModel.availableFolders.collectAsStateWithLifecycle()
+    val selectedFolderId by viewModel.selectedFolderId.collectAsStateWithLifecycle()
     val permissions = rememberBluetoothPermissionState()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -175,35 +186,102 @@ fun DeviceListScreen(
                         is DeviceListUiState.Loaded -> s.rows
                         else -> emptyList()
                     }
-                    if (rows.isEmpty() && uiState is DeviceListUiState.Loaded) {
-                        EmptyStateView(
-                            icon = Icons.AutoMirrored.Filled.BluetoothSearching,
-                            title = stringResource(id = R.string.device_list_empty_title),
-                            message = stringResource(id = R.string.device_list_empty_message),
-                            actionLabel = stringResource(id = R.string.device_list_scan_again),
-                            onAction = { viewModel.handleIntent(DeviceListIntent.StartScan) },
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        FolderChipRow(
+                            folders = availableFolders,
+                            selectedFolderId = selectedFolderId,
+                            onSelect = viewModel::setFolder,
                         )
-                    } else if (uiState is DeviceListUiState.Idle && rows.isEmpty()) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator()
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            if (rows.isEmpty() && uiState is DeviceListUiState.Loaded) {
+                                EmptyStateView(
+                                    icon = Icons.AutoMirrored.Filled.BluetoothSearching,
+                                    title = stringResource(id = R.string.device_list_empty_title),
+                                    message = stringResource(id = R.string.device_list_empty_message),
+                                    actionLabel = stringResource(id = R.string.device_list_scan_again),
+                                    onAction = { viewModel.handleIntent(DeviceListIntent.StartScan) },
+                                )
+                            } else if (uiState is DeviceListUiState.Idle && rows.isEmpty()) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            } else {
+                                ContactsList(
+                                    rows = rows,
+                                    onRowClick = { mac ->
+                                        viewModel.handleIntent(DeviceListIntent.DeviceSelected(mac))
+                                        onDeviceClick(mac)
+                                    },
+                                    onSuggestInstall = { mac ->
+                                        viewModel.handleIntent(DeviceListIntent.SuggestInstall(mac))
+                                    },
+                                )
+                            }
                         }
-                    } else {
-                        ContactsList(
-                            rows = rows,
-                            onRowClick = { mac ->
-                                viewModel.handleIntent(DeviceListIntent.DeviceSelected(mac))
-                                onDeviceClick(mac)
-                            },
-                            onSuggestInstall = { mac ->
-                                viewModel.handleIntent(DeviceListIntent.SuggestInstall(mac))
-                            },
-                        )
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Horizontally scrollable chip row that drives the active folder
+ * filter. Three categories of chips:
+ *  * **All** — synthetic, encoded as `null` in
+ *    [DeviceListViewModel.selectedFolderId]; surfaces the unfiltered
+ *    contact list. Always rendered first.
+ *  * **Nearby** — synthetic, encoded as
+ *    [DeviceListViewModel.VIRTUAL_NEARBY_ID]; trims chats to peers
+ *    currently visible on the radio.
+ *  * **Persistent folders** — one chip per row in [folders],
+ *    rendered in the order returned by
+ *    [com.example.bluewave_mobile.data.FolderRepository.observeFolders].
+ *    Built-in keys map to localised resources so "Work" reads as
+ *    "Работа" / "Work" depending on locale.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FolderChipRow(
+    folders: List<ChatFolderEntity>,
+    selectedFolderId: String?,
+    onSelect: (String?) -> Unit,
+) {
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp),
+    ) {
+        item(key = "chip:all") {
+            FilterChip(
+                selected = selectedFolderId == null,
+                onClick = { onSelect(null) },
+                label = { Text(text = stringResource(id = R.string.folders_chip_all)) },
+            )
+        }
+        item(key = "chip:nearby") {
+            FilterChip(
+                selected = selectedFolderId == DeviceListViewModel.VIRTUAL_NEARBY_ID,
+                onClick = { onSelect(DeviceListViewModel.VIRTUAL_NEARBY_ID) },
+                label = { Text(text = stringResource(id = R.string.folders_chip_nearby)) },
+            )
+        }
+        items(items = folders, key = { "chip:" + it.id }) { folder ->
+            val label = when (folder.builtInKey) {
+                BuiltInFolder.WORK -> stringResource(id = R.string.folders_builtin_work)
+                BuiltInFolder.FAMILY -> stringResource(id = R.string.folders_builtin_family)
+                else -> folder.name.ifBlank { folder.id }
+            }
+            FilterChip(
+                selected = selectedFolderId == folder.id,
+                onClick = { onSelect(folder.id) },
+                label = { Text(text = label) },
+            )
         }
     }
 }

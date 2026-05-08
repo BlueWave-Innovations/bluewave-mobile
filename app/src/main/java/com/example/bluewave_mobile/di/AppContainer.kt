@@ -8,7 +8,9 @@ import com.example.bluewave_mobile.crypto.KeyManager
 import com.example.bluewave_mobile.crypto.LibSignalEngine
 import com.example.bluewave_mobile.crypto.SignalEngine
 import com.example.bluewave_mobile.data.AppDatabase
+import com.example.bluewave_mobile.data.ChatFolderDao
 import com.example.bluewave_mobile.data.DatabaseProvider
+import com.example.bluewave_mobile.data.FolderRepository
 import com.example.bluewave_mobile.data.MessageDao
 import com.example.bluewave_mobile.data.MessageRepository
 import com.example.bluewave_mobile.data.MessageRepositoryImpl
@@ -65,6 +67,24 @@ class AppContainer(applicationContext: Context) {
      */
     val peerProfileDao: PeerProfileDao by lazy {
         database.peerProfileDao()
+    }
+
+    /**
+     * DAO handle for the chat-folder taxonomy and the
+     * peer→folder bridge table.
+     */
+    val chatFolderDao: ChatFolderDao by lazy {
+        database.chatFolderDao()
+    }
+
+    /**
+     * Single Source of Truth for the chat-folder taxonomy. Used by
+     * the device-list filter chips and the folders-management
+     * screen. `BlueWaveApplication` calls
+     * [FolderRepository.seedBuiltInsIfNeeded] at process startup.
+     */
+    val folderRepository: FolderRepository by lazy {
+        FolderRepository(chatFolderDao)
     }
 
     /** Android Keystore-backed AES-256 key holder. */

@@ -134,6 +134,8 @@
     <string name="folders_assign_action">Добавить в папку</string>
     <string name="folders_empty_section">В этой папке пока нет контактов.</string>
     <string name="folders_unassign_action">Убрать из папки</string>
+    <string name="folders_member_count">Контактов: %1$d</string>
+    <string name="folders_name_placeholder">Название папки</string>
 
     <!-- Группы -->
     <string name="create_group_title">Новая группа</string>

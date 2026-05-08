@@ -61,6 +61,52 @@ object DatabaseProvider {
     }
 
     /**
+     * v4 → v5: introduces the chat-folder taxonomy.
+     *  * `chat_folder` holds one row per built-in / user-created
+     *    folder; `builtInKey` is non-null for seeded rows so the
+     *    UI can resolve a localised label.
+     *  * `peer_folder_assignment` is a many-to-many bridge between
+     *    peers (by MAC) and folders, with a CASCADE foreign key so
+     *    deleting a folder also drops every assignment.
+     *
+     * Built-in folders are *not* seeded by this migration — that
+     * happens in `FolderRepository.seedBuiltInsIfNeeded` so the UI
+     * thread never blocks on a Room migration. The migration only
+     * has to leave the schema in a state Room recognises.
+     */
+    private val MIGRATION_4_5: Migration = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS chat_folder (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    name TEXT NOT NULL DEFAULT '',
+                    builtInKey TEXT,
+                    sortOrder INTEGER NOT NULL DEFAULT 0,
+                    createdAt INTEGER NOT NULL DEFAULT 0
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS peer_folder_assignment (
+                    peerId TEXT NOT NULL,
+                    folderId TEXT NOT NULL,
+                    PRIMARY KEY (peerId, folderId),
+                    FOREIGN KEY (folderId) REFERENCES chat_folder(id) ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                """
+                CREATE INDEX IF NOT EXISTS index_peer_folder_assignment_folderId
+                ON peer_folder_assignment(folderId)
+                """.trimIndent(),
+            )
+        }
+    }
+
+    /**
      * Returns the singleton [AppDatabase] instance, creating it if necessary.
      *
      * @param context Application context (not Activity context) to prevent memory leaks.
@@ -73,9 +119,9 @@ object DatabaseProvider {
                 AppDatabase::class.java,
                 "bluewave_messages.db",
             )
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                 // Destructive fallback as a last-resort net for older
-                // unreleased schema revisions; production v2+ → v4 always
+                // unreleased schema revisions; production v2+ → v5 always
                 // uses the explicit migrations above.
                 .fallbackToDestructiveMigration(dropAllTables = true)
                 .build()

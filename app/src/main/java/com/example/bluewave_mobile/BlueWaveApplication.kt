@@ -76,6 +76,18 @@ class BlueWaveApplication : Application() {
         // screen can probe peers as soon as the user taps "Scan".
         container.sdpProber.start()
 
+        // Seed the built-in chat folders ("Work" / "Family") on
+        // first launch so the chip row above the device list has
+        // something to render. Idempotent — subsequent launches
+        // are a single COUNT query that returns early.
+        applicationScope.launch {
+            runCatching {
+                container.folderRepository.seedBuiltInsIfNeeded()
+            }.onFailure { e ->
+                Log.w(TAG, "Failed to seed built-in folders", e)
+            }
+        }
+
         // Stage the running APK in the cache so `ApkSender.suggestInstall`
         // has a FileProvider URI ready when the user taps the
         // "Send via Bluetooth" CTA on a no-app peer. Cheap I/O on the

@@ -6,9 +6,11 @@ import androidx.room.RoomDatabase
 /**
  * Main Room database for the BlueWave messenger.
  *
- * Stores encrypted message history ([MessageEntity]) and the
- * cached profile cards peers have pushed to us
- * ([PeerProfileEntity]).
+ * Stores:
+ *  * encrypted message history ([MessageEntity]);
+ *  * cached profile cards pushed by peers ([PeerProfileEntity]);
+ *  * the user-defined chat-folder taxonomy ([ChatFolderEntity] +
+ *    [PeerFolderAssignmentEntity]).
  *
  * Room generates the implementation of this abstract class at compile time via KSP.
  *
@@ -16,10 +18,17 @@ import androidx.room.RoomDatabase
  * @see MessageDao
  * @see PeerProfileEntity
  * @see PeerProfileDao
+ * @see ChatFolderEntity
+ * @see ChatFolderDao
  */
 @Database(
-    entities = [MessageEntity::class, PeerProfileEntity::class],
-    version = 4,
+    entities = [
+        MessageEntity::class,
+        PeerProfileEntity::class,
+        ChatFolderEntity::class,
+        PeerFolderAssignmentEntity::class,
+    ],
+    version = 5,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -38,4 +47,11 @@ abstract class AppDatabase : RoomDatabase() {
      * [PeerProfileDao.observeAll].
      */
     abstract fun peerProfileDao(): PeerProfileDao
+
+    /**
+     * DAO for the chat-folder taxonomy and the peer→folder bridge
+     * table. Used by `FolderRepository` and the device-list filter
+     * chips.
+     */
+    abstract fun chatFolderDao(): ChatFolderDao
 }
