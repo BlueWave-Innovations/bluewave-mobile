@@ -132,6 +132,7 @@ fun MainScaffold() {
             composable<SettingsRoute> {
                 SettingsScreen(
                     onOpenFolders = { navController.navigate(FoldersManagementRoute) },
+                    onOpenProfile = { onTabClicked(navController, ProfileRoute) },
                 )
             }
             composable<ProfileRoute> {

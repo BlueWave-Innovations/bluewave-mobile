@@ -3,6 +3,7 @@ package com.example.bluewave_mobile
 import android.app.Application
 import android.util.Log
 import com.example.bluewave_mobile.di.AppContainer
+import com.example.bluewave_mobile.preferences.BluetoothVisibility
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -62,10 +63,14 @@ class BlueWaveApplication : Application() {
         super.onCreate()
         container = AppContainer(this)
 
-        // Spin up the perpetual RFCOMM accept loop so every device
-        // running BlueWave is automatically reachable. The session
-        // manager itself defers all heavy work to Dispatchers.IO.
-        container.bluetoothSessionManager.start()
+        // The RFCOMM accept loop is gated by the user-facing
+        // "Bluetooth visibility" toggle: a fresh install lands on
+        // [BluetoothVisibility.OFF] (the safe default) and the user
+        // explicitly opts in from the Settings screen. The collector
+        // below mirrors the persisted value into start / shutdown
+        // calls on the session manager. We do *not* call
+        // [container.bluetoothSessionManager.start] here so an "off"
+        // user is never advertised on the radio.
 
         // Register the SDP record receiver up-front so the device-list
         // screen can probe peers as soon as the user taps "Scan".
@@ -127,6 +132,28 @@ class BlueWaveApplication : Application() {
                         container.messageRepository.onLocalProfileChanged()
                     }.onFailure { e ->
                         Log.w(TAG, "onLocalProfileChanged failed", e)
+                    }
+                }
+        }
+
+        // Visibility kill-switch: every time the user changes the
+        // Bluetooth-visibility selector in Settings we either bring
+        // the accept loop online (any timed value) or tear it down
+        // ([BluetoothVisibility.OFF]). Both [start] and [shutdown]
+        // are idempotent, so the redundant calls on cold launch
+        // (DataStore replays the cached value) are harmless.
+        applicationScope.launch {
+            container.userPreferencesRepository.bluetoothVisibility
+                .distinctUntilChanged()
+                .collect { visibility ->
+                    runCatching {
+                        if (visibility == BluetoothVisibility.OFF) {
+                            container.bluetoothSessionManager.shutdown()
+                        } else {
+                            container.bluetoothSessionManager.start()
+                        }
+                    }.onFailure { e ->
+                        Log.w(TAG, "Failed to apply BT visibility=$visibility", e)
                     }
                 }
         }
