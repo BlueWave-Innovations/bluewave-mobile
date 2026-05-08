@@ -20,6 +20,7 @@ import com.example.bluewave_mobile.ui.state.ChatMessage
 import com.example.bluewave_mobile.ui.state.ChatUiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -29,6 +30,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -124,6 +126,22 @@ class ChatViewModel(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000L),
             initialValue = null,
+        )
+
+    /**
+     * `true` when an RFCOMM session for [deviceMac] is currently
+     * attached. Drives the "Online via Bluetooth" / "Offline" badge
+     * in the chat top bar and gates the green online dot on peer
+     * avatars. Defaults to `false` when [transport] is `null`
+     * (unit-test build).
+     */
+    val isPeerOnline: StateFlow<Boolean> = (transport?.connectedPeers ?: emptyConnectedPeersFlow())
+        .map { peers -> deviceMac.uppercase() in peers }
+        .distinctUntilChanged()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000L),
+            initialValue = false,
         )
 
     /**
@@ -306,6 +324,15 @@ class ChatViewModel(
         val impl = repository as? MessageRepositoryImpl ?: return false
         return impl.isPausedFor(deviceMac)
     }
+
+    /**
+     * Tiny helper used by the [isPeerOnline] derivation when no
+     * [MessageTransport] is wired in (unit-test build). A single
+     * empty-set emission collapses the [map] / [distinctUntilChanged]
+     * chain to "always offline" without forcing the test class to
+     * supply a fake transport.
+     */
+    private fun emptyConnectedPeersFlow(): Flow<Set<String>> = flowOf(emptySet())
 
     companion object {
         /** SavedStateHandle key for the active peer MAC address. */

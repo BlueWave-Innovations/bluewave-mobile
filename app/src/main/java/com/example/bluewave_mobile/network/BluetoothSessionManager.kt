@@ -12,7 +12,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -68,6 +71,9 @@ class BluetoothSessionManager(
     private val _sessionAttached: MutableSharedFlow<String> =
         MutableSharedFlow(replay = 0, extraBufferCapacity = 16)
     override val sessionAttached: Flow<String> = _sessionAttached.asSharedFlow()
+
+    private val _connectedPeers: MutableStateFlow<Set<String>> = MutableStateFlow(emptySet())
+    override val connectedPeers: Flow<Set<String>> = _connectedPeers.asStateFlow()
 
     @Volatile
     private var serverSocket: BluetoothServerSocket? = null
@@ -159,6 +165,8 @@ class BluetoothSessionManager(
         sessionLock.withLock {
             sessions.put(mac, session)?.cancel()
         }
+        _connectedPeers.update { current -> current + mac }
+        _sessionAttached.emit(mac)
         session.start(
             scope = scope,
             onFrame = { payload ->
@@ -174,6 +182,7 @@ class BluetoothSessionManager(
                 sessionLock.withLock {
                     if (sessions[mac] === session) {
                         sessions.remove(mac)
+                        _connectedPeers.update { current -> current - mac }
                     }
                 }
             },

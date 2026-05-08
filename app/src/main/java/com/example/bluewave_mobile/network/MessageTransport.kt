@@ -61,6 +61,15 @@ interface MessageTransport {
     val sessionAttached: Flow<String>
 
     /**
+     * Live snapshot of every MAC address that currently owns a hot
+     * RFCOMM session. Re-emitted on every attach / detach so the UI
+     * can render an "Online via Bluetooth" badge without polling.
+     * The set is uppercased so callers can match it against
+     * normalised peer ids.
+     */
+    val connectedPeers: Flow<Set<String>>
+
+    /**
      * Initiates an outgoing connection to [macAddress] if no live
      * session exists for that peer yet. Idempotent: calling it on a
      * peer that is already connected is a no-op.
