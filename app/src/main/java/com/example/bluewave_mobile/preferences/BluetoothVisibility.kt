@@ -7,10 +7,18 @@ package com.example.bluewave_mobile.preferences
  * The user picks a duration; we then use
  * `BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE` to surface the
  * system dialog asking the platform to make the device
- * discoverable for that long. The same value is also used to
- * gate [com.example.bluewave_mobile.network.BluetoothSessionManager.start]
- * — when the user picks [OFF] we tear the accept-loop down so we
- * stop announcing the BlueWave RFCOMM service.
+ * discoverable for that long, i.e. visible to **unpaired** peers
+ * doing a fresh inquiry scan.
+ *
+ * The RFCOMM accept-loop in
+ * [com.example.bluewave_mobile.network.BluetoothSessionManager] is
+ * **not** gated by this setting: an already-paired peer can connect
+ * to us over RFCOMM regardless of the system discoverable flag, and
+ * keeping the server socket open is also how Android registers our
+ * service UUID with the SDP database. Killing it just because the
+ * user is not currently "discoverable" would silently break both
+ * inbound messages and the SDP probe on the other peer (the remote
+ * device would believe BlueWave is no longer installed).
  */
 enum class BluetoothVisibility(val durationSeconds: Int) {
     OFF(durationSeconds = 0),

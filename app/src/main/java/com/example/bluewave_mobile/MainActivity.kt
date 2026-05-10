@@ -1,5 +1,6 @@
 package com.example.bluewave_mobile
 
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -16,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -57,9 +59,27 @@ class MainActivity : ComponentActivity() {
             val themeMode by prefs.themeMode.collectAsStateWithLifecycle(initialValue = ThemeMode.SYSTEM)
             val appLanguage by prefs.appLanguage.collectAsStateWithLifecycle(initialValue = AppLanguage.SYSTEM)
             val context = LocalContext.current
+            // Track the locale we last applied so we only call
+            // `Activity.recreate()` on a *real* change. The first
+            // composition just records the seed value (already
+            // applied synchronously by `applyPersistedLanguage`
+            // before `setContent`), every subsequent flip pushes
+            // the new locale into AppCompatDelegate AND recreates
+            // the Activity so every `stringResource()` lookup is
+            // re-resolved against the new `values-*` bundle.
+            //
+            // AppCompatDelegate only triggers recreation on its own
+            // when used through `AppCompatActivity`; this activity
+            // is a `ComponentActivity` so we drive recreation
+            // manually.
+            val lastApplied: androidx.compose.runtime.MutableState<AppLanguage?> =
+                remember { mutableStateOf(null) }
             LaunchedEffect(appLanguage) {
+                val previous = lastApplied.value
+                lastApplied.value = appLanguage
+                if (previous == null || previous == appLanguage) return@LaunchedEffect
                 AppCompatDelegate.setApplicationLocales(appLanguage.toLocaleList())
-                @Suppress("UNUSED_EXPRESSION") context // keep reference so re-composition wakes on locale flip
+                (context as? Activity)?.recreate()
             }
 
             BlueWaveTheme(themeMode = themeMode) {

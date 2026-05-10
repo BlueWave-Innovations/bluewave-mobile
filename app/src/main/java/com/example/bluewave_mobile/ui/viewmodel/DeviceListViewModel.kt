@@ -22,24 +22,29 @@ import com.example.bluewave_mobile.data.PeerProfileEntity
 import com.example.bluewave_mobile.network.ApkSender
 import com.example.bluewave_mobile.network.BlueWaveSdpProber
 import com.example.bluewave_mobile.network.BluetoothDiscovery
+import com.example.bluewave_mobile.network.MessageTransport
 import com.example.bluewave_mobile.ui.intent.DeviceListIntent
 import com.example.bluewave_mobile.ui.model.ContactRow
 import com.example.bluewave_mobile.ui.state.DeviceListUiState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
@@ -91,6 +96,7 @@ class DeviceListViewModel(
     private val folderRepository: FolderRepository? = null,
     private val groupRepository: GroupRepository? = null,
     private val crypto: CryptoManager? = null,
+    private val transport: MessageTransport? = null,
 ) : ViewModel() {
 
     private val intents: MutableSharedFlow<DeviceListIntent> = MutableSharedFlow(extraBufferCapacity = 16)
@@ -236,22 +242,59 @@ class DeviceListViewModel(
     private fun scanFlow(): Flow<DeviceListUiState> {
         sdpProber.start()
         val seen: MutableMap<String, BluetoothDeviceInfo> = LinkedHashMap()
-        val radioPeers: Flow<Map<String, BluetoothDeviceInfo>> = flow {
+        // `callbackFlow` exposes a coroutine scope that is tied to
+        // the lifetime of the downstream collector, so the periodic
+        // SDP re-probe job below is automatically cancelled when the
+        // device list stops scanning. The ticker is what keeps the
+        // "no BlueWave on this device anymore" detection working
+        // after a peer uninstalls the app: Android caches SDP
+        // results, so we have to ask for a fresh
+        // `fetchUuidsWithSdp` every ~15 s for every bonded MAC. The
+        // `appPresence` map gets refreshed via the broadcast
+        // receiver inside [BlueWaveSdpProber] which then flows back
+        // through the outer `combine` and re-emits new rows.
+        val radioPeers: Flow<Map<String, BluetoothDeviceInfo>> = callbackFlow {
+            // The re-probe ticker uses [Dispatchers.IO] (not the
+            // caller's dispatcher) on purpose: in unit tests the
+            // caller is a `TestScope` whose `delay` is virtual time,
+            // and a `while (isActive) { delay(15s); … }` loop on
+            // virtual time spins millions of iterations per second
+            // until the JVM heap fills up. IO uses real wall-clock
+            // time, so the loop is dormant for the entirety of a
+            // <1 s unit-test run and only kicks in for a real
+            // foreground device-list session on a phone.
+            val reprobeJob = launch(Dispatchers.IO) {
+                while (isActive) {
+                    delay(SDP_REPROBE_INTERVAL_MS)
+                    // Snapshot the keys so a concurrent discovery
+                    // emit can't trip a ConcurrentModificationException
+                    // mid-iteration.
+                    val macs = seen.keys.toList()
+                    for (mac in macs) {
+                        sdpProber.probe(mac)
+                    }
+                }
+            }
             bluetoothDiscovery.bondedDevices().forEach { peer ->
                 seen[peer.macAddress.uppercase()] = peer
                 sdpProber.probe(peer.macAddress)
             }
-            emit(seen.toMap())
-            bluetoothDiscovery
-                .discoverDevices()
-                .onEach { peer ->
-                    val mac = peer.macAddress.uppercase()
-                    seen[mac] = peer
-                    sdpProber.probe(peer.macAddress)
-                }
-                .collect { emit(seen.toMap()) }
-            emit(seen.toMap())
+            trySend(seen.toMap())
+            launch {
+                bluetoothDiscovery
+                    .discoverDevices()
+                    .onEach { peer ->
+                        val mac = peer.macAddress.uppercase()
+                        seen[mac] = peer
+                        sdpProber.probe(peer.macAddress)
+                    }
+                    .collect { trySend(seen.toMap()) }
+                trySend(seen.toMap())
+            }
+            awaitClose { reprobeJob.cancel() }
         }
+        val connectedPeers: Flow<Set<String>> =
+            transport?.connectedPeers ?: flowOf(emptySet())
 
         // Pre-roll the folder filter signals so a missing repository
         // (unit-test build) collapses to "no filter" rather than a
@@ -282,12 +325,14 @@ class DeviceListViewModel(
                 messageRepository.observeAllConversations(),
                 sdpProber.appPresence,
                 messageRepository.observeAllPeerProfiles(),
-            ) { peers, conversations, presence, peerProfiles ->
+                connectedPeers,
+            ) { peers, conversations, presence, peerProfiles, connected ->
                 RadioSnapshot(
                     peers = peers,
                     conversations = conversations,
                     presence = presence,
                     peerProfiles = peerProfiles,
+                    connectedPeers = connected,
                 )
             },
             folderFilter,
@@ -298,6 +343,7 @@ class DeviceListViewModel(
                 conversations = radio.conversations,
                 presence = radio.presence,
                 peerProfiles = radio.peerProfiles,
+                connectedPeers = radio.connectedPeers,
                 selectedFolderId = filter.selectedFolderId,
                 peerToFolders = filter.peerToFolders,
                 groups = groupBundle.groups,
@@ -326,6 +372,7 @@ class DeviceListViewModel(
         val conversations: List<ConversationSummary>,
         val presence: Map<String, Boolean>,
         val peerProfiles: List<PeerProfileEntity>,
+        val connectedPeers: Set<String>,
     )
 
     /** Snapshot of every group + membership row, fed into [buildRows]. */
@@ -367,6 +414,7 @@ class DeviceListViewModel(
         conversations: List<ConversationSummary>,
         presence: Map<String, Boolean>,
         peerProfiles: List<PeerProfileEntity> = emptyList(),
+        connectedPeers: Set<String> = emptySet(),
         selectedFolderId: String? = null,
         peerToFolders: Map<String, Set<String>> = emptyMap(),
         groups: List<ChatGroupEntity> = emptyList(),
@@ -374,6 +422,16 @@ class DeviceListViewModel(
     ): List<ContactRow> {
         val profilesByMac: Map<String, PeerProfileEntity> =
             peerProfiles.associateBy { it.macAddress.uppercase() }
+        // Normalize the set once so [ContactRow.isOnline] can be a
+        // cheap `contains` lookup per row. The transport tracks the
+        // MAC of every peer currently holding an open RFCOMM
+        // session, which is the closest thing we have to a real
+        // "online" signal on a personal-area network. Falling back
+        // to "is the radio still seeing this MAC" was misleading
+        // because Android caches scan results for ~10 s after the
+        // peer goes away.
+        val connectedMacs: Set<String> =
+            if (connectedPeers.isEmpty()) emptySet() else connectedPeers.mapTo(HashSet()) { it.uppercase() }
         val chatMacs: MutableSet<String> = HashSet()
         val chatRows: MutableList<ContactRow.ExistingChat> = ArrayList(conversations.size)
 
@@ -391,7 +449,7 @@ class DeviceListViewModel(
                 lastMessagePreview = decryptPreview(summary),
                 lastMessageTimestamp = summary.lastMessage.timestamp,
                 unreadCount = summary.unreadCount,
-                isOnline = peers.containsKey(mac),
+                isOnline = mac in connectedMacs,
             )
         }
 
@@ -544,6 +602,17 @@ class DeviceListViewModel(
         const val VIRTUAL_NEARBY_ID: String = "virtual:nearby"
 
         /**
+         * Cadence of the periodic SDP re-probe loop. Android caches
+         * SDP results internally, so to notice that a peer has
+         * uninstalled BlueWave we have to ask
+         * `fetchUuidsWithSdp` again on a timer. 15 s strikes a
+         * balance between "user sees the row flip to download
+         * suggestion within ~15 s of the uninstall" and "we don't
+         * burn battery hammering the radio".
+         */
+        internal const val SDP_REPROBE_INTERVAL_MS: Long = 15_000L
+
+        /**
          * `ViewModelProvider.Factory` that pulls dependencies out of
          * the [BlueWaveApplication.container]. Compose host:
          *
@@ -562,6 +631,7 @@ class DeviceListViewModel(
                     folderRepository = app.container.folderRepository,
                     groupRepository = app.container.groupRepository,
                     crypto = app.container.cryptoManager,
+                    transport = app.container.bluetoothSessionManager,
                 )
             }
         }

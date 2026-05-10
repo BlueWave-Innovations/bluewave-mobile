@@ -3,7 +3,6 @@ package com.example.bluewave_mobile
 import android.app.Application
 import android.util.Log
 import com.example.bluewave_mobile.di.AppContainer
-import com.example.bluewave_mobile.preferences.BluetoothVisibility
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -63,14 +62,24 @@ class BlueWaveApplication : Application() {
         super.onCreate()
         container = AppContainer(this)
 
-        // The RFCOMM accept loop is gated by the user-facing
-        // "Bluetooth visibility" toggle: a fresh install lands on
-        // [BluetoothVisibility.OFF] (the safe default) and the user
-        // explicitly opts in from the Settings screen. The collector
-        // below mirrors the persisted value into start / shutdown
-        // calls on the session manager. We do *not* call
-        // [container.bluetoothSessionManager.start] here so an "off"
-        // user is never advertised on the radio.
+        // Start the RFCOMM accept loop unconditionally on cold launch:
+        //  * already-paired peers MUST be able to reach us over RFCOMM
+        //    regardless of the "Bluetooth visibility" setting (the
+        //    visibility toggle is an Android *discoverable* concept —
+        //    it only controls whether we appear in fresh inquiry scans
+        //    done by **unpaired** peers, not whether we accept inbound
+        //    RFCOMM connections from peers that already know our MAC);
+        //  * registering our service UUID through
+        //    `listenUsingRfcommWithServiceRecord` is also what
+        //    populates the local SDP database — if we never call it,
+        //    a remote peer's `fetchUuidsWithSdp()` returns "no
+        //    BlueWave on this device" and the row falls to the
+        //    install-suggestion section even though the app is
+        //    installed.
+        //
+        // Both [start] and [shutdown] are idempotent, so process
+        // restarts and Activity recreations are safe.
+        container.bluetoothSessionManager.start()
 
         // Register the SDP record receiver up-front so the device-list
         // screen can probe peers as soon as the user taps "Scan".
@@ -148,27 +157,15 @@ class BlueWaveApplication : Application() {
                 }
         }
 
-        // Visibility kill-switch: every time the user changes the
-        // Bluetooth-visibility selector in Settings we either bring
-        // the accept loop online (any timed value) or tear it down
-        // ([BluetoothVisibility.OFF]). Both [start] and [shutdown]
-        // are idempotent, so the redundant calls on cold launch
-        // (DataStore replays the cached value) are harmless.
-        applicationScope.launch {
-            container.userPreferencesRepository.bluetoothVisibility
-                .distinctUntilChanged()
-                .collect { visibility ->
-                    runCatching {
-                        if (visibility == BluetoothVisibility.OFF) {
-                            container.bluetoothSessionManager.shutdown()
-                        } else {
-                            container.bluetoothSessionManager.start()
-                        }
-                    }.onFailure { e ->
-                        Log.w(TAG, "Failed to apply BT visibility=$visibility", e)
-                    }
-                }
-        }
+        // NOTE: the user-facing "Bluetooth visibility" selector in the
+        // Settings screen only controls the Android *discoverable*
+        // window via `ACTION_REQUEST_DISCOVERABLE` — it does NOT
+        // start or stop the RFCOMM accept-loop. That accept-loop is
+        // always running (see the unconditional `start()` call
+        // above) so paired peers can keep messaging us and so our
+        // SDP record stays advertised. Settings screen handles the
+        // discoverable-intent dispatch directly when the user picks
+        // a non-OFF duration.
     }
 
     override fun onTerminate() {
