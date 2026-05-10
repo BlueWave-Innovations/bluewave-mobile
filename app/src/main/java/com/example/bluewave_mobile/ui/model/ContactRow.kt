@@ -70,4 +70,38 @@ sealed interface ContactRow {
         override val displayName: String,
         override val macAddress: String,
     ) : ContactRow
+
+    /**
+     * Multi-peer group conversation rendered alongside one-on-one
+     * chats in the "Chats" section.
+     *
+     * Reuses [macAddress] as the carrier of the group's stable
+     * opaque id so the row can flow through the same [LazyColumn]
+     * keying as the other [ContactRow] subtypes — the screen
+     * branches on the runtime subtype to navigate to
+     * [com.example.bluewave_mobile.ui.navigation.GroupChatRoute]
+     * instead of [com.example.bluewave_mobile.ui.navigation.ChatRoute].
+     *
+     * @param groupId Stable identifier minted by [com.example.bluewave_mobile.data.GroupRepository.createGroup].
+     * @param memberCount Total number of peers in the group, including
+     *                     the local device.
+     * @param lastMessagePreview Plaintext preview of the latest
+     *                            message — empty when the group
+     *                            history is empty.
+     * @param lastMessageTimestamp Unix epoch milliseconds of the
+     *                              latest message, used as a sort
+     *                              key alongside [ExistingChat].
+     * @param unreadCount Number of inbound group messages that have
+     *                     not yet been opened.
+     */
+    data class GroupChat(
+        override val displayName: String,
+        val groupId: String,
+        val memberCount: Int,
+        val lastMessagePreview: String,
+        val lastMessageTimestamp: Long,
+        val unreadCount: Int,
+    ) : ContactRow {
+        override val macAddress: String get() = groupId
+    }
 }

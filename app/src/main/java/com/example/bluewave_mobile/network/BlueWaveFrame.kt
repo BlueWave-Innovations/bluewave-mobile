@@ -26,6 +26,15 @@ package com.example.bluewave_mobile.network
  *    `PreKeySignalMessage` — same encoding as the corresponding
  *    standalone `Type` tags so the inner payload is symmetric
  *    with the regular text-message path.
+ *  * `GROUP_INVITE` (0x05) — encrypted multi-peer group bootstrap
+ *    pushed by the group's owner to every prospective member when
+ *    the group is first created. The body re-uses the
+ *    `[1B subtype][libsignal ciphertext]` envelope — when
+ *    decrypted, the inner plaintext is the JSON-encoded
+ *    `GroupInvitePayload`.
+ *  * `GROUP_MESSAGE` (0x06) — encrypted multi-peer group text. Same
+ *    envelope as `GROUP_INVITE`. The decrypted plaintext is
+ *    `[2B groupIdLen big-endian][groupId UTF-8][message UTF-8]`.
  *
  * A single byte tag is intentionally minimal: every frame already
  * paid the length prefix overhead, so anything more than one byte
@@ -44,6 +53,8 @@ object BlueWaveFrame {
         SIGNAL_MESSAGE(0x02),
         PREKEY_SIGNAL_MESSAGE(0x03),
         PROFILE_METADATA(0x04),
+        GROUP_INVITE(0x05),
+        GROUP_MESSAGE(0x06),
         ;
 
         companion object {
@@ -160,6 +171,125 @@ object BlueWaveFrame {
             val ciphertext = ByteArray(body.size - 1)
             System.arraycopy(body, 1, ciphertext, 0, ciphertext.size)
             return Inner(subtype, ciphertext)
+        }
+    }
+
+    /**
+     * Inner codec for the body of a [Type.GROUP_INVITE] or
+     * [Type.GROUP_MESSAGE] frame.
+     *
+     * The encoding is identical to [ProfileEnvelope]'s — a single
+     * subtype byte (0x02 for `SignalMessage`, 0x03 for
+     * `PreKeySignalMessage`) followed by the libsignal ciphertext.
+     * It is split into a separate object so the call sites in
+     * `GroupRepository` read naturally and so the unit tests can
+     * pin every group-related round-trip independently.
+     */
+    object GroupEnvelope {
+
+        /** Subtypes a group frame body can hold. */
+        enum class Subtype(val tag: Byte) {
+            SIGNAL_MESSAGE(Type.SIGNAL_MESSAGE.tag),
+            PREKEY_SIGNAL_MESSAGE(Type.PREKEY_SIGNAL_MESSAGE.tag),
+            ;
+
+            companion object {
+                fun fromTag(tag: Byte): Subtype? = entries.firstOrNull { it.tag == tag }
+            }
+        }
+
+        /** Decoded view of a group frame body. */
+        data class Inner(val subtype: Subtype, val ciphertext: ByteArray) {
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (other !is Inner) return false
+                return subtype == other.subtype && ciphertext.contentEquals(other.ciphertext)
+            }
+
+            override fun hashCode(): Int = 31 * subtype.hashCode() + ciphertext.contentHashCode()
+        }
+
+        /** Encode `[subtype][ciphertext]`. */
+        fun encode(subtype: Subtype, ciphertext: ByteArray): ByteArray {
+            val out = ByteArray(ciphertext.size + 1)
+            out[0] = subtype.tag
+            System.arraycopy(ciphertext, 0, out, 1, ciphertext.size)
+            return out
+        }
+
+        /**
+         * Decode `[subtype][ciphertext]`. Returns `null` for empty
+         * bodies and for unknown subtype tags.
+         */
+        fun decode(body: ByteArray): Inner? {
+            if (body.isEmpty()) return null
+            val subtype = Subtype.fromTag(body[0]) ?: return null
+            val ciphertext = ByteArray(body.size - 1)
+            System.arraycopy(body, 1, ciphertext, 0, ciphertext.size)
+            return Inner(subtype, ciphertext)
+        }
+    }
+
+    /**
+     * Inner codec for the *plaintext* body of a [Type.GROUP_MESSAGE]
+     * frame, sitting one layer below [GroupEnvelope] (which handles
+     * the libsignal wrap).
+     *
+     * Encoding: `[2B groupIdLen big-endian][groupId UTF-8 bytes]
+     * [message UTF-8 bytes]`. Splitting `groupId` from the message
+     * body in plaintext (post-libsignal) lets the receiver route the
+     * payload to the right `group_message` row without paying for an
+     * inner JSON parse on every chat message — only invites carry
+     * structured JSON.
+     *
+     * `groupId` length is bounded by 64 KiB because the prefix is a
+     * `UInt16`. All BlueWave group ids are UUID strings (36 ASCII
+     * bytes) so this is a generous ceiling.
+     */
+    object GroupMessageBody {
+
+        /** Decoded view of a `GROUP_MESSAGE` plaintext body. */
+        data class Inner(val groupId: String, val message: ByteArray) {
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (other !is Inner) return false
+                return groupId == other.groupId && message.contentEquals(other.message)
+            }
+
+            override fun hashCode(): Int = 31 * groupId.hashCode() + message.contentHashCode()
+        }
+
+        /** Encode `[2B groupIdLen][groupId][message]`. */
+        fun encode(groupId: String, message: ByteArray): ByteArray {
+            val groupIdBytes = groupId.toByteArray(Charsets.UTF_8)
+            require(groupIdBytes.size <= UShort.MAX_VALUE.toInt()) {
+                "groupId too long: ${groupIdBytes.size} bytes"
+            }
+            val out = ByteArray(2 + groupIdBytes.size + message.size)
+            out[0] = ((groupIdBytes.size ushr 8) and 0xFF).toByte()
+            out[1] = (groupIdBytes.size and 0xFF).toByte()
+            System.arraycopy(groupIdBytes, 0, out, 2, groupIdBytes.size)
+            System.arraycopy(message, 0, out, 2 + groupIdBytes.size, message.size)
+            return out
+        }
+
+        /**
+         * Decode `[2B groupIdLen][groupId][message]`. Returns `null`
+         * when the body is shorter than the advertised length — the
+         * caller is expected to drop the frame.
+         */
+        fun decode(body: ByteArray): Inner? {
+            if (body.size < 2) return null
+            val groupIdLen = ((body[0].toInt() and 0xFF) shl 8) or (body[1].toInt() and 0xFF)
+            if (body.size < 2 + groupIdLen) return null
+            val groupIdBytes = ByteArray(groupIdLen)
+            System.arraycopy(body, 2, groupIdBytes, 0, groupIdLen)
+            val message = ByteArray(body.size - 2 - groupIdLen)
+            System.arraycopy(body, 2 + groupIdLen, message, 0, message.size)
+            return Inner(
+                groupId = String(groupIdBytes, Charsets.UTF_8),
+                message = message,
+            )
         }
     }
 }

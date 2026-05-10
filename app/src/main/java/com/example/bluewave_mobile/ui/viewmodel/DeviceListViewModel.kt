@@ -11,8 +11,11 @@ import com.example.bluewave_mobile.crypto.CryptoManager
 import com.example.bluewave_mobile.crypto.DecryptionResult
 import com.example.bluewave_mobile.data.BluetoothDeviceInfo
 import com.example.bluewave_mobile.data.ChatFolderEntity
+import com.example.bluewave_mobile.data.ChatGroupEntity
 import com.example.bluewave_mobile.data.ConversationSummary
 import com.example.bluewave_mobile.data.FolderRepository
+import com.example.bluewave_mobile.data.GroupMemberEntity
+import com.example.bluewave_mobile.data.GroupRepository
 import com.example.bluewave_mobile.data.MessageRepository
 import com.example.bluewave_mobile.data.PeerFolderAssignmentEntity
 import com.example.bluewave_mobile.data.PeerProfileEntity
@@ -86,6 +89,7 @@ class DeviceListViewModel(
     private val sdpProber: BlueWaveSdpProber,
     private val apkSender: ApkSender,
     private val folderRepository: FolderRepository? = null,
+    private val groupRepository: GroupRepository? = null,
     private val crypto: CryptoManager? = null,
 ) : ViewModel() {
 
@@ -264,20 +268,40 @@ class DeviceListViewModel(
             FolderFilter(selectedFolderId = id, peerToFolders = byMac)
         }
 
+        val groups: Flow<List<ChatGroupEntity>> =
+            groupRepository?.observeGroups() ?: flowOf(emptyList())
+        val memberships: Flow<List<GroupMemberEntity>> =
+            groupRepository?.observeAllMemberships() ?: flowOf(emptyList())
+        val groupSnapshot: Flow<GroupSnapshot> = combine(groups, memberships) { gs, ms ->
+            GroupSnapshot(groups = gs, memberships = ms)
+        }
+
         return combine(
-            radioPeers,
-            messageRepository.observeAllConversations(),
-            sdpProber.appPresence,
-            messageRepository.observeAllPeerProfiles(),
+            combine(
+                radioPeers,
+                messageRepository.observeAllConversations(),
+                sdpProber.appPresence,
+                messageRepository.observeAllPeerProfiles(),
+            ) { peers, conversations, presence, peerProfiles ->
+                RadioSnapshot(
+                    peers = peers,
+                    conversations = conversations,
+                    presence = presence,
+                    peerProfiles = peerProfiles,
+                )
+            },
             folderFilter,
-        ) { peers, conversations, presence, peerProfiles, filter ->
+            groupSnapshot,
+        ) { radio, filter, groupBundle ->
             buildRows(
-                peers = peers,
-                conversations = conversations,
-                presence = presence,
-                peerProfiles = peerProfiles,
+                peers = radio.peers,
+                conversations = radio.conversations,
+                presence = radio.presence,
+                peerProfiles = radio.peerProfiles,
                 selectedFolderId = filter.selectedFolderId,
                 peerToFolders = filter.peerToFolders,
+                groups = groupBundle.groups,
+                memberships = groupBundle.memberships,
             )
         }
             .map<List<ContactRow>, DeviceListUiState> { rows -> DeviceListUiState.Scanning(rows) }
@@ -294,6 +318,20 @@ class DeviceListViewModel(
     private data class FolderFilter(
         val selectedFolderId: String?,
         val peerToFolders: Map<String, Set<String>>,
+    )
+
+    /** Snapshot of every radio + DB observation collapsed for [buildRows]. */
+    private data class RadioSnapshot(
+        val peers: Map<String, BluetoothDeviceInfo>,
+        val conversations: List<ConversationSummary>,
+        val presence: Map<String, Boolean>,
+        val peerProfiles: List<PeerProfileEntity>,
+    )
+
+    /** Snapshot of every group + membership row, fed into [buildRows]. */
+    private data class GroupSnapshot(
+        val groups: List<ChatGroupEntity>,
+        val memberships: List<GroupMemberEntity>,
     )
 
     /**
@@ -331,6 +369,8 @@ class DeviceListViewModel(
         peerProfiles: List<PeerProfileEntity> = emptyList(),
         selectedFolderId: String? = null,
         peerToFolders: Map<String, Set<String>> = emptyMap(),
+        groups: List<ChatGroupEntity> = emptyList(),
+        memberships: List<GroupMemberEntity> = emptyList(),
     ): List<ContactRow> {
         val profilesByMac: Map<String, PeerProfileEntity> =
             peerProfiles.associateBy { it.macAddress.uppercase() }
@@ -388,11 +428,36 @@ class DeviceListViewModel(
             }
         }
 
+        // Build the group section. Each group row joins:
+        //  * [ChatGroupEntity] for the display name + creation time,
+        //  * the membership rows so we can show "4 участника" without
+        //    issuing extra queries,
+        //  * the latest [GroupMessageEntity] read off the matching
+        //    `groupId` if one is staged via the same flow — for now we
+        //    leave the preview empty because the group screen owns
+        //    that summary; the row still re-renders on every group
+        //    addition / removal.
+        val membersByGroup: Map<String, Int> =
+            memberships.groupingBy(GroupMemberEntity::groupId).eachCount()
+        val groupRows: MutableList<ContactRow.GroupChat> = ArrayList(groups.size)
+        for (group in groups) {
+            val memberCount = (membersByGroup[group.id] ?: 0) + 1 // +1 for the local device
+            groupRows += ContactRow.GroupChat(
+                displayName = group.name.ifBlank { group.id },
+                groupId = group.id,
+                memberCount = memberCount,
+                lastMessagePreview = "",
+                lastMessageTimestamp = group.createdAt,
+                unreadCount = 0,
+            )
+        }
+
         // Sort each section locally — chats by recency, candidates by
         // bonded-first then alphabetical, install suggestions
         // alphabetically. The screen renders sections in the order
-        // [chats, candidates, installs] and uses the row subtype as
-        // the section divider.
+        // [groups, chats, candidates, installs] and uses the row
+        // subtype as the section divider.
+        groupRows.sortByDescending(ContactRow.GroupChat::lastMessageTimestamp)
         chatRows.sortByDescending(ContactRow.ExistingChat::lastMessageTimestamp)
         candidateRows.sortWith(
             compareByDescending(ContactRow.StartChatCandidate::isBonded)
@@ -407,21 +472,25 @@ class DeviceListViewModel(
         // only chats whose peer sits in that folder — the candidate
         // and install sections are hidden because peers without
         // chat history can't be assigned to folders yet.
+        val filteredGroups: List<ContactRow.GroupChat>
         val filteredChats: List<ContactRow.ExistingChat>
         val filteredCandidates: List<ContactRow.StartChatCandidate>
         val filteredInstalls: List<ContactRow.InstallSuggestion>
         when (selectedFolderId) {
             null -> {
+                filteredGroups = groupRows
                 filteredChats = chatRows
                 filteredCandidates = candidateRows
                 filteredInstalls = installRows
             }
             VIRTUAL_NEARBY_ID -> {
+                filteredGroups = groupRows
                 filteredChats = chatRows.filter(ContactRow.ExistingChat::isOnline)
                 filteredCandidates = candidateRows
                 filteredInstalls = installRows
             }
             else -> {
+                filteredGroups = emptyList()
                 filteredChats = chatRows.filter { row ->
                     peerToFolders[row.macAddress.uppercase()]
                         ?.contains(selectedFolderId) == true
@@ -434,8 +503,9 @@ class DeviceListViewModel(
         // The result is concatenated in render order so a `LazyColumn`
         // can iterate without a secondary group-by pass.
         val combined: MutableList<ContactRow> = ArrayList(
-            filteredChats.size + filteredCandidates.size + filteredInstalls.size,
+            filteredGroups.size + filteredChats.size + filteredCandidates.size + filteredInstalls.size,
         )
+        combined += filteredGroups
         combined += filteredChats
         combined += filteredCandidates
         combined += filteredInstalls
@@ -490,6 +560,7 @@ class DeviceListViewModel(
                     sdpProber = app.container.sdpProber,
                     apkSender = app.container.apkSender,
                     folderRepository = app.container.folderRepository,
+                    groupRepository = app.container.groupRepository,
                     crypto = app.container.cryptoManager,
                 )
             }

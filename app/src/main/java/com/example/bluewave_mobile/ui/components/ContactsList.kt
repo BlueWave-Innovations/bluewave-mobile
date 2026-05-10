@@ -19,7 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BluetoothConnected
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Icon
@@ -77,6 +77,7 @@ fun ContactsList(
     onSuggestInstall: (String) -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(vertical = 8.dp),
+    onGroupClick: (String) -> Unit = onRowClick,
 ) {
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
@@ -103,6 +104,10 @@ fun ContactsList(
                         row = row,
                         onSuggestInstall = { onSuggestInstall(row.macAddress) },
                     )
+                    is ContactRow.GroupChat -> GroupChatRow(
+                        row = row,
+                        onClick = { onGroupClick(row.groupId) },
+                    )
                 }
             }
         }
@@ -114,6 +119,7 @@ fun ContactsList(
  * for picking the localized header label.
  */
 private fun sectionKeyOf(row: ContactRow): String = when (row) {
+    is ContactRow.GroupChat -> "groups"
     is ContactRow.ExistingChat -> "chats"
     is ContactRow.StartChatCandidate -> "candidates"
     is ContactRow.InstallSuggestion -> "installs"
@@ -122,6 +128,7 @@ private fun sectionKeyOf(row: ContactRow): String = when (row) {
 @Composable
 private fun SectionHeader(sectionKey: String) {
     val label = when (sectionKey) {
+        "groups" -> stringResource(id = R.string.contacts_groups_section)
         "chats" -> stringResource(id = R.string.contacts_section_chats)
         "candidates" -> stringResource(id = R.string.contacts_section_can_chat)
         "installs" -> stringResource(id = R.string.contacts_section_install_suggest)
@@ -313,6 +320,109 @@ private fun InstallSuggestionRow(
 }
 
 @Composable
+private fun GroupChatRow(
+    row: ContactRow.GroupChat,
+    onClick: () -> Unit,
+) {
+    val timestampLabel: String = if (row.lastMessageTimestamp > 0L) {
+        remember(row.lastMessageTimestamp) {
+            DateFormat.getTimeInstance(DateFormat.SHORT)
+                .format(Date(row.lastMessageTimestamp))
+        }
+    } else {
+        ""
+    }
+    val unreadDescription = if (row.unreadCount > 0) {
+        stringResource(id = R.string.contacts_chat_unread_badge_cd, row.unreadCount)
+    } else {
+        ""
+    }
+    val memberCountLabel = stringResource(id = R.string.group_chat_member_count, row.memberCount)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                contentDescription = listOf(row.displayName, memberCountLabel, unreadDescription)
+                    .filter(String::isNotEmpty)
+                    .joinToString(separator = ", ")
+            },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        GroupAvatarTile()
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = row.displayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                if (timestampLabel.isNotEmpty()) {
+                    Text(
+                        text = timestampLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = row.lastMessagePreview.ifEmpty { memberCountLabel },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (row.unreadCount > 0) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    fontWeight = if (row.unreadCount > 0) FontWeight.Medium else FontWeight.Normal,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                if (row.unreadCount > 0) {
+                    Spacer(Modifier.width(8.dp))
+                    Badge(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ) {
+                        Text(
+                            text = row.unreadCount.coerceAtMost(99).toString(),
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GroupAvatarTile() {
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Group,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(22.dp),
+        )
+    }
+}
+
+@Composable
 private fun Avatar(online: Boolean, badgeText: String) {
     Box(
         modifier = Modifier
@@ -354,6 +464,14 @@ private fun ContactsListPreview() {
     BlueWaveTheme {
         ContactsList(
             rows = listOf(
+                ContactRow.GroupChat(
+                    displayName = "Дизайн-команда",
+                    groupId = "group:design",
+                    memberCount = 4,
+                    lastMessagePreview = "Алекс: ок, заливаю",
+                    lastMessageTimestamp = System.currentTimeMillis() - 2_000L,
+                    unreadCount = 5,
+                ),
                 ContactRow.ExistingChat(
                     displayName = "Aleksandr",
                     macAddress = "AA:BB:CC:11:22:33",

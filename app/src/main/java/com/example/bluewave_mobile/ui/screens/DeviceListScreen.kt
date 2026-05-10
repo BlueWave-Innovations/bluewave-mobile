@@ -12,12 +12,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.BluetoothSearching
 import androidx.compose.material.icons.filled.BluetoothDisabled
+import androidx.compose.material.icons.filled.GroupAdd
+import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -90,6 +93,7 @@ fun DeviceListScreen(
     onDeviceClick: (String) -> Unit,
     onCreateGroupClick: () -> Unit = {},
     onShareQrClick: () -> Unit = {},
+    onGroupClick: (String) -> Unit = {},
     viewModel: DeviceListViewModel = viewModel(factory = DeviceListViewModel.Factory),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -130,6 +134,24 @@ fun DeviceListScreen(
                         text = stringResource(id = R.string.device_list_title),
                         modifier = Modifier.semantics { heading() },
                     )
+                },
+                actions = {
+                    IconButton(onClick = onCreateGroupClick) {
+                        Icon(
+                            imageVector = Icons.Filled.GroupAdd,
+                            contentDescription = stringResource(
+                                id = R.string.device_list_create_group_cd,
+                            ),
+                        )
+                    }
+                    IconButton(onClick = onShareQrClick) {
+                        Icon(
+                            imageVector = Icons.Filled.QrCode,
+                            contentDescription = stringResource(
+                                id = R.string.device_list_qr_cd,
+                            ),
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(),
             )
@@ -218,6 +240,7 @@ fun DeviceListScreen(
                                     onSuggestInstall = { mac ->
                                         viewModel.handleIntent(DeviceListIntent.SuggestInstall(mac))
                                     },
+                                    onGroupClick = onGroupClick,
                                 )
                             }
                         }

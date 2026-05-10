@@ -4,6 +4,8 @@
     <!-- Device list screen -->
     <string name="device_list_title">BlueWave</string>
     <string name="device_list_rescan_cd">Rescan for nearby devices</string>
+    <string name="device_list_create_group_cd">Create new group</string>
+    <string name="device_list_qr_cd">Share my QR code</string>
     <string name="device_list_empty_title">No devices nearby</string>
     <string name="device_list_empty_message">Move closer to a paired phone or tap the button below to start a fresh scan.</string>
     <string name="device_list_scan_again">Scan again</string>
@@ -145,6 +147,7 @@
     <string name="create_group_create">Create</string>
     <string name="group_chat_title">Group chat</string>
     <string name="group_chat_placeholder">Group chat content will live here.</string>
+    <string name="group_chat_with_cd">Group chat: %1$s</string>
     <string name="group_chat_member_count">%1$d members</string>
     <string name="group_chat_status_online">Online via Bluetooth</string>
     <string name="group_chat_status_offline">Offline</string>

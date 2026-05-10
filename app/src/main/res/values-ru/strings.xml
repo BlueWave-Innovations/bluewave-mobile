@@ -4,6 +4,8 @@
     <!-- Device list screen -->
     <string name="device_list_title">BlueWave</string>
     <string name="device_list_rescan_cd">Повторить поиск устройств поблизости</string>
+    <string name="device_list_create_group_cd">Создать новую группу</string>
+    <string name="device_list_qr_cd">Поделиться моим QR-кодом</string>
     <string name="device_list_empty_title">Устройств не найдено</string>
     <string name="device_list_empty_message">Подойдите ближе к сопряжённому телефону или нажмите кнопку ниже, чтобы начать новый поиск.</string>
     <string name="device_list_scan_again">Искать снова</string>

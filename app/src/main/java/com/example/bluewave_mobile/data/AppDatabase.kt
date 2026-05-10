@@ -10,7 +10,9 @@ import androidx.room.RoomDatabase
  *  * encrypted message history ([MessageEntity]);
  *  * cached profile cards pushed by peers ([PeerProfileEntity]);
  *  * the user-defined chat-folder taxonomy ([ChatFolderEntity] +
- *    [PeerFolderAssignmentEntity]).
+ *    [PeerFolderAssignmentEntity]);
+ *  * the multi-peer group taxonomy ([ChatGroupEntity] +
+ *    [GroupMemberEntity] + [GroupMessageEntity]).
  *
  * Room generates the implementation of this abstract class at compile time via KSP.
  *
@@ -20,6 +22,8 @@ import androidx.room.RoomDatabase
  * @see PeerProfileDao
  * @see ChatFolderEntity
  * @see ChatFolderDao
+ * @see ChatGroupEntity
+ * @see ChatGroupDao
  */
 @Database(
     entities = [
@@ -27,8 +31,11 @@ import androidx.room.RoomDatabase
         PeerProfileEntity::class,
         ChatFolderEntity::class,
         PeerFolderAssignmentEntity::class,
+        ChatGroupEntity::class,
+        GroupMemberEntity::class,
+        GroupMessageEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -54,4 +61,10 @@ abstract class AppDatabase : RoomDatabase() {
      * chips.
      */
     abstract fun chatFolderDao(): ChatFolderDao
+
+    /**
+     * DAO for the multi-peer group taxonomy. Backs `GroupRepository`
+     * and the group-chat / group-list UIs introduced in Phase 6.
+     */
+    abstract fun chatGroupDao(): ChatGroupDao
 }

@@ -29,7 +29,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -58,9 +57,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bluewave_mobile.R
 import com.example.bluewave_mobile.data.E2EEState
 import com.example.bluewave_mobile.ui.components.BondLossBanner
+import com.example.bluewave_mobile.ui.components.ChatInputRow
 import com.example.bluewave_mobile.ui.components.EmptyStateView
 import com.example.bluewave_mobile.ui.components.MessageBubble
-import com.example.bluewave_mobile.ui.components.SendButton
 import com.example.bluewave_mobile.ui.intent.ChatIntent
 import com.example.bluewave_mobile.ui.state.ChatMessage
 import com.example.bluewave_mobile.ui.state.ChatUiState
@@ -542,38 +541,4 @@ private fun E2EEIndicator(
             .padding(start = 8.dp)
             .size(20.dp),
     )
-}
-
-@Composable
-private fun ChatInputRow(
-    draft: String,
-    enabled: Boolean,
-    onDraftChange: (String) -> Unit,
-    onSend: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        val inputCd = stringResource(id = R.string.chat_input_cd)
-        OutlinedTextField(
-            value = draft,
-            onValueChange = onDraftChange,
-            placeholder = { Text(stringResource(id = R.string.chat_input_placeholder)) },
-            singleLine = false,
-            maxLines = 4,
-            enabled = enabled,
-            modifier = Modifier
-                .weight(1f)
-                .semantics { contentDescription = inputCd },
-        )
-        SendButton(
-            onClick = onSend,
-            enabled = enabled && draft.isNotBlank(),
-            modifier = Modifier.padding(start = 8.dp),
-        )
-    }
 }

@@ -107,6 +107,74 @@ object DatabaseProvider {
     }
 
     /**
+     * v5 → v6: introduces the multi-peer group taxonomy.
+     *  * `chat_group` holds one row per group (id, name, owner MAC,
+     *    creation timestamp).
+     *  * `group_member` is the many-to-many bridge between a group
+     *    and its participating peer MACs. CASCADE foreign key on
+     *    `groupId` so removing a group also drops every membership.
+     *  * `group_message` mirrors the regular `messages` table but is
+     *    keyed off `groupId`. The encryption-at-rest scheme is the
+     *    same AES-256-GCM that backs single-peer messages; the wire
+     *    layer fan-outs every send through the existing pairwise
+     *    libsignal sessions and lands inbound rows in this table by
+     *    `groupId`.
+     */
+    private val MIGRATION_5_6: Migration = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS chat_group (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    name TEXT NOT NULL DEFAULT '',
+                    ownerMac TEXT NOT NULL DEFAULT '',
+                    createdAt INTEGER NOT NULL DEFAULT 0
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS group_member (
+                    groupId TEXT NOT NULL,
+                    peerMac TEXT NOT NULL,
+                    joinedAt INTEGER NOT NULL DEFAULT 0,
+                    PRIMARY KEY (groupId, peerMac),
+                    FOREIGN KEY (groupId) REFERENCES chat_group(id) ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                """
+                CREATE INDEX IF NOT EXISTS index_group_member_groupId
+                ON group_member(groupId)
+                """.trimIndent(),
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS group_message (
+                    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                    groupId TEXT NOT NULL,
+                    senderMac TEXT NOT NULL,
+                    encryptedPayload BLOB NOT NULL,
+                    iv BLOB NOT NULL,
+                    timestamp INTEGER NOT NULL DEFAULT 0,
+                    isOutgoing INTEGER NOT NULL DEFAULT 0,
+                    senderName TEXT NOT NULL DEFAULT '',
+                    isRead INTEGER NOT NULL DEFAULT 0,
+                    FOREIGN KEY (groupId) REFERENCES chat_group(id) ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                """
+                CREATE INDEX IF NOT EXISTS index_group_message_groupId
+                ON group_message(groupId)
+                """.trimIndent(),
+            )
+        }
+    }
+
+    /**
      * Returns the singleton [AppDatabase] instance, creating it if necessary.
      *
      * @param context Application context (not Activity context) to prevent memory leaks.
@@ -119,9 +187,9 @@ object DatabaseProvider {
                 AppDatabase::class.java,
                 "bluewave_messages.db",
             )
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 // Destructive fallback as a last-resort net for older
-                // unreleased schema revisions; production v2+ → v5 always
+                // unreleased schema revisions; production v2+ → v6 always
                 // uses the explicit migrations above.
                 .fallbackToDestructiveMigration(dropAllTables = true)
                 .build()

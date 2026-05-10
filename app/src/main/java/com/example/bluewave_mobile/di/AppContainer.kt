@@ -9,8 +9,11 @@ import com.example.bluewave_mobile.crypto.LibSignalEngine
 import com.example.bluewave_mobile.crypto.SignalEngine
 import com.example.bluewave_mobile.data.AppDatabase
 import com.example.bluewave_mobile.data.ChatFolderDao
+import com.example.bluewave_mobile.data.ChatGroupDao
 import com.example.bluewave_mobile.data.DatabaseProvider
 import com.example.bluewave_mobile.data.FolderRepository
+import com.example.bluewave_mobile.data.GroupRepository
+import com.example.bluewave_mobile.data.GroupRepositoryImpl
 import com.example.bluewave_mobile.data.MessageDao
 import com.example.bluewave_mobile.data.MessageRepository
 import com.example.bluewave_mobile.data.MessageRepositoryImpl
@@ -87,6 +90,43 @@ class AppContainer(applicationContext: Context) {
         FolderRepository(chatFolderDao)
     }
 
+    /**
+     * DAO handle for the multi-peer group taxonomy
+     * ([com.example.bluewave_mobile.data.ChatGroupEntity] +
+     * [com.example.bluewave_mobile.data.GroupMemberEntity] +
+     * [com.example.bluewave_mobile.data.GroupMessageEntity]).
+     */
+    val chatGroupDao: ChatGroupDao by lazy {
+        database.chatGroupDao()
+    }
+
+    /**
+     * Single Source of Truth for groups. Owns the wire-level
+     * fan-out logic — every outgoing group message is encrypted
+     * once per recipient under the existing pairwise libsignal
+     * session and shipped via [bluetoothSessionManager].
+     */
+    val groupRepository: GroupRepository by lazy {
+        GroupRepositoryImpl(
+            chatGroupDao = chatGroupDao,
+            cryptoManager = cryptoManager,
+            signalEngine = signalEngine,
+            transport = bluetoothSessionManager,
+            // Resolve the local MAC and display name lazily so the
+            // ViewModel layer never reaches into BluetoothAdapter
+            // directly. `bluetoothAdapter?.address` is empty on
+            // emulators and Android 12+ devices that haven't granted
+            // the runtime permission yet — we fall back to "" so the
+            // group repo just labels outgoing rows as anonymous in
+            // those cases.
+            localMacProvider = { bluetoothAdapter?.address?.uppercase().orEmpty() },
+            localNameProvider = {
+                val name = bluetoothAdapter?.name
+                if (name.isNullOrBlank()) "Me" else name
+            },
+        )
+    }
+
     /** Android Keystore-backed AES-256 key holder. */
     val keyManager: KeyManager by lazy {
         KeyManager()
@@ -118,6 +158,11 @@ class AppContainer(applicationContext: Context) {
             // repository decoupled from the long-lived flow
             // collector that drives [onLocalProfileChanged].
             localProfileProvider = { userPreferencesRepository.localProfile.first() },
+            // Wires Phase 6 group routing into the inbound
+            // dispatcher: GROUP_INVITE / GROUP_MESSAGE frames are
+            // decrypted via the same pairwise libsignal session and
+            // then handed to [groupRepository] for persistence.
+            groupRepository = groupRepository,
         )
     }
 

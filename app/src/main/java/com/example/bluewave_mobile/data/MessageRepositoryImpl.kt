@@ -60,6 +60,7 @@ class MessageRepositoryImpl(
     private val signalEngine: SignalEngine? = null,
     private val peerProfileDao: PeerProfileDao? = null,
     private val localProfileProvider: suspend () -> LocalProfile = { LocalProfile.EMPTY },
+    private val groupRepository: GroupRepository? = null,
 ) : MessageRepository {
 
     override fun getMessagesByDevice(macAddress: String): Flow<List<MessageEntity>> {
@@ -175,6 +176,12 @@ class MessageRepositoryImpl(
             )
             BlueWaveFrame.Type.PROFILE_METADATA -> handleIncomingProfileMetadata(
                 engine, key, frame.payload,
+            )
+            BlueWaveFrame.Type.GROUP_INVITE -> handleIncomingGroupFrame(
+                engine, key, senderName, frame.payload, isInvite = true,
+            )
+            BlueWaveFrame.Type.GROUP_MESSAGE -> handleIncomingGroupFrame(
+                engine, key, senderName, frame.payload, isInvite = false,
             )
         }
     }
@@ -386,6 +393,61 @@ class MessageRepositoryImpl(
             pushLocalProfileIfReady(engine, macAddress)
         }
         persistInboundPlaintext(macAddress, senderName, plaintext)
+    }
+
+    /**
+     * Decrypts a `GROUP_INVITE` or `GROUP_MESSAGE` frame and routes
+     * the resulting plaintext to [groupRepository].
+     *
+     * The wire envelope is identical to `PROFILE_METADATA` — a
+     * one-byte subtype tag followed by a libsignal ciphertext. The
+     * subtype tells us whether to call `decryptSignalMessage` or
+     * `decryptPreKeyMessage`; the inner plaintext format depends on
+     * [isInvite] and is parsed downstream by the group repository.
+     */
+    private suspend fun handleIncomingGroupFrame(
+        engine: SignalEngine,
+        macAddress: String,
+        senderName: String,
+        body: ByteArray,
+        isInvite: Boolean,
+    ) {
+        val groups = groupRepository
+        if (groups == null) {
+            Log.w(TAG, "Dropping group frame from $macAddress — no GroupRepository wired")
+            return
+        }
+        val inner = BlueWaveFrame.GroupEnvelope.decode(body)
+        if (inner == null) {
+            Log.w(TAG, "Dropping malformed group envelope from $macAddress (size=${body.size})")
+            return
+        }
+        val plaintext = try {
+            when (inner.subtype) {
+                BlueWaveFrame.GroupEnvelope.Subtype.SIGNAL_MESSAGE ->
+                    engine.decryptSignalMessage(macAddress, inner.ciphertext)
+                BlueWaveFrame.GroupEnvelope.Subtype.PREKEY_SIGNAL_MESSAGE ->
+                    engine.decryptPreKeyMessage(macAddress, inner.ciphertext)
+            }
+        } catch (e: SignalEngineException) {
+            Log.w(TAG, "Group decrypt failed for $macAddress: ${e.message}")
+            sessionStateFor(macAddress).value = E2EEState.FAILED
+            return
+        }
+        sessionStateFor(macAddress).value = E2EEState.SECURE
+        if (inner.subtype == BlueWaveFrame.GroupEnvelope.Subtype.PREKEY_SIGNAL_MESSAGE) {
+            // The peer's PreKeySignalMessage built our receiving session
+            // as a side effect — flush any queued chat / profile / group
+            // ops that were waiting on the handshake.
+            drainPendingQueue(engine, macAddress)
+            pushLocalProfileIfReady(engine, macAddress)
+            groups.onPeerSessionSecure(macAddress)
+        }
+        if (isInvite) {
+            groups.handleIncomingGroupInvite(macAddress, plaintext)
+        } else {
+            groups.handleIncomingGroupMessage(macAddress, senderName, plaintext)
+        }
     }
 
     /**
