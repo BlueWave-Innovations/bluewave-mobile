@@ -3,6 +3,7 @@ package com.example.bluewave_mobile.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,15 +13,18 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.BluetoothSearching
 import androidx.compose.material.icons.filled.BluetoothDisabled
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -29,13 +33,18 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -45,10 +54,12 @@ import com.example.bluewave_mobile.data.ChatFolderEntity
 import com.example.bluewave_mobile.ui.components.ContactsList
 import com.example.bluewave_mobile.ui.components.EmptyStateView
 import com.example.bluewave_mobile.ui.intent.DeviceListIntent
+import com.example.bluewave_mobile.ui.model.ContactRow
 import com.example.bluewave_mobile.ui.permissions.PermissionGateView
 import com.example.bluewave_mobile.ui.permissions.rememberBluetoothPermissionState
 import com.example.bluewave_mobile.ui.state.DeviceListUiState
 import com.example.bluewave_mobile.ui.viewmodel.DeviceListViewModel
+import androidx.compose.foundation.text.KeyboardOptions
 
 /**
  * Scaffold-based screen that lists Bluetooth peers as a sectioned
@@ -101,6 +112,7 @@ fun DeviceListScreen(
     val selectedFolderId by viewModel.selectedFolderId.collectAsStateWithLifecycle()
     val permissions = rememberBluetoothPermissionState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var searchQuery: String by rememberSaveable { mutableStateOf("") }
 
     // Auto-start the first scan once permissions come back as granted —
     // the user shouldn't have to tap the FAB after dismissing the
@@ -208,7 +220,15 @@ fun DeviceListScreen(
                         is DeviceListUiState.Loaded -> s.rows
                         else -> emptyList()
                     }
+                    val filteredRows by remember(rows, searchQuery) {
+                        derivedStateOf { applySearchFilter(rows, searchQuery) }
+                    }
                     Column(modifier = Modifier.fillMaxSize()) {
+                        SearchField(
+                            query = searchQuery,
+                            onQueryChange = { searchQuery = it },
+                            onClear = { searchQuery = "" },
+                        )
                         FolderChipRow(
                             folders = availableFolders,
                             selectedFolderId = selectedFolderId,
@@ -230,9 +250,17 @@ fun DeviceListScreen(
                                 ) {
                                     CircularProgressIndicator()
                                 }
+                            } else if (filteredRows.isEmpty() && searchQuery.isNotBlank()) {
+                                EmptyStateView(
+                                    icon = Icons.Filled.Search,
+                                    title = stringResource(id = R.string.search_empty_title),
+                                    message = stringResource(id = R.string.search_empty_message),
+                                    actionLabel = stringResource(id = R.string.search_clear),
+                                    onAction = { searchQuery = "" },
+                                )
                             } else {
                                 ContactsList(
-                                    rows = rows,
+                                    rows = filteredRows,
                                     onRowClick = { mac ->
                                         viewModel.handleIntent(DeviceListIntent.DeviceSelected(mac))
                                         onDeviceClick(mac)
@@ -305,6 +333,91 @@ private fun FolderChipRow(
                 onClick = { onSelect(folder.id) },
                 label = { Text(text = label) },
             )
+        }
+    }
+}
+
+/**
+ * Search field that lives directly under the top app bar and feeds
+ * its plaintext into [applySearchFilter].
+ *
+ * Uses a single-line [OutlinedTextField] rather than the `SearchBar`
+ * component so the chip-row beneath it can keep its existing
+ * spacing — the BlueWave list is dense and a full Material 3
+ * `SearchBar` would push the first chat row below the fold on
+ * compact phones. The leading icon is a magnifier, the trailing
+ * icon is a clear button shown only while the field is non-empty.
+ *
+ * Search runs locally — no network round-trip — and is fed by the
+ * already-streaming row list, so we don't add any IO. The
+ * [ImeAction.Search] keyboard hint is purely cosmetic; pressing it
+ * dismisses the soft keyboard but doesn't fire any extra effect.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SearchField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onClear: () -> Unit,
+) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        placeholder = {
+            Text(text = stringResource(id = R.string.search_placeholder))
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Filled.Search,
+                contentDescription = null,
+            )
+        },
+        trailingIcon = {
+            if (query.isNotEmpty()) {
+                IconButton(onClick = onClear) {
+                    Icon(
+                        imageVector = Icons.Filled.Clear,
+                        contentDescription = stringResource(id = R.string.search_clear),
+                    )
+                }
+            }
+        },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    )
+}
+
+/**
+ * Pure projection of the row list against the user-typed search
+ * [query].
+ *
+ *  * Empty / blank queries pass every row through unchanged so the
+ *    happy path has zero overhead.
+ *  * The match is case-insensitive and trimmed; we lowercase both
+ *    sides under [java.util.Locale.ROOT] so locale-specific casing
+ *    rules (e.g. Turkish dotless i) don't surprise users.
+ *  * For [ContactRow.ExistingChat] / [ContactRow.GroupChat] we also
+ *    match against the cached `lastMessagePreview` so typing a word
+ *    from a recent message brings the chat row up — mirrors the
+ *    behaviour of every consumer messenger.
+ */
+internal fun applySearchFilter(
+    rows: List<ContactRow>,
+    query: String,
+): List<ContactRow> {
+    val needle = query.trim()
+    if (needle.isEmpty()) return rows
+    val lowered = needle.lowercase()
+    return rows.filter { row ->
+        if (row.displayName.lowercase().contains(lowered)) return@filter true
+        if (row.macAddress.lowercase().contains(lowered)) return@filter true
+        when (row) {
+            is ContactRow.ExistingChat -> row.lastMessagePreview.lowercase().contains(lowered)
+            is ContactRow.GroupChat -> row.lastMessagePreview.lowercase().contains(lowered)
+            else -> false
         }
     }
 }

@@ -177,6 +177,8 @@
     <string name="chat_date_yesterday">Вчера</string>
 
     <!-- Поиск -->
-    <string name="search_hint">Поиск по имени или сообщениям</string>
-    <string name="search_no_results">Ничего не найдено.</string>
+    <string name="search_placeholder">Поиск по имени или сообщениям</string>
+    <string name="search_clear">Очистить поиск</string>
+    <string name="search_empty_title">Ничего не найдено</string>
+    <string name="search_empty_message">Попробуйте другое имя, тег контакта или слово из недавнего сообщения.</string>
 </resources>

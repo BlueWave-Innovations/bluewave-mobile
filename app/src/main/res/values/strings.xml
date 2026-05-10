@@ -178,6 +178,8 @@
     <string name="chat_date_yesterday">Yesterday</string>
 
     <!-- Search -->
-    <string name="search_hint">Search by name or message</string>
-    <string name="search_no_results">Nothing matches your search.</string>
+    <string name="search_placeholder">Search by name or message</string>
+    <string name="search_clear">Clear search</string>
+    <string name="search_empty_title">Nothing matches your search</string>
+    <string name="search_empty_message">Try a different name, contact tag, or word from a recent message.</string>
 </resources>
