@@ -17,7 +17,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -59,26 +58,31 @@ class MainActivity : ComponentActivity() {
             val themeMode by prefs.themeMode.collectAsStateWithLifecycle(initialValue = ThemeMode.SYSTEM)
             val appLanguage by prefs.appLanguage.collectAsStateWithLifecycle(initialValue = AppLanguage.SYSTEM)
             val context = LocalContext.current
-            // Track the locale we last applied so we only call
-            // `Activity.recreate()` on a *real* change. The first
-            // composition just records the seed value (already
-            // applied synchronously by `applyPersistedLanguage`
-            // before `setContent`), every subsequent flip pushes
-            // the new locale into AppCompatDelegate AND recreates
-            // the Activity so every `stringResource()` lookup is
-            // re-resolved against the new `values-*` bundle.
+            // Drive the per-app locale picker. The activity is a
+            // `ComponentActivity`, not an `AppCompatActivity`, so
+            // `AppCompatDelegate.setApplicationLocales` does NOT
+            // auto-recreate the window for us — we have to call
+            // [Activity.recreate] ourselves so every
+            // `stringResource()` re-resolves against the new
+            // `values-*` bundle.
             //
-            // AppCompatDelegate only triggers recreation on its own
-            // when used through `AppCompatActivity`; this activity
-            // is a `ComponentActivity` so we drive recreation
-            // manually.
-            val lastApplied: androidx.compose.runtime.MutableState<AppLanguage?> =
-                remember { mutableStateOf(null) }
+            // The guard compares against
+            // [AppCompatDelegate.getApplicationLocales] (not against
+            // a remembered Compose state) because Compose state is
+            // wiped on every recreate. If we keyed off remembered
+            // state, the first DataStore replay after a recreate
+            // would re-trigger `recreate()` and the activity would
+            // get stuck in an infinite recreation loop — that's the
+            // "приложение лагает / нужно переустанавливать"
+            // regression we saw on the live phone. Querying the
+            // delegate is the source of truth across recreates: it
+            // is already up to date by the time we run because
+            // `applyPersistedLanguage` ran synchronously in
+            // `onCreate` before `setContent`.
             LaunchedEffect(appLanguage) {
-                val previous = lastApplied.value
-                lastApplied.value = appLanguage
-                if (previous == null || previous == appLanguage) return@LaunchedEffect
-                AppCompatDelegate.setApplicationLocales(appLanguage.toLocaleList())
+                val desired = appLanguage.toLocaleList()
+                if (AppCompatDelegate.getApplicationLocales() == desired) return@LaunchedEffect
+                AppCompatDelegate.setApplicationLocales(desired)
                 (context as? Activity)?.recreate()
             }
 

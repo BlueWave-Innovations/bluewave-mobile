@@ -461,27 +461,41 @@ class DeviceListViewModel(
             val profileName = profilesByMac[mac]?.displayName?.takeUnless(String::isBlank)
             val name: String = profileName ?: peer.name.ifBlank { mac }
             val hasApp: Boolean? = presence[mac]
-            if (hasApp == true) {
+            val isConnected: Boolean = mac in connectedMacs
+            // Decision matrix for the section a non-chat peer lands in:
+            //
+            //  * already connected (RFCOMM session live)   → candidate
+            //    – a live socket is the strongest possible
+            //      "BlueWave is installed" signal, beats SDP.
+            //  * already bonded by the user                → candidate
+            //    – the user explicitly paired this device, so we
+            //      trust the bond. Falsely routing them into the
+            //      "no app yet" section was the asymmetric chat /
+            //      install-suggestion regression we saw on-device:
+            //      Android's SDP cache for a bonded peer can stay
+            //      stale forever if the cache was populated
+            //      *before* the peer's accept loop came online.
+            //      Even if BlueWave is genuinely absent the
+            //      tap-to-chat flow falls back to a connect error
+            //      and we can prompt then.
+            //  * SDP says yes                              → candidate
+            //  * SDP says no, unpaired, no live session    → install suggestion
+            //  * everything else (probe pending)           → candidate
+            //    (optimistic; flips to install-suggest only when
+            //    a definitive `false` lands AND the peer is
+            //    unpaired and unconnected).
+            val keepAsCandidate: Boolean =
+                isConnected || peer.isPaired || hasApp == true || hasApp == null
+            if (keepAsCandidate) {
                 candidateRows += ContactRow.StartChatCandidate(
                     displayName = name,
                     macAddress = mac,
                     isBonded = peer.isPaired,
                 )
-            } else if (hasApp == false) {
+            } else {
                 installRows += ContactRow.InstallSuggestion(
                     displayName = name,
                     macAddress = mac,
-                )
-            } else {
-                // SDP record not yet resolved — assume the peer might
-                // run BlueWave to keep the row in the "can start chat"
-                // section while the probe is in flight. The row will
-                // re-route to "no app yet" automatically once the
-                // negative answer lands through `presence`.
-                candidateRows += ContactRow.StartChatCandidate(
-                    displayName = name,
-                    macAddress = mac,
-                    isBonded = peer.isPaired,
                 )
             }
         }

@@ -127,9 +127,21 @@ class BlueWaveApplication : Application() {
         // accept loop produced it — triggers the repository to push
         // its local key bundle to the peer. The repository keeps a
         // per-peer "already sent" guard so we never duplicate the
-        // bundle within a session.
+        // bundle within a session. We also flip the SDP-derived
+        // presence map to `true` for this MAC: a live RFCOMM
+        // session is the strongest possible signal that the peer
+        // runs BlueWave, regardless of what the platform's SDP
+        // cache happens to say. This is the fix for the asymmetric
+        // chat / install-suggestion rows we saw on-device when one
+        // phone's SDP cache for the other was populated *before*
+        // that other phone's accept loop came online.
         applicationScope.launch {
             container.bluetoothSessionManager.sessionAttached.collect { mac ->
+                runCatching {
+                    container.sdpProber.markPresent(mac)
+                }.onFailure { e ->
+                    Log.w(TAG, "markPresent failed for $mac", e)
+                }
                 runCatching {
                     container.messageRepository.onPeerLinkUp(mac)
                 }.onFailure { e ->
