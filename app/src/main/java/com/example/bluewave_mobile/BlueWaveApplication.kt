@@ -1,12 +1,15 @@
 package com.example.bluewave_mobile
 
+import android.annotation.SuppressLint
 import android.app.Application
 import android.util.Log
 import com.example.bluewave_mobile.di.AppContainer
+import com.example.bluewave_mobile.network.BluetoothConstants
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -188,6 +191,48 @@ class BlueWaveApplication : Application() {
                 }
         }
 
+        // Eager auto-connect on cold launch + on every link teardown.
+        // RFCOMM sessions are otherwise lazily created the first time
+        // the user taps a contact and sends a message, which means
+        // the "online dot" stays grey on both phones even when both
+        // apps are running side by side with their accept loops
+        // waiting. To match the "open the app and you're already
+        // online with everyone you know" UX of mainstream messengers
+        // we proactively fan out outbound connect attempts to every
+        // already-bonded device a few hundred ms after the accept
+        // loop comes up. The race between simultaneous outbound and
+        // inbound connects is handled in `attachSession`, which
+        // evicts the older session if two ever land for the same MAC.
+        //
+        // The first attempt is delayed by `AUTO_CONNECT_INITIAL_DELAY_MS`
+        // so the accept-loop has time to register the SDP service
+        // record on both sides; otherwise the very first connect can
+        // race the listen-side SDP record and fail with "service
+        // discovery failed".
+        applicationScope.launch {
+            delay(AUTO_CONNECT_INITIAL_DELAY_MS)
+            connectToBondedPeers()
+        }
+
+        // Re-run the auto-connect probe whenever a session is
+        // detached (peer toggled BT, killed the app, …) so the link
+        // re-establishes itself the moment the peer comes back, no
+        // user interaction required. We sleep `AUTO_RECONNECT_BACKOFF_MS`
+        // to give the peer's adapter time to settle before
+        // re-attempting; a still-unreachable peer just fails the
+        // connect() call and the next sessionDetached → reconnect
+        // edge will fire when something else brings the link up.
+        applicationScope.launch {
+            container.bluetoothSessionManager.sessionDetached.collect { mac ->
+                delay(AUTO_RECONNECT_BACKOFF_MS)
+                runCatching {
+                    container.bluetoothSessionManager.connect(mac)
+                }.onFailure { e ->
+                    Log.w(TAG, "auto-reconnect attempt failed for $mac", e)
+                }
+            }
+        }
+
         // NOTE: the user-facing "Bluetooth visibility" selector in the
         // Settings screen only controls the Android *discoverable*
         // window via `ACTION_REQUEST_DISCOVERABLE` — it does NOT
@@ -197,6 +242,48 @@ class BlueWaveApplication : Application() {
         // SDP record stays advertised. Settings screen handles the
         // discoverable-intent dispatch directly when the user picks
         // a non-OFF duration.
+    }
+
+    /**
+     * Fires a non-blocking outbound `connect()` attempt against every
+     * device the platform reports as already bonded. The session
+     * manager dedupes inbound + outbound connects per MAC so the
+     * worst case is a racing accept on the peer side that gets
+     * evicted as soon as our outbound socket lands.
+     *
+     * Bonded devices that do not run BlueWave fail with `IOException`
+     * inside `connect()` and are logged once — no further retries.
+     * Unbonded peers are picked up by the scan flow in
+     * `DeviceListViewModel`, which calls `connect()` directly when
+     * the user opens the chat, so we deliberately do **not** spam
+     * connect attempts to the entire inquiry result here.
+     */
+    @SuppressLint("MissingPermission")
+    private suspend fun connectToBondedPeers() {
+        val adapter = container.bluetoothAdapter ?: return
+        if (!adapter.isEnabled) return
+        val bonded = try {
+            adapter.bondedDevices ?: emptySet()
+        } catch (e: SecurityException) {
+            Log.w(TAG, "bondedDevices denied by permissions; skipping auto-connect", e)
+            return
+        }
+        if (bonded.isEmpty()) return
+        for (device in bonded) {
+            val mac = device.address ?: continue
+            applicationScope.launch {
+                runCatching {
+                    container.bluetoothSessionManager.connect(mac)
+                }.onFailure { e ->
+                    // Failure here is normal for headphones, smart
+                    // watches and any other bonded peer that does
+                    // not run BlueWave — the SDP lookup misses our
+                    // UUID, `createInsecureRfcommSocketToServiceRecord`
+                    // throws, and we move on.
+                    Log.d(TAG, "auto-connect skipped for $mac: ${e.message}")
+                }
+            }
+        }
     }
 
     override fun onTerminate() {
@@ -211,5 +298,22 @@ class BlueWaveApplication : Application() {
 
     private companion object {
         const val TAG = "BlueWaveApplication"
+
+        /**
+         * Grace period before the very first auto-connect fan-out so
+         * the local accept loop has time to register its SDP service
+         * record. Without it, the first outbound connect can race
+         * the listener and fail with "service discovery failed".
+         */
+        const val AUTO_CONNECT_INITIAL_DELAY_MS: Long = 500L
+
+        /**
+         * Cool-down between a session detaching and the next
+         * outbound connect attempt against the same MAC. Matches
+         * roughly two heartbeat intervals so the peer's adapter has
+         * time to settle if the detach was caused by a transient
+         * radio glitch.
+         */
+        const val AUTO_RECONNECT_BACKOFF_MS: Long = BluetoothConstants.HEARTBEAT_INTERVAL_MS * 2
     }
 }
