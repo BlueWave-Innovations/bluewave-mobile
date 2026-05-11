@@ -4,6 +4,7 @@ import android.bluetooth.BluetoothSocket
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -28,6 +29,26 @@ import kotlinx.coroutines.launch
  * [MessageTransport] interface — callers always go through the
  * session manager so that there is exactly one source of truth for
  * "which peers are live".
+ *
+ * **Liveness.** RFCOMM does not surface a TCP-style "the other end
+ * went away" event reliably — if the peer turns Bluetooth off, kills
+ * its process or just walks out of range, our `InputStream.read` can
+ * sit blocked for minutes before the kernel notices. To match the
+ * "instant offline" UX of a centralised messenger we maintain two
+ * helper jobs alongside the read loop:
+ *
+ *  * a periodic **heartbeat sender** writing a
+ *    [BlueWaveFrame.Type.HEARTBEAT] frame every
+ *    [BluetoothConstants.HEARTBEAT_INTERVAL_MS] millis. A failed
+ *    write tears the session down immediately;
+ *  * a **liveness watchdog** that checks the timestamp of the last
+ *    *received* byte chunk every
+ *    [BluetoothConstants.HEARTBEAT_INTERVAL_MS] millis and tears
+ *    the session down once the gap exceeds
+ *    [BluetoothConstants.LIVENESS_TIMEOUT_MS].
+ *
+ * Heartbeat frames are filtered out before they reach `onFrame` so
+ * the application layer remains unaware of the liveness machinery.
  */
 internal class BluetoothSession(
     private val socket: BluetoothSocket,
@@ -56,6 +77,17 @@ internal class BluetoothSession(
     }
 
     private var pumpJob: Job? = null
+    private var heartbeatJob: Job? = null
+    private var watchdogJob: Job? = null
+
+    /**
+     * Timestamp (`System.currentTimeMillis`) of the most recent byte
+     * chunk read from the peer — refreshed by the read loop and
+     * polled by the liveness watchdog. Volatile because the two
+     * jobs run on different threads.
+     */
+    @Volatile
+    private var lastInboundMs: Long = System.currentTimeMillis()
 
     /**
      * Stream of byte chunks straight from the underlying
@@ -74,9 +106,14 @@ internal class BluetoothSession(
     fun start(scope: CoroutineScope, onFrame: suspend (ByteArray) -> Unit, onClosed: suspend () -> Unit) {
         if (pumpJob != null) return
         connectedThread.start()
+        lastInboundMs = System.currentTimeMillis()
         pumpJob = scope.launch {
             try {
                 incomingBytes.collect { chunk ->
+                    // Any byte from the peer — even a partial frame
+                    // header — proves the link is alive, so refresh
+                    // the watchdog timestamp before parsing.
+                    lastInboundMs = System.currentTimeMillis()
                     val frames = try {
                         accumulator.append(chunk)
                     } catch (e: IllegalStateException) {
@@ -85,11 +122,78 @@ internal class BluetoothSession(
                         return@collect
                     }
                     for (frame in frames) {
+                        if (isHeartbeat(frame)) {
+                            // `lastInboundMs` already refreshed above;
+                            // drop the frame so the application layer
+                            // never has to know heartbeats exist.
+                            continue
+                        }
                         onFrame(frame)
                     }
                 }
             } finally {
+                heartbeatJob?.cancel()
+                heartbeatJob = null
+                watchdogJob?.cancel()
+                watchdogJob = null
                 onClosed()
+            }
+        }
+        heartbeatJob = scope.launch { runHeartbeatSender() }
+        watchdogJob = scope.launch { runLivenessWatchdog() }
+    }
+
+    /**
+     * Periodically pushes a zero-body
+     * [BlueWaveFrame.Type.HEARTBEAT] frame to the peer. A failed
+     * write means the socket is already dead and we tear the
+     * session down so [BluetoothSessionManager.connectedPeers]
+     * flips off immediately — without waiting for the read loop to
+     * notice on the next `input.read()` call (which can be many
+     * seconds away).
+     */
+    private suspend fun runHeartbeatSender() {
+        val pingFrame = BlueWaveFrame.encode(BlueWaveFrame.Type.HEARTBEAT, EMPTY_PAYLOAD)
+        while (true) {
+            delay(BluetoothConstants.HEARTBEAT_INTERVAL_MS)
+            val framed = try {
+                MessageFraming.frame(pingFrame)
+            } catch (e: IllegalArgumentException) {
+                // The heartbeat is a constant 1-byte payload so this
+                // branch is unreachable in practice — log defensively
+                // and stop pinging if it ever fires.
+                Log.e(TAG, "Refusing to frame heartbeat for $remoteMacAddress: ${e.message}")
+                return
+            }
+            val ok = connectedThread.write(framed)
+            if (!ok) {
+                Log.d(TAG, "Heartbeat write failed for $remoteMacAddress; tearing down session")
+                cancel()
+                return
+            }
+        }
+    }
+
+    /**
+     * Watchdog that wakes up every
+     * [BluetoothConstants.HEARTBEAT_INTERVAL_MS] and tears the
+     * session down once we have not seen a single byte from the
+     * peer for more than [BluetoothConstants.LIVENESS_TIMEOUT_MS] —
+     * the radio link is functionally dead even if the kernel has
+     * not noticed yet.
+     */
+    private suspend fun runLivenessWatchdog() {
+        while (true) {
+            delay(BluetoothConstants.HEARTBEAT_INTERVAL_MS)
+            val now = System.currentTimeMillis()
+            if (now - lastInboundMs > BluetoothConstants.LIVENESS_TIMEOUT_MS) {
+                Log.d(
+                    TAG,
+                    "Liveness watchdog tripped for $remoteMacAddress " +
+                        "(${now - lastInboundMs} ms since last inbound byte); tearing down session",
+                )
+                cancel()
+                return
             }
         }
     }
@@ -117,10 +221,24 @@ internal class BluetoothSession(
     fun cancel() {
         pumpJob?.cancel()
         pumpJob = null
+        heartbeatJob?.cancel()
+        heartbeatJob = null
+        watchdogJob?.cancel()
+        watchdogJob = null
         connectedThread.cancel()
     }
 
+    /**
+     * `true` iff [frame] decodes to a [BlueWaveFrame.Type.HEARTBEAT].
+     * Cheap one-byte inspection — avoids paying the cost of the full
+     * `decode` path on every inbound frame, since the type tag is
+     * always the first byte.
+     */
+    private fun isHeartbeat(frame: ByteArray): Boolean =
+        frame.isNotEmpty() && frame[0] == BlueWaveFrame.Type.HEARTBEAT.tag
+
     private companion object {
         const val TAG = "BluetoothSession"
+        val EMPTY_PAYLOAD: ByteArray = ByteArray(0)
     }
 }

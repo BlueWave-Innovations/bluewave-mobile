@@ -125,6 +125,23 @@ interface SignalEngine {
      * runs.
      */
     suspend fun reset()
+
+    /**
+     * Drops the Signal session record for a single peer so the next
+     * `KEY_BUNDLE` exchange with that peer rebuilds the Double
+     * Ratchet from scratch.
+     *
+     * Called by `MessageRepositoryImpl.onPeerLinkDown` when the
+     * RFCOMM session ends so a stale ratchet — typically the result
+     * of the peer process being killed and losing its in-memory
+     * libsignal store — cannot poison the next link-up. The local
+     * identity and prekey material are kept; only the per-peer
+     * session is forgotten.
+     *
+     * Safe to call for a peer we have never handshaked with —
+     * implementations are expected to no-op in that case.
+     */
+    suspend fun resetPeerSession(macAddress: String)
 }
 
 /**

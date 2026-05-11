@@ -35,6 +35,13 @@ package com.example.bluewave_mobile.network
  *  * `GROUP_MESSAGE` (0x06) — encrypted multi-peer group text. Same
  *    envelope as `GROUP_INVITE`. The decrypted plaintext is
  *    `[2B groupIdLen big-endian][groupId UTF-8][message UTF-8]`.
+ *  * `HEARTBEAT` (0x07) — transport-level keep-alive ping with no
+ *    body. Emitted periodically by [BluetoothSession] so the receiver
+ *    can detect a silently-dead peer (BT off, app killed, radio
+ *    suspended) without waiting for the kernel's TCP-style ACL
+ *    timeout. The transport filters these frames out before they
+ *    reach [MessageRepository.processIncomingMessage] — they are
+ *    never visible to the application layer.
  *
  * A single byte tag is intentionally minimal: every frame already
  * paid the length prefix overhead, so anything more than one byte
@@ -55,6 +62,7 @@ object BlueWaveFrame {
         PROFILE_METADATA(0x04),
         GROUP_INVITE(0x05),
         GROUP_MESSAGE(0x06),
+        HEARTBEAT(0x07),
         ;
 
         companion object {

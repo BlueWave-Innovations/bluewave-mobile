@@ -150,6 +150,25 @@ class BlueWaveApplication : Application() {
             }
         }
 
+        // Mirror the per-peer link teardown: when the session manager
+        // evicts an RFCOMM session (peer turned BT off, killed the
+        // app, walked out of range and tripped the liveness watchdog,
+        // …) the repository drops its libsignal session record and
+        // re-arms the "already shipped key bundle" guard so the very
+        // next reconnect rebuilds the Double Ratchet from scratch.
+        // Without this hook a peer reinstall or process kill would
+        // leave both sides convinced that the session is still live
+        // and every subsequent decrypt would silently fail.
+        applicationScope.launch {
+            container.bluetoothSessionManager.sessionDetached.collect { mac ->
+                runCatching {
+                    container.messageRepository.onPeerLinkDown(mac)
+                }.onFailure { e ->
+                    Log.w(TAG, "onPeerLinkDown failed for $mac", e)
+                }
+            }
+        }
+
         // Re-broadcast the local profile card to every peer with a
         // SECURE Signal session whenever the user edits their name /
         // handle / bio / avatar in the Profile tab. `drop(1)` skips

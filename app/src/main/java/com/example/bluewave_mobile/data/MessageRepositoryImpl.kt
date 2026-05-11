@@ -136,6 +136,31 @@ class MessageRepositoryImpl(
         sendLocalKeyBundleIfNeeded(macAddress.uppercase())
     }
 
+    override suspend fun onPeerLinkDown(macAddress: String) {
+        val key = macAddress.uppercase()
+        // Drop the libsignal session record so the next link-up
+        // rebuilds the Double Ratchet from scratch. Without this the
+        // peer-side ratchet (which the peer may have lost — fresh
+        // process with an in-memory store) and our ratchet would
+        // disagree on the message counter and decrypt would fail
+        // silently for every subsequent message.
+        signalEngine?.resetPeerSession(key)
+        e2eeLock.withLock {
+            // Forget that we already shipped a key bundle so the next
+            // [onPeerLinkUp] re-sends it; also drop any plaintext that
+            // was waiting on the dead session — the user will retype
+            // if they cared (queued bytes encrypted with a session the
+            // peer no longer has are unrecoverable anyway).
+            keyBundleSent.remove(key)
+            pendingQueues.remove(key)
+        }
+        // Surface "handshake pending" so the chat header shows the
+        // spinner until the next link-up settles. The state flow is
+        // observed by the UI so this also flips the online dot off
+        // via downstream session-collection in `BluetoothSessionManager`.
+        sessionStateFor(key).value = E2EEState.PENDING
+    }
+
     override suspend fun insertMessage(message: MessageEntity): Long {
         return messageDao.insertMessage(message)
     }
@@ -183,6 +208,14 @@ class MessageRepositoryImpl(
             BlueWaveFrame.Type.GROUP_MESSAGE -> handleIncomingGroupFrame(
                 engine, key, senderName, frame.payload, isInvite = false,
             )
+            BlueWaveFrame.Type.HEARTBEAT -> {
+                // Heartbeats are transport-internal — `BluetoothSession`
+                // filters them out before they reach the repository.
+                // We still handle the case defensively in case a heartbeat
+                // ever leaks through (e.g. a unit-test wire harness or a
+                // future routing change) — silently dropping keeps the
+                // application layer unaware of liveness machinery.
+            }
         }
     }
 

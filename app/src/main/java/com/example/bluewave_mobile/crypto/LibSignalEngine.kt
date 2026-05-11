@@ -1,5 +1,6 @@
 package com.example.bluewave_mobile.crypto
 
+import android.util.Log
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.signal.libsignal.protocol.IdentityKey
@@ -92,15 +93,40 @@ class LibSignalEngine private constructor(
         encodeBundle(bundle)
     }
 
-    override suspend fun processPeerKeyBundle(macAddress: String, bytes: ByteArray) = mutex.withLock {
-        val bundle = decodeBundle(bytes)
-        val address = addressFor(macAddress)
-        try {
-            SessionBuilder(store, address).process(bundle)
-        } catch (e: UntrustedIdentityException) {
-            throw SignalEngineException("Peer identity changed: ${e.message}", e)
-        } catch (e: Exception) {
-            throw SignalEngineException("Failed to process key bundle: ${e.message}", e)
+    override suspend fun processPeerKeyBundle(macAddress: String, bytes: ByteArray) {
+        mutex.withLock {
+            val bundle = decodeBundle(bytes)
+            val address = addressFor(macAddress)
+            try {
+                SessionBuilder(store, address).process(bundle)
+            } catch (e: UntrustedIdentityException) {
+                // Trust-on-first-use: the peer rotated its identity
+                // key (process restart with an in-memory store, fresh
+                // install, …). In a centralised messenger we'd
+                // surface a warning and force the user to re-verify;
+                // in our setting the RFCOMM peer is already validated
+                // by its MAC address and physical proximity, so we
+                // overwrite the stored identity and retry the
+                // handshake. Without this branch a peer reinstall
+                // would permanently break message flow until both
+                // apps were force-stopped.
+                Log.w(
+                    TAG,
+                    "Peer $macAddress rotated identity; overwriting stored key and retrying handshake",
+                )
+                try {
+                    store.saveIdentity(address, bundle.identityKey)
+                    SessionBuilder(store, address).process(bundle)
+                } catch (retry: Exception) {
+                    throw SignalEngineException(
+                        "Failed to process key bundle after identity rotation: ${retry.message}",
+                        retry,
+                    )
+                }
+            } catch (e: Exception) {
+                throw SignalEngineException("Failed to process key bundle: ${e.message}", e)
+            }
+            knownPeers.add(address.name)
         }
     }
 
@@ -150,7 +176,7 @@ class LibSignalEngine private constructor(
         }
     }
 
-    override suspend fun reset() = mutex.withLock {
+    override suspend fun reset(): Unit = mutex.withLock {
         // libsignal's `InMemorySignalProtocolStore` has no public
         // "list every peer" hook, so we keep our own roster of MACs
         // for which we have ever invoked [SessionBuilder.process].
@@ -161,6 +187,22 @@ class LibSignalEngine private constructor(
             store.deleteAllSessions(mac)
         }
         knownPeers.clear()
+    }
+
+    override suspend fun resetPeerSession(macAddress: String) {
+        mutex.withLock {
+            // libsignal does not expose a "delete the session for one
+            // device id" hook directly — `deleteSession` clears *all*
+            // device ids for the supplied name, which is exactly the
+            // right granularity for our single-device model. We also
+            // drop the MAC from `knownPeers` so a subsequent [reset]
+            // does not redundantly re-target it.
+            val address = addressFor(macAddress)
+            if (store.containsSession(address)) {
+                store.deleteAllSessions(address.name)
+            }
+            knownPeers.remove(address.name)
+        }
     }
 
     /**
@@ -238,6 +280,9 @@ class LibSignalEngine private constructor(
     companion object {
         /** Single-device-per-user model. Multi-device is future work. */
         const val DEVICE_ID: Int = 1
+
+        /** Logcat tag used by the engine for non-fatal warnings. */
+        private const val TAG: String = "LibSignalEngine"
 
         /** Wire-format version of the bundle codec — bump on changes. */
         private const val BUNDLE_VERSION: Int = 1

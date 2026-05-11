@@ -127,6 +127,26 @@ interface MessageRepository {
     suspend fun onPeerLinkUp(macAddress: String)
 
     /**
+     * Hook called by `BlueWaveApplication` whenever the underlying
+     * [com.example.bluewave_mobile.network.MessageTransport] reports
+     * that the RFCOMM session for [macAddress] has been evicted
+     * (peer killed the app, BT toggled off, liveness watchdog
+     * fired, …).
+     *
+     * Implementations are expected to drop every per-peer cache
+     * that conflates "we have already handshaked with this peer"
+     * with "the live RFCOMM session is still alive" — notably the
+     * libsignal session record (so the Double Ratchet does not
+     * carry forward from a state the peer no longer has) and the
+     * "already sent key bundle" book-keeping (so the very next
+     * link-up re-sends the bundle). The `E2EEState` flow flips back
+     * to `PENDING` so the chat UI shows the handshake spinner.
+     *
+     * Idempotent — safe to call for a peer we have never seen.
+     */
+    suspend fun onPeerLinkDown(macAddress: String)
+
+    /**
      * Retrieves the latest message per device for building a conversation list.
      *
      * @return A [Flow] emitting a list of the most recent message from each conversation.
