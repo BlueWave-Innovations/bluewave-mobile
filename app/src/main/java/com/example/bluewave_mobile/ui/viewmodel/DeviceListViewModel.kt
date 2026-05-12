@@ -440,37 +440,50 @@ class DeviceListViewModel(
             val profileName = profilesByMac[mac]?.displayName?.takeUnless(String::isBlank)
             val name: String = profileName ?: peer.name.ifBlank { mac }
             val hasApp: Boolean? = presence[mac]
-            // Decision matrix for the section a non-chat peer lands in:
+            // Decision matrix for the section a non-chat peer lands
+            // in. The SDP probe in [BlueWaveSdpProber] commits an
+            // entry to `false` after
+            // [BluetoothConstants.SDP_PROBE_TIMEOUT_MS] if no
+            // positive `ACTION_UUID` ever lands, so the `null`
+            // branches below only fire inside that short window:
             //
-            //  * already bonded by the user                → candidate
-            //    – the user explicitly paired this device, so we
-            //      trust the bond. Falsely routing them into the
-            //      "no app yet" section was the asymmetric chat /
-            //      install-suggestion regression we saw on-device:
-            //      Android's SDP cache for a bonded peer can stay
-            //      stale forever if the cache was populated
-            //      *before* the peer's accept loop came online.
-            //      Even if BlueWave is genuinely absent the
-            //      tap-to-chat flow falls back to a connect error
-            //      and we can prompt then.
             //  * SDP says yes                              → candidate
-            //  * SDP says no, unpaired                     → install suggestion
-            //  * probe pending OR no answer within the SDP
-            //    timeout                                   → install suggestion
-            //    (strict mode — the prober commits the
-            //    entry to `false` after
-            //    [BluetoothConstants.SDP_PROBE_TIMEOUT_MS],
-            //    so this branch only ever fires inside that
-            //    short window and flips to a candidate the
-            //    moment a positive `ACTION_UUID` lands).
+            //  * probe pending AND bonded                  → candidate
+            //    – bonded peers get the optimistic benefit of the
+            //      doubt for the ~2 s probe window because the
+            //      user explicitly paired them; a late
+            //      `ACTION_UUID` would still upgrade an unbonded
+            //      peer too, but bonded ones already have user
+            //      intent behind them.
+            //  * probe pending AND unbonded                → install suggestion
+            //    (strict mode — flips to candidate the moment a
+            //    positive `ACTION_UUID` lands)
+            //  * SDP says no AND bonded                    → HIDDEN
+            //    – this is the headphones / speaker / smartwatch
+            //      case: the user bonded the peer for some other
+            //      purpose and the SDP probe confirmed that it
+            //      isn't running BlueWave. Routing it into
+            //      "install suggestion" is nonsense (you can't
+            //      install BlueWave on a pair of AirPods), and
+            //      routing it into "candidate" is the bug we're
+            //      fixing here. So drop it entirely.
+            //      A previously-chatted BlueWave peer with a
+            //      stale SDP cache is rescued via
+            //      [BlueWaveSdpProber.markPresent] the moment an
+            //      RFCOMM session reattaches, so this branch
+            //      cannot strand a real BlueWave peer.
+            //  * SDP says no AND unbonded                  → install suggestion
             val keepAsCandidate: Boolean =
-                peer.isPaired || hasApp == true
+                hasApp == true || (hasApp == null && peer.isPaired)
             if (keepAsCandidate) {
                 candidateRows += ContactRow.StartChatCandidate(
                     displayName = name,
                     macAddress = mac,
                     isBonded = peer.isPaired,
                 )
+            } else if (hasApp == false && peer.isPaired) {
+                // Bonded non-BlueWave device → drop from the list.
+                continue
             } else {
                 installRows += ContactRow.InstallSuggestion(
                     displayName = name,
