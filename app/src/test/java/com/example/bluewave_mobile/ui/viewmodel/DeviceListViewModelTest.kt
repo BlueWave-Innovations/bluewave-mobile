@@ -227,20 +227,24 @@ class DeviceListViewModelTest {
             presence = mapOf(
                 "AA" to true,
                 "BB" to false,
-                // CC is unknown — should land in candidates per the
-                // optimistic default.
+                // CC is unknown — under the strict SDP filter that
+                // mirrors `BlueWaveSdpProber`'s 2 s timeout, every
+                // unbonded peer without a positive SDP answer
+                // lands in "No app yet". A late `ACTION_UUID`
+                // would flip the cell to a candidate on the next
+                // emission; the projection itself is pure.
             ),
         )
 
-        // 1) Existing chat for DD, then 2) candidates (AA + CC),
-        // then 3) install suggestion for BB.
+        // 1) Existing chat for DD, then 2) candidate (AA only),
+        // then 3) install suggestions for BB and CC.
         assertEquals(4, rows.size)
         assertTrue(rows[0] is ContactRow.ExistingChat)
         assertEquals("DD", rows[0].macAddress)
-        val middle = rows.subList(1, 3)
-        assertTrue(middle.all { it is ContactRow.StartChatCandidate })
-        assertEquals(setOf("AA", "CC"), middle.map { it.macAddress }.toSet())
-        assertTrue(rows[3] is ContactRow.InstallSuggestion)
-        assertEquals("BB", rows[3].macAddress)
+        assertTrue(rows[1] is ContactRow.StartChatCandidate)
+        assertEquals("AA", rows[1].macAddress)
+        val tail = rows.subList(2, 4)
+        assertTrue(tail.all { it is ContactRow.InstallSuggestion })
+        assertEquals(setOf("BB", "CC"), tail.map { it.macAddress }.toSet())
     }
 }

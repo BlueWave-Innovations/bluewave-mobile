@@ -1,8 +1,11 @@
 package com.example.bluewave_mobile
 
+import android.Manifest
 import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -28,10 +31,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.bluewave_mobile.network.BlueWaveBluetoothService
 import com.example.bluewave_mobile.preferences.AppLanguage
 import com.example.bluewave_mobile.preferences.ThemeMode
 import com.example.bluewave_mobile.preferences.UserPreferencesRepository
@@ -46,10 +51,36 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
+
+    /**
+     * Result launcher for the Android 13+
+     * [Manifest.permission.POST_NOTIFICATIONS] runtime dialog. We
+     * fire it once per cold launch when the permission is missing
+     * so the persistent foreground-service notification is
+     * visible — the FGS itself runs regardless, the user just
+     * loses the "BlueWave is listening" indicator if they deny.
+     */
+    private val notificationsPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* no-op */ }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
+
+        // The Application class already started the FGS at process
+        // launch, but Android may have killed the process between
+        // sessions and recreated only the Activity; calling start()
+        // again is idempotent and brings the listener back online
+        // if it was reaped.
+        BlueWaveBluetoothService.start(this)
+
+        // Fire the POST_NOTIFICATIONS dialog the first time the
+        // user lands on the home screen. We deliberately do NOT
+        // gate the rest of the app on this — a denied notification
+        // permission is recoverable through system Settings and
+        // does not block messaging functionality.
+        maybeRequestPostNotificationsPermission()
 
         // Apply the persisted language preference *before* the first
         // composition runs so every `stringResource()` lookup reads
@@ -124,6 +155,35 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    /**
+     * Re-asserts the foreground-service start on every
+     * [onStart] edge so a process recreated by Android after a
+     * memory-pressure kill (swipe-from-recents on a low-RAM
+     * device) brings the accept-loop guarantee back the moment
+     * the user re-opens the app. The service's start helper is
+     * idempotent so this is a cheap no-op when the listener was
+     * already alive.
+     */
+    override fun onStart() {
+        super.onStart()
+        BlueWaveBluetoothService.start(this)
+    }
+
+    /**
+     * Idempotent POST_NOTIFICATIONS request used only on
+     * Android 13+ where the permission is a runtime gate. On
+     * older API levels notifications post unconditionally.
+     */
+    private fun maybeRequestPostNotificationsPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        val granted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.POST_NOTIFICATIONS,
+        ) == PackageManager.PERMISSION_GRANTED
+        if (granted) return
+        notificationsPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     /**

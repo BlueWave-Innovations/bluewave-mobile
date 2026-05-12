@@ -253,37 +253,65 @@ class BluetoothSessionManager(
             Log.w(TAG, "cancelDiscovery() denied by permissions", e)
         }
 
-        // Symmetric with the accept side, which calls
-        // `listenUsingInsecureRfcommWithServiceRecord` — both endpoints
-        // must agree on the secure/insecure flag or the RFCOMM
-        // negotiation fails and the connect throws IOException
-        // ("read failed, socket might closed or timeout, read ret: -1"
-        // on the kernel side). The previous secure call here was a
-        // leftover from before the no-pairing switch and was the root
-        // cause of "messages don't pass between phones".
-        val socket: BluetoothSocket = try {
-            device.createInsecureRfcommSocketToServiceRecord(BluetoothConstants.APP_UUID)
-        } catch (e: IOException) {
-            Log.w(TAG, "createInsecureRfcommSocketToServiceRecord failed for $key: ${e.message}")
-            return
-        } catch (e: SecurityException) {
-            Log.w(TAG, "createInsecureRfcommSocketToServiceRecord denied by permissions for $key", e)
-            return
-        }
+        // Retry loop with exponential back-off. The first attempt
+        // runs immediately; on transient IOException we wait
+        // `CONNECT_RETRY_BACKOFFS_MS[attempt-1]` and try again. This
+        // closes the cold-launch race in which the peer's accept
+        // loop is still booting when our outbound connect lands.
+        // SecurityException is treated as terminal — retrying a
+        // permission denial would just spin the radio for nothing.
+        val backoffs = BluetoothConstants.CONNECT_RETRY_BACKOFFS_MS
+        val maxAttempts = backoffs.size + 1
+        var attempt = 0
+        while (attempt < maxAttempts) {
+            attempt++
+            // Bail early if a concurrent inbound `accept()` already
+            // attached a session for this MAC while we were waiting
+            // on the back-off — calling `connect()` on top of it
+            // would just create a stray socket we'd have to evict.
+            sessions[key]?.let { return }
 
-        try {
-            withContext(Dispatchers.IO) { socket.connect() }
-        } catch (e: IOException) {
-            Log.w(TAG, "connect() failed for $key: ${e.message}")
-            try { socket.close() } catch (_: IOException) { /* best effort */ }
-            return
-        } catch (e: SecurityException) {
-            Log.w(TAG, "connect() denied by permissions for $key", e)
-            try { socket.close() } catch (_: IOException) { /* best effort */ }
-            return
-        }
+            // Symmetric with the accept side, which calls
+            // `listenUsingInsecureRfcommWithServiceRecord` — both
+            // endpoints must agree on the secure/insecure flag or
+            // the RFCOMM negotiation fails and the connect throws
+            // IOException ("read failed, socket might closed or
+            // timeout, read ret: -1" on the kernel side). The
+            // previous secure call here was a leftover from before
+            // the no-pairing switch and was the root cause of
+            // "messages don't pass between phones".
+            val socket: BluetoothSocket = try {
+                device.createInsecureRfcommSocketToServiceRecord(BluetoothConstants.APP_UUID)
+            } catch (e: IOException) {
+                Log.w(TAG, "createInsecureRfcommSocketToServiceRecord failed for $key (attempt $attempt/$maxAttempts): ${e.message}")
+                if (attempt < maxAttempts) {
+                    delay(backoffs[attempt - 1])
+                    continue
+                }
+                return
+            } catch (e: SecurityException) {
+                Log.w(TAG, "createInsecureRfcommSocketToServiceRecord denied by permissions for $key", e)
+                return
+            }
 
-        attachSession(socket)
+            try {
+                withContext(Dispatchers.IO) { socket.connect() }
+                attachSession(socket)
+                return
+            } catch (e: IOException) {
+                Log.w(TAG, "connect() failed for $key (attempt $attempt/$maxAttempts): ${e.message}")
+                try { socket.close() } catch (_: IOException) { /* best effort */ }
+                if (attempt < maxAttempts) {
+                    delay(backoffs[attempt - 1])
+                    continue
+                }
+                return
+            } catch (e: SecurityException) {
+                Log.w(TAG, "connect() denied by permissions for $key", e)
+                try { socket.close() } catch (_: IOException) { /* best effort */ }
+                return
+            }
+        }
     }
 
     override suspend fun send(macAddress: String, payload: ByteArray): Boolean {

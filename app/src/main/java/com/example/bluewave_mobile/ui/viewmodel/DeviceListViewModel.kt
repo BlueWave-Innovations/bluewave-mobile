@@ -455,12 +455,16 @@ class DeviceListViewModel(
             //      and we can prompt then.
             //  * SDP says yes                              → candidate
             //  * SDP says no, unpaired                     → install suggestion
-            //  * everything else (probe pending)           → candidate
-            //    (optimistic; flips to install-suggest only when
-            //    a definitive `false` lands AND the peer is
-            //    unpaired).
+            //  * probe pending OR no answer within the SDP
+            //    timeout                                   → install suggestion
+            //    (strict mode — the prober commits the
+            //    entry to `false` after
+            //    [BluetoothConstants.SDP_PROBE_TIMEOUT_MS],
+            //    so this branch only ever fires inside that
+            //    short window and flips to a candidate the
+            //    moment a positive `ACTION_UUID` lands).
             val keepAsCandidate: Boolean =
-                peer.isPaired || hasApp == true || hasApp == null
+                peer.isPaired || hasApp == true
             if (keepAsCandidate) {
                 candidateRows += ContactRow.StartChatCandidate(
                     displayName = name,

@@ -7,6 +7,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import androidx.core.content.ContextCompat
 import com.example.bluewave_mobile.data.BluetoothDeviceInfo
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -78,7 +79,17 @@ class BluetoothDiscovery(
             addAction(BluetoothDevice.ACTION_FOUND)
             addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
         }
-        context.registerReceiver(receiver, filter)
+        // ACTION_FOUND / ACTION_DISCOVERY_FINISHED are emitted by
+        // the platform Bluetooth process, so the receiver MUST be
+        // exported on Android 13+ — an unexported registration
+        // would silently never fire and discovery would never
+        // surface any device.
+        ContextCompat.registerReceiver(
+            context,
+            receiver,
+            filter,
+            ContextCompat.RECEIVER_EXPORTED,
+        )
 
         // Cancel any in-flight discovery before kicking a new one off.
         if (localAdapter.isDiscovering) {

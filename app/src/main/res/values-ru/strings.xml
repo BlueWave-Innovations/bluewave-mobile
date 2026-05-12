@@ -18,6 +18,13 @@
     <string name="permission_message">BlueWave нужен доступ к Bluetooth, чтобы находить устройства поблизости и обмениваться сообщениями по локальному радиоканалу.</string>
     <string name="permission_grant">Разрешить</string>
     <string name="permission_combined_cd">Нужно разрешение на Bluetooth. Разрешите доступ, чтобы находить устройства поблизости и обмениваться сообщениями.</string>
+    <string name="permission_notifications_label">Показ уведомления «BlueWave слушает» (нужно, чтобы сообщения продолжали приходить в фоне)</string>
+
+    <!-- Foreground service / persistent listener notification -->
+    <string name="bt_service_channel_name">Слушатель BlueWave</string>
+    <string name="bt_service_channel_description">Держит BlueWave онлайн, чтобы сообщения от собеседников приходили в фоне.</string>
+    <string name="bt_service_notification_title">BlueWave</string>
+    <string name="bt_service_notification_text">Слушаем сообщения</string>
 
     <!-- Chat screen -->
     <string name="chat_title">Чат</string>

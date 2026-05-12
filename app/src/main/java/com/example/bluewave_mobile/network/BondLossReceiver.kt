@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.util.Log
+import androidx.core.content.ContextCompat
 import com.example.bluewave_mobile.data.MessageRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -78,7 +79,16 @@ class BondLossReceiver(
             addAction(ACTION_KEY_MISSING)
             addAction(ACTION_ENCRYPTION_CHANGE)
         }
-        context.registerReceiver(this, filter)
+        // Both broadcasts are emitted by the platform Bluetooth
+        // process, so the receiver MUST be exported on Android 13+.
+        // An unexported registration would silently never fire and
+        // bond-loss recovery would stall.
+        ContextCompat.registerReceiver(
+            context,
+            this,
+            filter,
+            ContextCompat.RECEIVER_EXPORTED,
+        )
     }
 
     /**

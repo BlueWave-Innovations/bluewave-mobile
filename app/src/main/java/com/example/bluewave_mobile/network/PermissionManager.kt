@@ -86,4 +86,24 @@ object PermissionManager {
                 PackageManager.PERMISSION_GRANTED
         }.toTypedArray()
     }
+
+    /**
+     * Whether the user has granted the
+     * [Manifest.permission.POST_NOTIFICATIONS] runtime permission.
+     *
+     * On API 32 and below the permission does not exist as a
+     * runtime concept — notifications are always allowed unless the
+     * user disabled them through the system Settings app — so this
+     * helper returns `true` to keep callers free of API-level
+     * branching. The result is consumed by [MainActivity] to decide
+     * whether to fire the system permission dialog the first time
+     * the user opens the device list.
+     */
+    fun hasPostNotificationsPermission(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
+        return ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.POST_NOTIFICATIONS,
+        ) == PackageManager.PERMISSION_GRANTED
+    }
 }

@@ -1,0 +1,17 @@
+<!--
+    Monochrome white-on-transparent vector used as the small icon
+    in the foreground-service notification. Android tints this
+    icon with the system "accent" colour on the status bar so the
+    fill MUST be solid white — multi-colour drawables collapse to
+    a square white blob on most OEMs.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="@android:color/white">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,2C6.48,2 2,6.48 2,12c0,1.7 0.43,3.3 1.18,4.7L2,22l5.45,-1.14C8.83,21.59 10.37,22 12,22c5.52,0 10,-4.48 10,-10S17.52,2 12,2zM7.5,11h2v2h-2V11zM11,11h2v2h-2V11zM14.5,11h2v2h-2V11z" />
+</vector>

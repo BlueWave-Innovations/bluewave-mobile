@@ -18,6 +18,13 @@
     <string name="permission_message">BlueWave needs Bluetooth access to discover nearby peers and exchange messages over a local radio link.</string>
     <string name="permission_grant">Grant permission</string>
     <string name="permission_combined_cd">Bluetooth permission required. Grant Bluetooth access to discover nearby peers and exchange messages.</string>
+    <string name="permission_notifications_label">Show \"BlueWave is listening\" notification (keeps message delivery alive in the background)</string>
+
+    <!-- Foreground service / persistent listener notification -->
+    <string name="bt_service_channel_name">BlueWave listener</string>
+    <string name="bt_service_channel_description">Keeps BlueWave online so messages from peers can be delivered in the background.</string>
+    <string name="bt_service_notification_title">BlueWave</string>
+    <string name="bt_service_notification_text">Listening for messages</string>
 
     <!-- Chat screen -->
     <string name="chat_title">Chat</string>
