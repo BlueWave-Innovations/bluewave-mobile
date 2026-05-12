@@ -41,6 +41,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -51,6 +52,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bluewave_mobile.R
 import com.example.bluewave_mobile.data.BuiltInFolder
 import com.example.bluewave_mobile.data.ChatFolderEntity
+import com.example.bluewave_mobile.network.BlueWaveBluetoothService
 import com.example.bluewave_mobile.ui.components.ContactsList
 import com.example.bluewave_mobile.ui.components.EmptyStateView
 import com.example.bluewave_mobile.ui.intent.DeviceListIntent
@@ -113,14 +115,23 @@ fun DeviceListScreen(
     val permissions = rememberBluetoothPermissionState()
     val snackbarHostState = remember { SnackbarHostState() }
     var searchQuery: String by rememberSaveable { mutableStateOf("") }
+    val context = LocalContext.current
 
     // Auto-start the first scan once permissions come back as granted —
     // the user shouldn't have to tap the FAB after dismissing the
-    // permission dialog.
+    // permission dialog. The freshly-granted BLUETOOTH_CONNECT also
+    // unblocks the `connectedDevice` foreground service which
+    // BlueWaveApplication tried to start at cold launch but the OS
+    // rejected because of the missing runtime permission — re-trigger
+    // it here so the listener notification appears the moment the
+    // user dismisses the system permission dialog.
     LaunchedEffect(permissions.allGranted) {
-        if (permissions.allGranted && uiState is DeviceListUiState.Idle) {
-            viewModel.handleIntent(DeviceListIntent.PermissionsGranted)
-            viewModel.handleIntent(DeviceListIntent.StartScan)
+        if (permissions.allGranted) {
+            BlueWaveBluetoothService.start(context)
+            if (uiState is DeviceListUiState.Idle) {
+                viewModel.handleIntent(DeviceListIntent.PermissionsGranted)
+                viewModel.handleIntent(DeviceListIntent.StartScan)
+            }
         }
     }
 

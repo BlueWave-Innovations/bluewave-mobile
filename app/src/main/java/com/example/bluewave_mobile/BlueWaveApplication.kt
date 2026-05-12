@@ -8,8 +8,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.util.Log
+import androidx.core.content.ContextCompat
 import com.example.bluewave_mobile.di.AppContainer
 import com.example.bluewave_mobile.network.BluetoothConstants
+import com.example.bluewave_mobile.network.BlueWaveBluetoothService
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -125,6 +127,18 @@ class BlueWaveApplication : Application() {
         // Register the SDP record receiver up-front so the device-list
         // screen can probe peers as soon as the user taps "Scan".
         container.sdpProber.start()
+
+        // Bring the foreground service online so Android stops
+        // reclaiming the process between user sessions. The service
+        // body doesn't own any state — the accept-loop, SDP
+        // receiver and the auto-reconnect machinery already live
+        // on `applicationScope` — it exists purely to anchor the
+        // persistent "BlueWave — listening for messages"
+        // notification that tells the OS "don't kill this process".
+        // Without the FGS Android 13+ will tear the process down
+        // a few minutes after the last visible activity goes away
+        // and inbound RFCOMM connections start silently failing.
+        BlueWaveBluetoothService.start(this)
 
         // Seed the built-in chat folders ("Work" / "Family") on
         // first launch so the chip row above the device list has
@@ -259,10 +273,16 @@ class BlueWaveApplication : Application() {
         // its own — this is purely for the outbound side so two
         // phones rediscover each other instantly without the user
         // having to tap into a chat.
-        @Suppress("UnspecifiedRegisterReceiverFlag")
-        registerReceiver(
+        // ACTION_STATE_CHANGED is dispatched by the platform
+        // Bluetooth process, so the receiver MUST be exported on
+        // Android 13+ — an unexported registration would silently
+        // never fire and the auto-reconnect fan-out would stall
+        // after every adapter on/off flip.
+        ContextCompat.registerReceiver(
+            this,
             bluetoothStateReceiver,
             IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED),
+            ContextCompat.RECEIVER_EXPORTED,
         )
 
         // Re-run the auto-connect probe whenever a session is

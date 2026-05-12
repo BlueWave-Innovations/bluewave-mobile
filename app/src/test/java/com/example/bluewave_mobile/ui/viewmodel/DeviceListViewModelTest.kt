@@ -227,20 +227,103 @@ class DeviceListViewModelTest {
             presence = mapOf(
                 "AA" to true,
                 "BB" to false,
-                // CC is unknown — should land in candidates per the
-                // optimistic default.
+                // CC is unknown — under the strict SDP filter that
+                // mirrors `BlueWaveSdpProber`'s 2 s timeout, every
+                // unbonded peer without a positive SDP answer
+                // lands in "No app yet". A late `ACTION_UUID`
+                // would flip the cell to a candidate on the next
+                // emission; the projection itself is pure.
             ),
         )
 
-        // 1) Existing chat for DD, then 2) candidates (AA + CC),
-        // then 3) install suggestion for BB.
+        // 1) Existing chat for DD, then 2) candidate (AA only),
+        // then 3) install suggestions for BB and CC.
         assertEquals(4, rows.size)
         assertTrue(rows[0] is ContactRow.ExistingChat)
         assertEquals("DD", rows[0].macAddress)
-        val middle = rows.subList(1, 3)
-        assertTrue(middle.all { it is ContactRow.StartChatCandidate })
-        assertEquals(setOf("AA", "CC"), middle.map { it.macAddress }.toSet())
-        assertTrue(rows[3] is ContactRow.InstallSuggestion)
-        assertEquals("BB", rows[3].macAddress)
+        assertTrue(rows[1] is ContactRow.StartChatCandidate)
+        assertEquals("AA", rows[1].macAddress)
+        val tail = rows.subList(2, 4)
+        assertTrue(tail.all { it is ContactRow.InstallSuggestion })
+        assertEquals(setOf("BB", "CC"), tail.map { it.macAddress }.toSet())
+    }
+
+    @Test
+    fun `buildRows hides bonded peers with a negative SDP verdict`() = runTest {
+        // A bonded headphone / speaker / smartwatch should not leak
+        // into either the "Can write" or the "Install BlueWave"
+        // section once the SDP probe definitively says "no
+        // BlueWave UUID". Routing it into "Install BlueWave"
+        // would be misleading (you can't install BlueWave on
+        // AirPods), and routing it into candidates was the bug
+        // that prompted this regression test.
+        val discovery = mockk<BluetoothDiscovery>(relaxed = true)
+        every { discovery.bondedDevices() } returns emptyList()
+        every { discovery.discoverDevices() } returns flowOf()
+        val vm = trackedVm(discovery)
+
+        val rows = vm.buildRows(
+            peers = mapOf(
+                "AUDIO" to BluetoothDeviceInfo(
+                    name = "AirPods",
+                    macAddress = "AUDIO",
+                    isPaired = true,
+                ),
+                "PHONE" to BluetoothDeviceInfo(
+                    name = "Alice's Pixel",
+                    macAddress = "PHONE",
+                    isPaired = true,
+                ),
+                "GHOST" to BluetoothDeviceInfo(
+                    name = "Bob",
+                    macAddress = "GHOST",
+                    isPaired = false,
+                ),
+            ),
+            conversations = emptyList(),
+            presence = mapOf(
+                "AUDIO" to false, // SDP committed "no BlueWave"
+                "PHONE" to true,  // SDP confirmed BlueWave
+                "GHOST" to false, // unbonded, no BlueWave
+            ),
+        )
+
+        // Only PHONE (candidate) and GHOST (install) should appear.
+        // AUDIO must be filtered out of the rows entirely.
+        assertEquals(2, rows.size)
+        assertEquals(
+            setOf("PHONE", "GHOST"),
+            rows.mapTo(HashSet()) { it.macAddress },
+        )
+        assertTrue(rows.any { it is ContactRow.StartChatCandidate && it.macAddress == "PHONE" })
+        assertTrue(rows.any { it is ContactRow.InstallSuggestion && it.macAddress == "GHOST" })
+    }
+
+    @Test
+    fun `buildRows keeps bonded peers while the SDP probe is still pending`() = runTest {
+        // While the 2 s SDP probe window is still open, bonded peers
+        // get the optimistic benefit of the doubt: the user
+        // explicitly paired them, so we err on the side of letting
+        // them land in "Can write" until the probe definitively
+        // answers "no".
+        val discovery = mockk<BluetoothDiscovery>(relaxed = true)
+        every { discovery.bondedDevices() } returns emptyList()
+        every { discovery.discoverDevices() } returns flowOf()
+        val vm = trackedVm(discovery)
+
+        val rows = vm.buildRows(
+            peers = mapOf(
+                "BONDED" to BluetoothDeviceInfo(
+                    name = "Maybe BlueWave",
+                    macAddress = "BONDED",
+                    isPaired = true,
+                ),
+            ),
+            conversations = emptyList(),
+            presence = emptyMap(), // probe still pending
+        )
+
+        assertEquals(1, rows.size)
+        assertTrue(rows[0] is ContactRow.StartChatCandidate)
     }
 }

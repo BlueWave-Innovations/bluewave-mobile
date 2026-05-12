@@ -10,9 +10,16 @@ import android.content.IntentFilter
 import android.os.ParcelUuid
 import android.os.Parcelable
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Resolves "does this Bluetooth peer run BlueWave?" by inspecting the
@@ -30,6 +37,15 @@ import kotlinx.coroutines.flow.update
  *  3. The internal [BroadcastReceiver] catches that broadcast, checks
  *     whether [BluetoothConstants.APP_UUID] is in the published list
  *     and updates [appPresence] accordingly.
+ *  4. To prevent the device-list UI from sitting forever on the
+ *     optimistic "probe still pending" fallback (Android's SDP
+ *     cache can drop an inquiry on the floor when the peer is out
+ *     of range or refused the probe), every [probe] schedules a
+ *     fallback coroutine that commits the entry to `false` after
+ *     [BluetoothConstants.SDP_PROBE_TIMEOUT_MS] if the broadcast
+ *     never lands. A late `ACTION_UUID` can still flip the entry
+ *     back to `true` — the receiver-driven path remains
+ *     authoritative.
  *
  * UI consumes [appPresence] reactively via Flow and decides whether a
  * peer should land in the "Can start chat" section (BlueWave detected)
@@ -43,6 +59,8 @@ import kotlinx.coroutines.flow.update
 class BlueWaveSdpProber(
     private val context: Context,
     private val adapter: BluetoothAdapter?,
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+    private val probeTimeoutMs: Long = BluetoothConstants.SDP_PROBE_TIMEOUT_MS,
 ) {
 
     private val _appPresence: MutableStateFlow<Map<String, Boolean>> =
@@ -51,9 +69,19 @@ class BlueWaveSdpProber(
     /**
      * Reactive map `MAC (uppercase) → has-BlueWave-uuid`. Absence
      * means "not probed yet"; consumers should treat that as
-     * "unknown" rather than "no app".
+     * "unknown" rather than "no app". After
+     * [BluetoothConstants.SDP_PROBE_TIMEOUT_MS] the entry is
+     * guaranteed to be present (committed to `false` when the
+     * broadcast never lands).
      */
     val appPresence: StateFlow<Map<String, Boolean>> = _appPresence
+
+    /**
+     * Tracks the in-flight timeout coroutine for each MAC so a
+     * back-to-back call to [probe] doesn't spawn duplicate jobs
+     * (which would race when committing `false`).
+     */
+    private val pendingTimeouts: MutableMap<String, Job> = ConcurrentHashMap()
 
     private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(receiverContext: Context, intent: Intent) {
@@ -66,6 +94,10 @@ class BlueWaveSdpProber(
                 (p as? ParcelUuid)?.uuid == BluetoothConstants.APP_UUID
             } ?: false
             val mac = device.address?.uppercase() ?: return
+            // A definitive answer from the platform supersedes the
+            // pending timeout — cancel it so we don't overwrite a
+            // late "yes, BlueWave" with a stale "false".
+            pendingTimeouts.remove(mac)?.cancel()
             _appPresence.update { current -> current + (mac to hasOurUuid) }
         }
     }
@@ -93,6 +125,11 @@ class BlueWaveSdpProber(
         } finally {
             registered = false
         }
+        // Cancel any in-flight timeouts so the prober teardown is
+        // total — otherwise a timeout coroutine could fire after
+        // teardown and dirty `_appPresence` with stale data.
+        pendingTimeouts.values.forEach { it.cancel() }
+        pendingTimeouts.clear()
     }
 
     /**
@@ -111,6 +148,10 @@ class BlueWaveSdpProber(
      */
     fun markPresent(macAddress: String) {
         val mac = macAddress.uppercase()
+        // A live RFCOMM session is the strongest possible signal
+        // — cancel any pending fallback timeout for this MAC so we
+        // don't end up overwriting a true with a false.
+        pendingTimeouts.remove(mac)?.cancel()
         _appPresence.update { current ->
             if (current[mac] == true) current else current + (mac to true)
         }
@@ -121,9 +162,17 @@ class BlueWaveSdpProber(
      * deliver the result through `ACTION_UUID`. Cheap when the SDP
      * cache already holds the record; the manager debounces repeat
      * probes for the same MAC by reusing the in-memory result.
+     *
+     * On every call we also arm a single fallback coroutine: if
+     * [BluetoothConstants.SDP_PROBE_TIMEOUT_MS] elapses without a
+     * matching `ACTION_UUID` broadcast, the entry is committed to
+     * `false`. A late broadcast can still flip the entry back to
+     * `true` — strictly upgrading from "no app" to "has app" is
+     * always safe.
      */
     @SuppressLint("MissingPermission")
     fun probe(device: BluetoothDevice) {
+        val mac = device.address?.uppercase() ?: return
         // `fetchUuidsWithSdp` is asynchronous; the result lands via the
         // ACTION_UUID broadcast handled above. Guarding against
         // SecurityException here keeps the call safe even if
@@ -133,7 +182,13 @@ class BlueWaveSdpProber(
             device.fetchUuidsWithSdp()
         } catch (e: SecurityException) {
             Log.w(TAG, "fetchUuidsWithSdp denied for ${device.address}", e)
+            // Permission gone → we can't tell whether the peer runs
+            // BlueWave or not, so leave the entry untouched. The UI
+            // permission gate will block any flow that needs SDP
+            // anyway.
+            return
         }
+        scheduleTimeout(mac)
     }
 
     /**
@@ -152,6 +207,32 @@ class BlueWaveSdpProber(
             return
         }
         probe(device)
+    }
+
+    /**
+     * Arms a single deferred "commit to `false`" job for [mac] so the
+     * UI never sits forever on the optimistic "probe pending" path.
+     * If a job is already pending we leave it alone — duplicate
+     * timeouts would race with each other and flap the entry.
+     */
+    private fun scheduleTimeout(mac: String) {
+        if (pendingTimeouts.containsKey(mac)) return
+        val job = scope.launch {
+            try {
+                delay(probeTimeoutMs)
+                _appPresence.update { current ->
+                    // Only fill in the entry if the broadcast never
+                    // arrived. A late `ACTION_UUID` (true) MUST win
+                    // over our timeout-driven `false` — and once
+                    // any value is set, the receiver path owns
+                    // future transitions.
+                    if (current.containsKey(mac)) current else current + (mac to false)
+                }
+            } finally {
+                pendingTimeouts.remove(mac)
+            }
+        }
+        pendingTimeouts[mac] = job
     }
 
     private companion object {

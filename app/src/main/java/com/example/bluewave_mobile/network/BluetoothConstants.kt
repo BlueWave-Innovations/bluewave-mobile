@@ -60,4 +60,42 @@ internal object BluetoothConstants {
      * adapter stays disabled for minutes.
      */
     const val ACCEPT_RETRY_DELAY_MS: Long = 2_000L
+
+    /**
+     * Exponential back-off schedule applied between successive
+     * `socket.connect()` retries for a single outbound connection
+     * attempt.
+     *
+     * Order is `[after-attempt-1, after-attempt-2, after-attempt-3]`,
+     * which yields a worst-case 1 + 3 + 8 = 12 s window during which
+     * a peer that just came online can race in. This closes the
+     * cold-launch race where two BlueWave phones light up their
+     * accept loops at slightly different times and the very first
+     * outbound connect lands while the remote `listenUsingRfcomm`
+     * hasn't published its SDP record yet.
+     *
+     * Tuned to match the canonical "instant messenger" UX: under a
+     * second on the happy path, ~12 s upper bound before we give up
+     * and fall back to the per-`sessionDetached` reconnect loop in
+     * [com.example.bluewave_mobile.BlueWaveApplication].
+     */
+    val CONNECT_RETRY_BACKOFFS_MS: List<Long> = listOf(1_000L, 3_000L, 8_000L)
+
+    /**
+     * Hard deadline for a [BluetoothDevice.fetchUuidsWithSdp] probe.
+     *
+     * Android's SDP cache lives in the platform Bluetooth process
+     * and can hold a stale "service not found" entry for a paired
+     * peer indefinitely. To keep the device-list UX deterministic
+     * we treat any probe that does not deliver an `ACTION_UUID`
+     * broadcast within [SDP_PROBE_TIMEOUT_MS] as a definitive "this
+     * peer does NOT run BlueWave" answer — the row drops into the
+     * "No app yet" section and the install-suggestion CTA lights up.
+     *
+     * 2 s matches the platform-side BR/EDR inquiry budget; longer
+     * deadlines feel laggy on-device (the user already saw the row
+     * appear and expects the section badge to settle immediately),
+     * shorter ones flap on slow devices.
+     */
+    const val SDP_PROBE_TIMEOUT_MS: Long = 2_000L
 }

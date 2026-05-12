@@ -27,6 +27,29 @@
         BlueWave touches.
     -->
 
+    <!--
+        Foreground service plumbing — without these the accept-loop in
+        BluetoothSessionManager dies the moment Android reclaims the
+        process. `connectedDevice` is the correct FGS type for a
+        peer-to-peer BT messenger and ships with its own dedicated
+        runtime permission on API 34+ (`FOREGROUND_SERVICE_CONNECTED_DEVICE`).
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE"
+        tools:targetApi="34" />
+
+    <!--
+        Android 13+ runtime permission required to show the persistent
+        "BlueWave is listening" notification that anchors the foreground
+        service. Denying this permission does NOT stop the FGS — Android
+        keeps the service alive, the user just doesn't see the
+        notification. The app gracefully degrades in that case.
+    -->
+    <uses-permission
+        android:name="android.permission.POST_NOTIFICATIONS"
+        tools:targetApi="33" />
+
     <!-- Hardware feature declaration for Bluetooth. -->
     <uses-feature
         android:name="android.hardware.bluetooth"
@@ -52,6 +75,20 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            Foreground service that keeps the RFCOMM accept-loop alive
+            in the background. `foregroundServiceType` must match the
+            value passed to ServiceCompat.startForeground at runtime
+            (Android 14+ rejects any mismatch with a SecurityException).
+            `exported=false` because the service is internal — no other
+            process should be able to start it.
+        -->
+        <service
+            android:name=".network.BlueWaveBluetoothService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
 
         <!--
             Exposes the staged BlueWave APK to the system Bluetooth
