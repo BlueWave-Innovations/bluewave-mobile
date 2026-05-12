@@ -1,10 +1,14 @@
 package com.example.bluewave_mobile
 
 import android.app.Activity
+import android.bluetooth.BluetoothAdapter
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,14 +18,19 @@ import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.bluewave_mobile.preferences.AppLanguage
 import com.example.bluewave_mobile.preferences.ThemeMode
@@ -58,6 +67,24 @@ class MainActivity : ComponentActivity() {
             val themeMode by prefs.themeMode.collectAsStateWithLifecycle(initialValue = ThemeMode.SYSTEM)
             val appLanguage by prefs.appLanguage.collectAsStateWithLifecycle(initialValue = AppLanguage.SYSTEM)
             val context = LocalContext.current
+
+            // BlueWave is fundamentally a Bluetooth messenger — if
+            // the user's adapter is off, the entire app degrades to
+            // a local message-history viewer. We prompt the system
+            // ACTION_REQUEST_ENABLE dialog as soon as the user
+            // returns to the foreground with the adapter off, then
+            // again on every subsequent ON_RESUME (e.g. user toggled
+            // BT off in quick settings while inside the app). We
+            // never auto-loop on the dialog dismissal: the user gets
+            // to deny it for the current session, and the next
+            // ON_RESUME edge will re-ask.
+            //
+            // Note: launching the system intent does NOT require
+            // BLUETOOTH_CONNECT runtime permission on API 33+ —
+            // the launcher is a SystemUI activity, so we don't have
+            // to chain it behind PermissionGateView.
+            EnsureBluetoothEnabled()
+
             // Drive the per-app locale picker. The activity is a
             // `ComponentActivity`, not an `AppCompatActivity`, so
             // `AppCompatDelegate.setApplicationLocales` does NOT
@@ -154,5 +181,73 @@ fun AdaptiveAppRoot() {
         } else {
             MainScaffold()
         }
+    }
+}
+
+/**
+ * Side-effect composable that fires the system
+ * `BluetoothAdapter.ACTION_REQUEST_ENABLE` dialog whenever the user
+ * brings BlueWave back to the foreground with the adapter off.
+ *
+ * Hooked into the root content so it runs once per
+ * [androidx.compose.runtime.Composer] instance and listens to the
+ * activity's lifecycle. The dialog itself is fully system-owned, so
+ * we just observe its result through the activity-result launcher
+ * to flip a local "user just decided" flag and avoid re-firing the
+ * dialog inside the same resumed slice (which would create a
+ * dialog-spam loop if the user picked "Deny"). The flag clears on
+ * every full ON_STOP → ON_RESUME transition so a subsequent return
+ * to the foreground asks again — that matches the user's request
+ * "if Bluetooth is off the program requests everything necessary
+ * so that messages are delivered constantly".
+ *
+ * Returns no UI of its own — it is a pure side-effect node.
+ */
+@Composable
+private fun EnsureBluetoothEnabled() {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val container = remember(context) {
+        (context.applicationContext as BlueWaveApplication).container
+    }
+    val adapter: BluetoothAdapter? = container.bluetoothAdapter
+
+    // Per-resumption guard: once the launcher closes (whether the
+    // user approved or denied) we don't re-prompt until the activity
+    // goes through a full STOP → RESUME cycle. Without this the
+    // launcher's onResult would arrive, the next recomposition would
+    // still see `adapter.isEnabled == false`, and we would re-prompt
+    // immediately — the exact infinite-dialog loop the comment
+    // above warns against.
+    var alreadyPromptedThisResume by remember { mutableStateOf(false) }
+
+    val enableLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+    ) {
+        // We don't actually care about the resultCode — the next
+        // adapter.isEnabled probe is the source of truth. We just
+        // need the lambda to exist so the launcher is wired up.
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> {
+                    if (adapter == null) return@LifecycleEventObserver
+                    if (alreadyPromptedThisResume) return@LifecycleEventObserver
+                    if (adapter.isEnabled) return@LifecycleEventObserver
+                    alreadyPromptedThisResume = true
+                    runCatching {
+                        enableLauncher.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
+                    }
+                }
+                Lifecycle.Event.ON_STOP -> {
+                    alreadyPromptedThisResume = false
+                }
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 }

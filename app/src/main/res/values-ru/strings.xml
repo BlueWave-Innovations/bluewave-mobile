@@ -131,7 +131,6 @@
     <string name="folders_delete_dialog_message">Метка будет снята со всех контактов. Сообщения останутся.</string>
     <string name="folders_member_picker_title">Выберите контакты</string>
     <string name="folders_chip_all">Все</string>
-    <string name="folders_chip_nearby">Рядом</string>
     <string name="folders_chip_no_app">Без приложения</string>
     <string name="folders_assign_action">Добавить в папку</string>
     <string name="folders_empty_section">В этой папке пока нет контактов.</string>
@@ -171,8 +170,6 @@
     <string name="qr_share_invalid">Это не QR-код контакта BlueWave.</string>
 
     <!-- Редизайн чата -->
-    <string name="chat_status_online">В сети через Bluetooth</string>
-    <string name="chat_status_offline">Не в сети</string>
     <string name="chat_date_today">Сегодня</string>
     <string name="chat_date_yesterday">Вчера</string>
 

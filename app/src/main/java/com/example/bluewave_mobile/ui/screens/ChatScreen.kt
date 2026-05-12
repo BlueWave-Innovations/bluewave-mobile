@@ -78,19 +78,15 @@ import java.util.Locale
  * sending plaintext.
  *
  * Step 28 hoisted decryption + send orchestration into [ChatViewModel].
- * Phase 5 redesigned the top bar:
- *  * 40dp avatar (initial letter on a tinted circle, online dot on the
- *    bottom-right when an RFCOMM session is attached);
- *  * display name + handle stacked to the right of the avatar;
- *  * "Online via Bluetooth" / "Offline" badge under the name;
- *  * E2EE lock indicator pinned to the trailing edge.
+ * The top bar shows the peer's avatar, display name + handle, and the
+ * E2EE lock indicator. The online/offline badge was removed to keep the
+ * UX focused on message delivery rather than presence guesses.
  *
  * The composable now only:
  *
  *  * subscribes to [ChatViewModel.messages] (already-decrypted),
- *    [ChatViewModel.uiState] (MVI screen state),
- *    [ChatViewModel.peerProfile] (cached `PROFILE_METADATA`), and
- *    [ChatViewModel.isPeerOnline] (live RFCOMM presence);
+ *    [ChatViewModel.uiState] (MVI screen state) and
+ *    [ChatViewModel.peerProfile] (cached `PROFILE_METADATA`);
  *  * forwards user actions through [ChatIntent]; and
  *  * surfaces bond loss / restore as a snackbar by observing
  *    [ChatUiState.Success.isPeerPaused].
@@ -109,7 +105,6 @@ fun ChatScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val bannerVisible by viewModel.bondLossBannerVisible.collectAsStateWithLifecycle()
     val peerProfile by viewModel.peerProfile.collectAsStateWithLifecycle()
-    val isPeerOnline by viewModel.isPeerOnline.collectAsStateWithLifecycle()
 
     var draft: String by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
@@ -143,13 +138,6 @@ fun ChatScreen(
             val displayName: String = peerProfile?.displayName?.takeUnless(String::isBlank)
                 ?: stringResource(id = R.string.chat_title)
             val handle: String? = peerProfile?.handle?.takeUnless(String::isBlank)
-            val statusText: String = stringResource(
-                id = if (isPeerOnline) {
-                    R.string.chat_status_online
-                } else {
-                    R.string.chat_status_offline
-                },
-            )
             val chatWithCd = stringResource(id = R.string.chat_with_cd, displayName)
             TopAppBar(
                 title = {
@@ -162,7 +150,6 @@ fun ChatScreen(
                     ) {
                         ChatAvatar(
                             displayName = displayName,
-                            online = isPeerOnline,
                         )
                         Column(
                             modifier = Modifier
@@ -174,24 +161,11 @@ fun ChatScreen(
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
                             )
-                            Text(
-                                text = handle ?: statusText,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (handle == null && isPeerOnline) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                            )
                             if (handle != null) {
                                 Text(
-                                    text = statusText,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = if (isPeerOnline) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    },
+                                    text = handle,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
@@ -471,14 +445,11 @@ private fun DateSeparator(
  * Renders the first non-blank character of [displayName] uppercased on
  * a tinted circle (the same styling as the contact-list avatars) so
  * the chat screen feels like a continuation of the row the user just
- * tapped. When [online] is `true`, a small primary-coloured dot is
- * pinned to the bottom-right corner mirroring
- * [com.example.bluewave_mobile.ui.components.ContactsList].
+ * tapped.
  */
 @Composable
 private fun ChatAvatar(
     displayName: String,
-    online: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val initial: String = displayName
@@ -499,15 +470,6 @@ private fun ChatAvatar(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.SemiBold,
         )
-        if (online) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(12.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
-            )
-        }
     }
 }
 

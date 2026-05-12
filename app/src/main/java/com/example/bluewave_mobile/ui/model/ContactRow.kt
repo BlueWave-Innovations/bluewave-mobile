@@ -39,8 +39,6 @@ sealed interface ContactRow {
      * @param unreadCount Number of inbound messages that have not yet
      *                    been opened by the local user. `0` hides the
      *                    badge in the row composable.
-     * @param isOnline `true` while [com.example.bluewave_mobile.network.MessageTransport]
-     *                 holds a live RFCOMM session to this peer.
      */
     data class ExistingChat(
         override val displayName: String,
@@ -48,7 +46,6 @@ sealed interface ContactRow {
         val lastMessagePreview: String,
         val lastMessageTimestamp: Long,
         val unreadCount: Int,
-        val isOnline: Boolean,
     ) : ContactRow
 
     /**

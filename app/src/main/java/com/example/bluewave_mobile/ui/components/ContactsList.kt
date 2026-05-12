@@ -178,7 +178,6 @@ private fun ExistingChatRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Avatar(
-            online = row.isOnline,
             badgeText = row.displayName.firstOrNull()?.uppercase() ?: "?",
         )
         Spacer(Modifier.width(12.dp))
@@ -423,7 +422,7 @@ private fun GroupAvatarTile() {
 }
 
 @Composable
-private fun Avatar(online: Boolean, badgeText: String) {
+private fun Avatar(badgeText: String) {
     Box(
         modifier = Modifier
             .size(40.dp)
@@ -437,15 +436,6 @@ private fun Avatar(online: Boolean, badgeText: String) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.SemiBold,
         )
-        if (online) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(12.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
-            )
-        }
     }
 }
 
@@ -478,7 +468,6 @@ private fun ContactsListPreview() {
                     lastMessagePreview = "Готово, забрал. Встречаемся в 19?",
                     lastMessageTimestamp = System.currentTimeMillis() - 5_000L,
                     unreadCount = 2,
-                    isOnline = true,
                 ),
                 ContactRow.ExistingChat(
                     displayName = "Mama",
@@ -486,7 +475,6 @@ private fun ContactsListPreview() {
                     lastMessagePreview = "Ужин на столе.",
                     lastMessageTimestamp = System.currentTimeMillis() - 60_000L,
                     unreadCount = 0,
-                    isOnline = false,
                 ),
                 ContactRow.StartChatCandidate(
                     displayName = "Pixel 9 Pro",

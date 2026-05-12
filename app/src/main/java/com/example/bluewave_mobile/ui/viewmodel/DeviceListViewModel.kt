@@ -105,9 +105,8 @@ class DeviceListViewModel(
 
     /**
      * Currently-active folder filter. `null` means the synthetic
-     * "All chats" chip — every row is rendered. The synthetic
-     * "Nearby" chip is encoded as [VIRTUAL_NEARBY_ID]; everything
-     * else is the literal [ChatFolderEntity.id] of a built-in or
+     * "All chats" chip — every row is rendered. Any non-null value
+     * is the literal [ChatFolderEntity.id] of a built-in or
      * user-created folder.
      */
     private val _selectedFolderId: MutableStateFlow<String?> = MutableStateFlow(null)
@@ -172,9 +171,9 @@ class DeviceListViewModel(
 
     /**
      * Pin the chip-row selection. Pass `null` for the synthetic
-     * "All chats" chip and [VIRTUAL_NEARBY_ID] for "Nearby". Any
-     * other value MUST be the [ChatFolderEntity.id] of a folder
-     * the user has created or that we seeded as built-in.
+     * "All chats" chip. Any other value MUST be the
+     * [ChatFolderEntity.id] of a folder the user has created or
+     * that we seeded as built-in.
      *
      * Folder selection lives outside the [DeviceListIntent] reducer
      * because we don't want flipping the chip to cancel an in-flight
@@ -293,8 +292,6 @@ class DeviceListViewModel(
             }
             awaitClose { reprobeJob.cancel() }
         }
-        val connectedPeers: Flow<Set<String>> =
-            transport?.connectedPeers ?: flowOf(emptySet())
 
         // Pre-roll the folder filter signals so a missing repository
         // (unit-test build) collapses to "no filter" rather than a
@@ -325,14 +322,12 @@ class DeviceListViewModel(
                 messageRepository.observeAllConversations(),
                 sdpProber.appPresence,
                 messageRepository.observeAllPeerProfiles(),
-                connectedPeers,
-            ) { peers, conversations, presence, peerProfiles, connected ->
+            ) { peers, conversations, presence, peerProfiles ->
                 RadioSnapshot(
                     peers = peers,
                     conversations = conversations,
                     presence = presence,
                     peerProfiles = peerProfiles,
-                    connectedPeers = connected,
                 )
             },
             folderFilter,
@@ -343,7 +338,6 @@ class DeviceListViewModel(
                 conversations = radio.conversations,
                 presence = radio.presence,
                 peerProfiles = radio.peerProfiles,
-                connectedPeers = radio.connectedPeers,
                 selectedFolderId = filter.selectedFolderId,
                 peerToFolders = filter.peerToFolders,
                 groups = groupBundle.groups,
@@ -372,7 +366,6 @@ class DeviceListViewModel(
         val conversations: List<ConversationSummary>,
         val presence: Map<String, Boolean>,
         val peerProfiles: List<PeerProfileEntity>,
-        val connectedPeers: Set<String>,
     )
 
     /** Snapshot of every group + membership row, fed into [buildRows]. */
@@ -397,11 +390,9 @@ class DeviceListViewModel(
      *    so the chat list shows the user-set "Алекс Иванов" rather
      *    than the OS-side device alias.
      *  * [selectedFolderId] / [peerToFolders] — chip-row filter; see
-     *    [setFolder] kdoc. `null` means "All chats" (no filter); the
-     *    sentinel [VIRTUAL_NEARBY_ID] keeps the chat section but
-     *    drops offline rows. Any other value drops every section
-     *    except chats and keeps only chats whose peer is in the
-     *    folder.
+     *    [setFolder] kdoc. `null` means "All chats" (no filter); any
+     *    other value drops every section except chats and keeps only
+     *    chats whose peer is in the folder.
      *
      * Visible, "BlueWave-on-board" peers without history go to the
      * "Can start chat" section. Visible peers without the BlueWave
@@ -414,7 +405,6 @@ class DeviceListViewModel(
         conversations: List<ConversationSummary>,
         presence: Map<String, Boolean>,
         peerProfiles: List<PeerProfileEntity> = emptyList(),
-        connectedPeers: Set<String> = emptySet(),
         selectedFolderId: String? = null,
         peerToFolders: Map<String, Set<String>> = emptyMap(),
         groups: List<ChatGroupEntity> = emptyList(),
@@ -422,16 +412,6 @@ class DeviceListViewModel(
     ): List<ContactRow> {
         val profilesByMac: Map<String, PeerProfileEntity> =
             peerProfiles.associateBy { it.macAddress.uppercase() }
-        // Normalize the set once so [ContactRow.isOnline] can be a
-        // cheap `contains` lookup per row. The transport tracks the
-        // MAC of every peer currently holding an open RFCOMM
-        // session, which is the closest thing we have to a real
-        // "online" signal on a personal-area network. Falling back
-        // to "is the radio still seeing this MAC" was misleading
-        // because Android caches scan results for ~10 s after the
-        // peer goes away.
-        val connectedMacs: Set<String> =
-            if (connectedPeers.isEmpty()) emptySet() else connectedPeers.mapTo(HashSet()) { it.uppercase() }
         val chatMacs: MutableSet<String> = HashSet()
         val chatRows: MutableList<ContactRow.ExistingChat> = ArrayList(conversations.size)
 
@@ -449,7 +429,6 @@ class DeviceListViewModel(
                 lastMessagePreview = decryptPreview(summary),
                 lastMessageTimestamp = summary.lastMessage.timestamp,
                 unreadCount = summary.unreadCount,
-                isOnline = mac in connectedMacs,
             )
         }
 
@@ -461,12 +440,8 @@ class DeviceListViewModel(
             val profileName = profilesByMac[mac]?.displayName?.takeUnless(String::isBlank)
             val name: String = profileName ?: peer.name.ifBlank { mac }
             val hasApp: Boolean? = presence[mac]
-            val isConnected: Boolean = mac in connectedMacs
             // Decision matrix for the section a non-chat peer lands in:
             //
-            //  * already connected (RFCOMM session live)   → candidate
-            //    – a live socket is the strongest possible
-            //      "BlueWave is installed" signal, beats SDP.
             //  * already bonded by the user                → candidate
             //    – the user explicitly paired this device, so we
             //      trust the bond. Falsely routing them into the
@@ -479,13 +454,13 @@ class DeviceListViewModel(
             //      tap-to-chat flow falls back to a connect error
             //      and we can prompt then.
             //  * SDP says yes                              → candidate
-            //  * SDP says no, unpaired, no live session    → install suggestion
+            //  * SDP says no, unpaired                     → install suggestion
             //  * everything else (probe pending)           → candidate
             //    (optimistic; flips to install-suggest only when
             //    a definitive `false` lands AND the peer is
-            //    unpaired and unconnected).
+            //    unpaired).
             val keepAsCandidate: Boolean =
-                isConnected || peer.isPaired || hasApp == true || hasApp == null
+                peer.isPaired || hasApp == true || hasApp == null
             if (keepAsCandidate) {
                 candidateRows += ContactRow.StartChatCandidate(
                     displayName = name,
@@ -538,38 +513,27 @@ class DeviceListViewModel(
         installRows.sortWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.displayName })
 
         // Apply the active chip filter. "All" leaves every row in
-        // place; "Nearby" trims chats to currently-online peers and
-        // keeps the candidate / install sections (those rows are
-        // radio-visible by construction). Any other folder id keeps
-        // only chats whose peer sits in that folder — the candidate
-        // and install sections are hidden because peers without
-        // chat history can't be assigned to folders yet.
+        // place; any other folder id keeps only chats whose peer sits
+        // in that folder — the candidate and install sections are
+        // hidden because peers without chat history can't be assigned
+        // to folders yet.
         val filteredGroups: List<ContactRow.GroupChat>
         val filteredChats: List<ContactRow.ExistingChat>
         val filteredCandidates: List<ContactRow.StartChatCandidate>
         val filteredInstalls: List<ContactRow.InstallSuggestion>
-        when (selectedFolderId) {
-            null -> {
-                filteredGroups = groupRows
-                filteredChats = chatRows
-                filteredCandidates = candidateRows
-                filteredInstalls = installRows
+        if (selectedFolderId == null) {
+            filteredGroups = groupRows
+            filteredChats = chatRows
+            filteredCandidates = candidateRows
+            filteredInstalls = installRows
+        } else {
+            filteredGroups = emptyList()
+            filteredChats = chatRows.filter { row ->
+                peerToFolders[row.macAddress.uppercase()]
+                    ?.contains(selectedFolderId) == true
             }
-            VIRTUAL_NEARBY_ID -> {
-                filteredGroups = groupRows
-                filteredChats = chatRows.filter(ContactRow.ExistingChat::isOnline)
-                filteredCandidates = candidateRows
-                filteredInstalls = installRows
-            }
-            else -> {
-                filteredGroups = emptyList()
-                filteredChats = chatRows.filter { row ->
-                    peerToFolders[row.macAddress.uppercase()]
-                        ?.contains(selectedFolderId) == true
-                }
-                filteredCandidates = emptyList()
-                filteredInstalls = emptyList()
-            }
+            filteredCandidates = emptyList()
+            filteredInstalls = emptyList()
         }
 
         // The result is concatenated in render order so a `LazyColumn`
@@ -607,14 +571,6 @@ class DeviceListViewModel(
     }
 
     companion object {
-        /**
-         * Sentinel id for the synthetic "Nearby" chip. Stored in
-         * [_selectedFolderId] when that chip is active so [buildRows]
-         * can take a different filter branch without clashing with a
-         * real [ChatFolderEntity.id].
-         */
-        const val VIRTUAL_NEARBY_ID: String = "virtual:nearby"
-
         /**
          * Cadence of the periodic SDP re-probe loop. Android caches
          * SDP results internally, so to notice that a peer has

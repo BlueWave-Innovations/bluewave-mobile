@@ -91,6 +91,17 @@ interface MessageTransport {
     suspend fun connect(macAddress: String)
 
     /**
+     * Synchronous, non-suspending check that returns `true` when an
+     * RFCOMM session is currently attached for [macAddress]. Backed
+     * by the same in-memory map [connect] / [disconnect] mutate, so
+     * the answer is consistent with the very next [send] / [connect]
+     * call. Used by [com.example.bluewave_mobile.data.MessageRepository.sendMessage]
+     * to decide whether to fire a just-in-time outbound connect
+     * before writing the user's bytes.
+     */
+    fun isConnected(macAddress: String): Boolean
+
+    /**
      * Sends [payload] to the peer identified by [macAddress]. Returns
      * `true` when the bytes were handed to the underlying socket,
      * `false` when no live session exists for that peer or the write

@@ -314,7 +314,7 @@ class BluetoothSessionManager(
      * subscribing to a separate state flow — the cost is a single
      * concurrent map lookup.
      */
-    fun isConnected(macAddress: String): Boolean =
+    override fun isConnected(macAddress: String): Boolean =
         sessions.containsKey(macAddress.uppercase())
 
     private companion object {

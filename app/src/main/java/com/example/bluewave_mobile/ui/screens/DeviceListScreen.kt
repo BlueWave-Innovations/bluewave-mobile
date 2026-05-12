@@ -281,13 +281,10 @@ fun DeviceListScreen(
 
 /**
  * Horizontally scrollable chip row that drives the active folder
- * filter. Three categories of chips:
+ * filter. Two categories of chips:
  *  * **All** — synthetic, encoded as `null` in
  *    [DeviceListViewModel.selectedFolderId]; surfaces the unfiltered
  *    contact list. Always rendered first.
- *  * **Nearby** — synthetic, encoded as
- *    [DeviceListViewModel.VIRTUAL_NEARBY_ID]; trims chats to peers
- *    currently visible on the radio.
  *  * **Persistent folders** — one chip per row in [folders],
  *    rendered in the order returned by
  *    [com.example.bluewave_mobile.data.FolderRepository.observeFolders].
@@ -313,13 +310,6 @@ private fun FolderChipRow(
                 selected = selectedFolderId == null,
                 onClick = { onSelect(null) },
                 label = { Text(text = stringResource(id = R.string.folders_chip_all)) },
-            )
-        }
-        item(key = "chip:nearby") {
-            FilterChip(
-                selected = selectedFolderId == DeviceListViewModel.VIRTUAL_NEARBY_ID,
-                onClick = { onSelect(DeviceListViewModel.VIRTUAL_NEARBY_ID) },
-                label = { Text(text = stringResource(id = R.string.folders_chip_nearby)) },
             )
         }
         items(items = folders, key = { "chip:" + it.id }) { folder ->

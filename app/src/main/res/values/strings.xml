@@ -131,7 +131,6 @@
     <string name="folders_delete_dialog_message">Removes this label from every contact. Messages stay intact.</string>
     <string name="folders_member_picker_title">Pick contacts</string>
     <string name="folders_chip_all">All</string>
-    <string name="folders_chip_nearby">Nearby</string>
     <string name="folders_chip_no_app">Without app</string>
     <string name="folders_assign_action">Assign to folder</string>
     <string name="folders_empty_section">No contacts in this folder yet.</string>
@@ -172,8 +171,6 @@
     <string name="qr_share_invalid">This QR isn\'t a BlueWave contact.</string>
 
     <!-- Chat redesign -->
-    <string name="chat_status_online">Online via Bluetooth</string>
-    <string name="chat_status_offline">Offline</string>
     <string name="chat_date_today">Today</string>
     <string name="chat_date_yesterday">Yesterday</string>
 

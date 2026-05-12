@@ -242,6 +242,28 @@ class MessageRepositoryImpl(
         if (isPausedFor(macAddress)) return
 
         val activeTransport = transport ?: return
+
+        // Make sure we have an RFCOMM session before we try to ship
+        // anything. `connect` is idempotent on the manager side (it
+        // early-returns when a session for this MAC already exists)
+        // and on the transport's accept loop side (the symmetric
+        // peer's listener will be reused), so this is effectively
+        // a no-op on the happy path. When the peer was unreachable
+        // a moment ago, the user reopens the chat and the auto-connect
+        // fan-out in [BlueWaveApplication] hasn't completed yet, this
+        // is what unblocks the very next message — instead of failing
+        // silently we wait for the connect to settle and then push
+        // the bytes. The auto-connect on cold launch + on adapter
+        // STATE_ON is best-effort; this synchronous attempt is the
+        // final safety net for "user just typed something, deliver
+        // it now even if the link hasn't been pre-warmed".
+        if (!activeTransport.isConnected(key)) {
+            runCatching { activeTransport.connect(key) }
+                .onFailure { e ->
+                    Log.w(TAG, "send-side connect attempt failed for $key: ${e.message}")
+                }
+        }
+
         val engine = signalEngine
         if (engine == null) {
             // Legacy plaintext-on-wire path: the transport length-prefixes

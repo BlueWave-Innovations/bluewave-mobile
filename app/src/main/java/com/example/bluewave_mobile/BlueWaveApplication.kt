@@ -2,6 +2,11 @@ package com.example.bluewave_mobile
 
 import android.annotation.SuppressLint
 import android.app.Application
+import android.bluetooth.BluetoothAdapter
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.util.Log
 import com.example.bluewave_mobile.di.AppContainer
 import com.example.bluewave_mobile.network.BluetoothConstants
@@ -13,6 +18,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -60,6 +66,38 @@ class BlueWaveApplication : Application() {
             Log.e(TAG, "Uncaught exception in application scope", throwable)
         },
     )
+
+    /**
+     * Receiver that listens for `BluetoothAdapter.ACTION_STATE_CHANGED`
+     * so we can re-fire the auto-connect fan-out the instant the user
+     * (or the system) flips the radio back on. Without it, a user
+     * who toggles BT off and then back on while the app is in the
+     * foreground would have to manually tap each contact to wake up
+     * the per-peer RFCOMM session.
+     *
+     * The receiver is registered unconditionally on [onCreate] and is
+     * not unregistered — the application process holds the singleton
+     * for its entire lifetime, so an `onTerminate` unregister is the
+     * only correct teardown and `onTerminate` only fires on emulators.
+     */
+    private val bluetoothStateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action != BluetoothAdapter.ACTION_STATE_CHANGED) return
+            val newState = intent.getIntExtra(
+                BluetoothAdapter.EXTRA_STATE,
+                BluetoothAdapter.ERROR,
+            )
+            if (newState != BluetoothAdapter.STATE_ON) return
+            // Give the adapter a beat to finish exposing the SDP
+            // service record before we hammer it with outbound
+            // connects — same reasoning as `AUTO_CONNECT_INITIAL_DELAY_MS`
+            // on cold launch.
+            applicationScope.launch {
+                delay(AUTO_CONNECT_INITIAL_DELAY_MS)
+                connectToKnownPeers()
+            }
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -211,8 +249,21 @@ class BlueWaveApplication : Application() {
         // discovery failed".
         applicationScope.launch {
             delay(AUTO_CONNECT_INITIAL_DELAY_MS)
-            connectToBondedPeers()
+            connectToKnownPeers()
         }
+
+        // Re-fire the auto-connect fan-out the moment the adapter
+        // flips back on after the user toggled it off (or after a
+        // transient driver glitch). The accept loop in
+        // [BluetoothSessionManager.acceptLoop] already recovers on
+        // its own — this is purely for the outbound side so two
+        // phones rediscover each other instantly without the user
+        // having to tap into a chat.
+        @Suppress("UnspecifiedRegisterReceiverFlag")
+        registerReceiver(
+            bluetoothStateReceiver,
+            IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED),
+        )
 
         // Re-run the auto-connect probe whenever a session is
         // detached (peer toggled BT, killed the app, …) so the link
@@ -246,40 +297,61 @@ class BlueWaveApplication : Application() {
 
     /**
      * Fires a non-blocking outbound `connect()` attempt against every
-     * device the platform reports as already bonded. The session
-     * manager dedupes inbound + outbound connects per MAC so the
-     * worst case is a racing accept on the peer side that gets
-     * evicted as soon as our outbound socket lands.
+     * known peer:
      *
-     * Bonded devices that do not run BlueWave fail with `IOException`
-     * inside `connect()` and are logged once — no further retries.
-     * Unbonded peers are picked up by the scan flow in
+     *  * **Bonded devices** — picked from `BluetoothAdapter.bondedDevices`.
+     *    Catches anyone we've ever paired with at the system level,
+     *    including the no-pairing era because Android occasionally
+     *    bonds opportunistically.
+     *  * **Chat-history peers** — every MAC we have at least one
+     *    persisted message for. This is the channel the user cares
+     *    about most: once two people have talked once, the next cold
+     *    launch reconnects them without any tap.
+     *
+     * The session manager dedupes inbound + outbound connects per
+     * MAC so the worst case is a racing accept on the peer side that
+     * gets evicted as soon as our outbound socket lands.
+     *
+     * Peers that do not run BlueWave (e.g. bonded headphones or smart
+     * watches) fail with `IOException` inside `connect()` and are
+     * logged at DEBUG once — no further retries. Unbonded peers
+     * discovered through scanning are picked up by
      * `DeviceListViewModel`, which calls `connect()` directly when
-     * the user opens the chat, so we deliberately do **not** spam
-     * connect attempts to the entire inquiry result here.
+     * the user taps the row.
      */
     @SuppressLint("MissingPermission")
-    private suspend fun connectToBondedPeers() {
+    private suspend fun connectToKnownPeers() {
         val adapter = container.bluetoothAdapter ?: return
         if (!adapter.isEnabled) return
-        val bonded = try {
-            adapter.bondedDevices ?: emptySet()
+
+        val targets: MutableSet<String> = HashSet()
+
+        // 1) bonded devices
+        try {
+            adapter.bondedDevices?.forEach { device ->
+                device.address?.takeIf { it.isNotBlank() }?.let { targets.add(it.uppercase()) }
+            }
         } catch (e: SecurityException) {
-            Log.w(TAG, "bondedDevices denied by permissions; skipping auto-connect", e)
-            return
+            Log.w(TAG, "bondedDevices denied by permissions; skipping bonded auto-connect", e)
         }
-        if (bonded.isEmpty()) return
-        for (device in bonded) {
-            val mac = device.address ?: continue
+
+        // 2) chat-history peers — every MAC with at least one
+        // persisted message gets a connect attempt.
+        runCatching {
+            container.messageDao.getLatestMessagePerDevice().first().forEach { row ->
+                row.macAddress.takeIf { it.isNotBlank() }?.let { targets.add(it.uppercase()) }
+            }
+        }.onFailure { e ->
+            Log.w(TAG, "Failed to enumerate chat-history peers for auto-connect", e)
+        }
+
+        if (targets.isEmpty()) return
+
+        for (mac in targets) {
             applicationScope.launch {
                 runCatching {
                     container.bluetoothSessionManager.connect(mac)
                 }.onFailure { e ->
-                    // Failure here is normal for headphones, smart
-                    // watches and any other bonded peer that does
-                    // not run BlueWave — the SDP lookup misses our
-                    // UUID, `createInsecureRfcommSocketToServiceRecord`
-                    // throws, and we move on.
                     Log.d(TAG, "auto-connect skipped for $mac: ${e.message}")
                 }
             }
