@@ -61,11 +61,45 @@ interface MessageTransport {
     val sessionAttached: Flow<String>
 
     /**
+     * Cold stream of MAC addresses whose RFCOMM session has just
+     * been evicted — peer killed the app, BT toggled off, liveness
+     * watchdog tripped, or write returned an error. Subscribers
+     * (notably the application-scope wiring that resets libsignal
+     * state) use this to drop per-peer ratchet bookkeeping so the
+     * next attach can re-handshake from scratch.
+     *
+     * Sessions that were superseded by a fresh attach for the
+     * *same* MAC do not emit on this flow — only true detaches,
+     * not in-place replacements.
+     */
+    val sessionDetached: Flow<String>
+
+    /**
+     * Live snapshot of every MAC address that currently owns a hot
+     * RFCOMM session. Re-emitted on every attach / detach so the UI
+     * can render an "Online via Bluetooth" badge without polling.
+     * The set is uppercased so callers can match it against
+     * normalised peer ids.
+     */
+    val connectedPeers: Flow<Set<String>>
+
+    /**
      * Initiates an outgoing connection to [macAddress] if no live
      * session exists for that peer yet. Idempotent: calling it on a
      * peer that is already connected is a no-op.
      */
     suspend fun connect(macAddress: String)
+
+    /**
+     * Synchronous, non-suspending check that returns `true` when an
+     * RFCOMM session is currently attached for [macAddress]. Backed
+     * by the same in-memory map [connect] / [disconnect] mutate, so
+     * the answer is consistent with the very next [send] / [connect]
+     * call. Used by [com.example.bluewave_mobile.data.MessageRepository.sendMessage]
+     * to decide whether to fire a just-in-time outbound connect
+     * before writing the user's bytes.
+     */
+    fun isConnected(macAddress: String): Boolean
 
     /**
      * Sends [payload] to the peer identified by [macAddress]. Returns

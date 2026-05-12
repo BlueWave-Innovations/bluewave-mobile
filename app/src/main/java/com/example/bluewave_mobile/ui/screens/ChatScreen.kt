@@ -1,5 +1,7 @@
 package com.example.bluewave_mobile.ui.screens
 
+import android.text.format.DateUtils
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,8 +15,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
@@ -26,7 +29,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -43,24 +45,30 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bluewave_mobile.R
 import com.example.bluewave_mobile.data.E2EEState
 import com.example.bluewave_mobile.ui.components.BondLossBanner
+import com.example.bluewave_mobile.ui.components.ChatInputRow
 import com.example.bluewave_mobile.ui.components.EmptyStateView
 import com.example.bluewave_mobile.ui.components.MessageBubble
-import com.example.bluewave_mobile.ui.components.SendButton
 import com.example.bluewave_mobile.ui.intent.ChatIntent
 import com.example.bluewave_mobile.ui.state.ChatMessage
 import com.example.bluewave_mobile.ui.state.ChatUiState
 import com.example.bluewave_mobile.ui.viewmodel.ChatViewModel
+import kotlinx.coroutines.launch
+import java.text.DateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 /**
  * Per-device chat screen.
@@ -70,10 +78,15 @@ import com.example.bluewave_mobile.ui.viewmodel.ChatViewModel
  * sending plaintext.
  *
  * Step 28 hoisted decryption + send orchestration into [ChatViewModel].
+ * The top bar shows the peer's avatar, display name + handle, and the
+ * E2EE lock indicator. The online/offline badge was removed to keep the
+ * UX focused on message delivery rather than presence guesses.
+ *
  * The composable now only:
  *
- *  * subscribes to [ChatViewModel.messages] (already-decrypted) and
- *    [ChatViewModel.uiState] (MVI screen state);
+ *  * subscribes to [ChatViewModel.messages] (already-decrypted),
+ *    [ChatViewModel.uiState] (MVI screen state) and
+ *    [ChatViewModel.peerProfile] (cached `PROFILE_METADATA`);
  *  * forwards user actions through [ChatIntent]; and
  *  * surfaces bond loss / restore as a snackbar by observing
  *    [ChatUiState.Success.isPeerPaused].
@@ -91,6 +104,7 @@ fun ChatScreen(
     val messages by viewModel.messages.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val bannerVisible by viewModel.bondLossBannerVisible.collectAsStateWithLifecycle()
+    val peerProfile by viewModel.peerProfile.collectAsStateWithLifecycle()
 
     var draft: String by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
@@ -121,7 +135,10 @@ fun ChatScreen(
         modifier = modifier,
         contentWindowInsets = WindowInsets(0),
         topBar = {
-            val chatWithCd = stringResource(id = R.string.chat_with_cd, deviceMac)
+            val displayName: String = peerProfile?.displayName?.takeUnless(String::isBlank)
+                ?: stringResource(id = R.string.chat_title)
+            val handle: String? = peerProfile?.handle?.takeUnless(String::isBlank)
+            val chatWithCd = stringResource(id = R.string.chat_with_cd, displayName)
             TopAppBar(
                 title = {
                     Row(
@@ -131,15 +148,26 @@ fun ChatScreen(
                             contentDescription = chatWithCd
                         },
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
+                        ChatAvatar(
+                            displayName = displayName,
+                        )
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 12.dp),
+                        ) {
                             Text(
-                                text = stringResource(id = R.string.chat_title),
+                                text = displayName,
                                 style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
                             )
-                            Text(
-                                text = deviceMac,
-                                style = MaterialTheme.typography.bodySmall,
-                            )
+                            if (handle != null) {
+                                Text(
+                                    text = handle,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                         E2EEIndicator(state = e2eeState)
                     }
@@ -242,6 +270,15 @@ private fun ChatBody(
             // gracefully degrades on touch devices: long-press
             // selection and the standard floating action menu still
             // work as on any other Compose Text.
+            val todayLabel = stringResource(id = R.string.chat_date_today)
+            val yesterdayLabel = stringResource(id = R.string.chat_date_yesterday)
+            val items: List<ChatListItem> = remember(messages, todayLabel, yesterdayLabel) {
+                buildChatListItems(
+                    messages = messages,
+                    todayLabel = todayLabel,
+                    yesterdayLabel = yesterdayLabel,
+                )
+            }
             SelectionContainer(modifier = modifier.fillMaxSize()) {
                 LazyColumn(
                     state = listState,
@@ -251,14 +288,188 @@ private fun ChatBody(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(
-                        items = messages.asReversed(),
-                        key = ChatMessage::id,
-                    ) { message ->
-                        MessageBubble(message = message)
+                        count = items.size,
+                        key = { index -> items[index].key },
+                    ) { index ->
+                        when (val item = items[index]) {
+                            is ChatListItem.Bubble -> MessageBubble(message = item.message)
+                            is ChatListItem.DateHeader -> DateSeparator(label = item.label)
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+/**
+ * Sealed model of every renderable row in the chat list. Splitting
+ * messages and date headers into a single typed list lets the
+ * `LazyColumn` use stable keys without each header racing against an
+ * adjacent message id.
+ */
+internal sealed interface ChatListItem {
+    val key: String
+
+    data class Bubble(val message: ChatMessage) : ChatListItem {
+        override val key: String = "msg:${message.id}"
+    }
+
+    data class DateHeader(
+        val label: String,
+        private val dayKey: Long,
+    ) : ChatListItem {
+        override val key: String = "date:$dayKey"
+    }
+}
+
+/**
+ * Builds the `LazyColumn`-friendly list of `ChatListItem`s consumed by
+ * the chat screen.
+ *
+ * Headers are inserted **above** the first message of each calendar
+ * day. The function returns the list newest-first so the chat
+ * composable can feed it straight into the `reverseLayout` LazyColumn
+ * without an extra `asReversed()` pass.
+ *
+ * The function is `internal` so the unit-test target can inspect the
+ * boundary cases without spinning up the Android renderer.
+ *
+ * @param messages messages in any order; sorted ascending by
+ *                 [ChatMessage.timestamp] inside the function.
+ * @param locale the locale used to render the calendar-day labels.
+ *               Defaulted to the system locale; tests pass a fixed
+ *               locale for deterministic output.
+ * @param now wall-clock instant used to compute "Today / Yesterday"
+ *            labels — defaulted to [System.currentTimeMillis] so the
+ *            production caller doesn't need to thread it through.
+ * @param todayLabel localised "Today" label injected by the caller.
+ *                   `null` falls back to the absolute date so the
+ *                   helper stays usable from `androidTest`-only paths
+ *                   that don't have a Compose context.
+ * @param yesterdayLabel mirror of [todayLabel] for the previous day.
+ */
+internal fun buildChatListItems(
+    messages: List<ChatMessage>,
+    locale: Locale = Locale.getDefault(),
+    now: Long = System.currentTimeMillis(),
+    todayLabel: String? = null,
+    yesterdayLabel: String? = null,
+): List<ChatListItem> {
+    if (messages.isEmpty()) return emptyList()
+    val sorted: List<ChatMessage> = messages.sortedBy(ChatMessage::timestamp)
+    val out: MutableList<ChatListItem> = ArrayList(sorted.size + 4)
+    var lastDay: Long = Long.MIN_VALUE
+    for (message in sorted) {
+        val day = startOfDay(message.timestamp)
+        if (day != lastDay) {
+            val label = formatDateSeparator(
+                timestamp = message.timestamp,
+                now = now,
+                locale = locale,
+                todayLabel = todayLabel,
+                yesterdayLabel = yesterdayLabel,
+            )
+            out += ChatListItem.DateHeader(label = label, dayKey = day)
+            lastDay = day
+        }
+        out += ChatListItem.Bubble(message = message)
+    }
+    return out.asReversed()
+}
+
+private fun startOfDay(timestamp: Long): Long {
+    val cal = Calendar.getInstance()
+    cal.timeInMillis = timestamp
+    cal.set(Calendar.HOUR_OF_DAY, 0)
+    cal.set(Calendar.MINUTE, 0)
+    cal.set(Calendar.SECOND, 0)
+    cal.set(Calendar.MILLISECOND, 0)
+    return cal.timeInMillis
+}
+
+private fun formatDateSeparator(
+    timestamp: Long,
+    now: Long,
+    locale: Locale,
+    todayLabel: String?,
+    yesterdayLabel: String?,
+): String {
+    val today = startOfDay(now)
+    val day = startOfDay(timestamp)
+    val deltaDays = ((today - day) / DateUtils.DAY_IN_MILLIS).toInt()
+    return when {
+        deltaDays == 0 && todayLabel != null -> todayLabel
+        deltaDays == 1 && yesterdayLabel != null -> yesterdayLabel
+        else -> {
+            // `MEDIUM` produces "May 7", "7 мая", etc. depending on
+            // locale and is what most messengers use as the day
+            // separator label.
+            val fmt = DateFormat.getDateInstance(DateFormat.MEDIUM, locale)
+            fmt.format(Date(timestamp))
+        }
+    }
+}
+
+@Composable
+private fun DateSeparator(
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .background(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(12.dp),
+                )
+                .padding(horizontal = 12.dp, vertical = 4.dp),
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * 40dp circular avatar placed at the leading edge of the chat top bar.
+ *
+ * Renders the first non-blank character of [displayName] uppercased on
+ * a tinted circle (the same styling as the contact-list avatars) so
+ * the chat screen feels like a continuation of the row the user just
+ * tapped.
+ */
+@Composable
+private fun ChatAvatar(
+    displayName: String,
+    modifier: Modifier = Modifier,
+) {
+    val initial: String = displayName
+        .trim()
+        .firstOrNull()
+        ?.uppercase()
+        ?: "?"
+    Box(
+        modifier = modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = initial,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.SemiBold,
+        )
     }
 }
 
@@ -292,38 +503,4 @@ private fun E2EEIndicator(
             .padding(start = 8.dp)
             .size(20.dp),
     )
-}
-
-@Composable
-private fun ChatInputRow(
-    draft: String,
-    enabled: Boolean,
-    onDraftChange: (String) -> Unit,
-    onSend: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        val inputCd = stringResource(id = R.string.chat_input_cd)
-        OutlinedTextField(
-            value = draft,
-            onValueChange = onDraftChange,
-            placeholder = { Text(stringResource(id = R.string.chat_input_placeholder)) },
-            singleLine = false,
-            maxLines = 4,
-            enabled = enabled,
-            modifier = Modifier
-                .weight(1f)
-                .semantics { contentDescription = inputCd },
-        )
-        SendButton(
-            onClick = onSend,
-            enabled = enabled && draft.isNotBlank(),
-            modifier = Modifier.padding(start = 8.dp),
-        )
-    }
 }

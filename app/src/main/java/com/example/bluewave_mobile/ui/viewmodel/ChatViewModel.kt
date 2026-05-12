@@ -13,6 +13,7 @@ import com.example.bluewave_mobile.data.E2EEState
 import com.example.bluewave_mobile.data.MessageEntity
 import com.example.bluewave_mobile.data.MessageRepository
 import com.example.bluewave_mobile.data.MessageRepositoryImpl
+import com.example.bluewave_mobile.data.PeerProfileEntity
 import com.example.bluewave_mobile.network.MessageTransport
 import com.example.bluewave_mobile.ui.intent.ChatIntent
 import com.example.bluewave_mobile.ui.state.ChatMessage
@@ -109,6 +110,20 @@ class ChatViewModel(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000L),
             initialValue = ChatUiState.Loading,
+        )
+
+    /**
+     * Reactive view of the peer's last-seen profile card. Emits
+     * `null` until the first `PROFILE_METADATA` frame from the
+     * peer has been received and persisted; the chat top bar
+     * gracefully falls back to the [deviceMac] in that case.
+     */
+    val peerProfile: StateFlow<PeerProfileEntity?> = repository
+        .observePeerProfile(deviceMac)
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000L),
+            initialValue = null,
         )
 
     /**

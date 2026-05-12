@@ -105,6 +105,22 @@ dependencies {
     implementation(libs.libsignal.android)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
+    // DataStore — backs the local profile card (name / @tag / bio /
+    // avatar) and the per-user preferences screen (theme, language,
+    // visibility timer). Preferences flavour, not Proto.
+    implementation(libs.androidx.datastore.preferences)
+
+    // AppCompat (only for AppCompatDelegate.setApplicationLocales —
+    // we keep ComponentActivity as the Activity base class).
+    implementation(libs.androidx.appcompat)
+
+    // QR rendering for the profile-share screen.
+    implementation(libs.zxing.core)
+
+    // Coil for Compose — used by the profile and chat headers to
+    // decode avatar URIs without blocking the UI thread.
+    implementation(libs.coil.compose)
+
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

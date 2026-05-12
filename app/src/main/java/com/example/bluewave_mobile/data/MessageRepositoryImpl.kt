@@ -6,12 +6,15 @@ import com.example.bluewave_mobile.crypto.SignalEngine
 import com.example.bluewave_mobile.crypto.SignalEngineException
 import com.example.bluewave_mobile.network.BlueWaveFrame
 import com.example.bluewave_mobile.network.MessageTransport
+import com.example.bluewave_mobile.preferences.LocalProfile
+import com.example.bluewave_mobile.preferences.LocalProfileCodec
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -55,6 +58,9 @@ class MessageRepositoryImpl(
     private val cryptoManager: CryptoManager = CryptoManager(),
     private val transport: MessageTransport? = null,
     private val signalEngine: SignalEngine? = null,
+    private val peerProfileDao: PeerProfileDao? = null,
+    private val localProfileProvider: suspend () -> LocalProfile = { LocalProfile.EMPTY },
+    private val groupRepository: GroupRepository? = null,
 ) : MessageRepository {
 
     override fun getMessagesByDevice(macAddress: String): Flow<List<MessageEntity>> {
@@ -93,12 +99,66 @@ class MessageRepositoryImpl(
         return sessionStateFor(macAddress).asStateFlow()
     }
 
+    override fun observePeerProfile(macAddress: String): Flow<PeerProfileEntity?> {
+        val dao = peerProfileDao ?: return flowOf(null)
+        return dao.observeProfile(macAddress.uppercase()).distinctUntilChanged()
+    }
+
+    override fun observeAllPeerProfiles(): Flow<List<PeerProfileEntity>> {
+        val dao = peerProfileDao ?: return flowOf(emptyList())
+        return dao.observeAll().distinctUntilChanged()
+    }
+
+    override suspend fun onLocalProfileChanged() {
+        // Re-broadcast the local profile to every peer we have a
+        // SECURE Signal session with. New peers will receive the
+        // profile through the per-session push driven by
+        // [pushLocalProfileIfReady] right after the handshake
+        // settles.
+        val engine = signalEngine ?: return
+        val activeTransport = transport ?: return
+        val peers: List<String> = synchronized(sessionStates) {
+            sessionStates.entries.filter { it.value.value == E2EEState.SECURE }.map { it.key }
+        }
+        if (peers.isEmpty()) return
+        val profile = runCatching { localProfileProvider() }.getOrNull() ?: return
+        val payload = LocalProfileCodec.encode(profile)
+        for (peer in peers) {
+            shipProfilePayload(engine, activeTransport, peer, payload)
+        }
+    }
+
     override suspend fun onPeerLinkUp(macAddress: String) {
         // Eager handshake: as soon as the radio link is up, push our
         // local key bundle so the peer can derive its sending session.
         // This is symmetric — whichever side initiated the connect,
         // both peers fire this hook on attach.
         sendLocalKeyBundleIfNeeded(macAddress.uppercase())
+    }
+
+    override suspend fun onPeerLinkDown(macAddress: String) {
+        val key = macAddress.uppercase()
+        // Drop the libsignal session record so the next link-up
+        // rebuilds the Double Ratchet from scratch. Without this the
+        // peer-side ratchet (which the peer may have lost — fresh
+        // process with an in-memory store) and our ratchet would
+        // disagree on the message counter and decrypt would fail
+        // silently for every subsequent message.
+        signalEngine?.resetPeerSession(key)
+        e2eeLock.withLock {
+            // Forget that we already shipped a key bundle so the next
+            // [onPeerLinkUp] re-sends it; also drop any plaintext that
+            // was waiting on the dead session — the user will retype
+            // if they cared (queued bytes encrypted with a session the
+            // peer no longer has are unrecoverable anyway).
+            keyBundleSent.remove(key)
+            pendingQueues.remove(key)
+        }
+        // Surface "handshake pending" so the chat header shows the
+        // spinner until the next link-up settles. The state flow is
+        // observed by the UI so this also flips the online dot off
+        // via downstream session-collection in `BluetoothSessionManager`.
+        sessionStateFor(key).value = E2EEState.PENDING
     }
 
     override suspend fun insertMessage(message: MessageEntity): Long {
@@ -139,6 +199,23 @@ class MessageRepositoryImpl(
             BlueWaveFrame.Type.PREKEY_SIGNAL_MESSAGE -> handleIncomingSignalMessage(
                 engine, key, senderName, frame.payload, isPreKey = true,
             )
+            BlueWaveFrame.Type.PROFILE_METADATA -> handleIncomingProfileMetadata(
+                engine, key, frame.payload,
+            )
+            BlueWaveFrame.Type.GROUP_INVITE -> handleIncomingGroupFrame(
+                engine, key, senderName, frame.payload, isInvite = true,
+            )
+            BlueWaveFrame.Type.GROUP_MESSAGE -> handleIncomingGroupFrame(
+                engine, key, senderName, frame.payload, isInvite = false,
+            )
+            BlueWaveFrame.Type.HEARTBEAT -> {
+                // Heartbeats are transport-internal — `BluetoothSession`
+                // filters them out before they reach the repository.
+                // We still handle the case defensively in case a heartbeat
+                // ever leaks through (e.g. a unit-test wire harness or a
+                // future routing change) — silently dropping keeps the
+                // application layer unaware of liveness machinery.
+            }
         }
     }
 
@@ -165,6 +242,28 @@ class MessageRepositoryImpl(
         if (isPausedFor(macAddress)) return
 
         val activeTransport = transport ?: return
+
+        // Make sure we have an RFCOMM session before we try to ship
+        // anything. `connect` is idempotent on the manager side (it
+        // early-returns when a session for this MAC already exists)
+        // and on the transport's accept loop side (the symmetric
+        // peer's listener will be reused), so this is effectively
+        // a no-op on the happy path. When the peer was unreachable
+        // a moment ago, the user reopens the chat and the auto-connect
+        // fan-out in [BlueWaveApplication] hasn't completed yet, this
+        // is what unblocks the very next message — instead of failing
+        // silently we wait for the connect to settle and then push
+        // the bytes. The auto-connect on cold launch + on adapter
+        // STATE_ON is best-effort; this synchronous attempt is the
+        // final safety net for "user just typed something, deliver
+        // it now even if the link hasn't been pre-warmed".
+        if (!activeTransport.isConnected(key)) {
+            runCatching { activeTransport.connect(key) }
+                .onFailure { e ->
+                    Log.w(TAG, "send-side connect attempt failed for $key: ${e.message}")
+                }
+        }
+
         val engine = signalEngine
         if (engine == null) {
             // Legacy plaintext-on-wire path: the transport length-prefixes
@@ -318,6 +417,7 @@ class MessageRepositoryImpl(
         sendLocalKeyBundleIfNeeded(macAddress)
         drainPendingQueue(engine, macAddress)
         sessionStateFor(macAddress).value = E2EEState.SECURE
+        pushLocalProfileIfReady(engine, macAddress)
     }
 
     private suspend fun handleIncomingSignalMessage(
@@ -343,8 +443,169 @@ class MessageRepositoryImpl(
         // libsignal already built our receiving session as a side
         // effect; no extra bookkeeping required. Drain any local
         // outbound that was waiting on a session.
-        if (isPreKey) drainPendingQueue(engine, macAddress)
+        if (isPreKey) {
+            drainPendingQueue(engine, macAddress)
+            pushLocalProfileIfReady(engine, macAddress)
+        }
         persistInboundPlaintext(macAddress, senderName, plaintext)
+    }
+
+    /**
+     * Decrypts a `GROUP_INVITE` or `GROUP_MESSAGE` frame and routes
+     * the resulting plaintext to [groupRepository].
+     *
+     * The wire envelope is identical to `PROFILE_METADATA` — a
+     * one-byte subtype tag followed by a libsignal ciphertext. The
+     * subtype tells us whether to call `decryptSignalMessage` or
+     * `decryptPreKeyMessage`; the inner plaintext format depends on
+     * [isInvite] and is parsed downstream by the group repository.
+     */
+    private suspend fun handleIncomingGroupFrame(
+        engine: SignalEngine,
+        macAddress: String,
+        senderName: String,
+        body: ByteArray,
+        isInvite: Boolean,
+    ) {
+        val groups = groupRepository
+        if (groups == null) {
+            Log.w(TAG, "Dropping group frame from $macAddress — no GroupRepository wired")
+            return
+        }
+        val inner = BlueWaveFrame.GroupEnvelope.decode(body)
+        if (inner == null) {
+            Log.w(TAG, "Dropping malformed group envelope from $macAddress (size=${body.size})")
+            return
+        }
+        val plaintext = try {
+            when (inner.subtype) {
+                BlueWaveFrame.GroupEnvelope.Subtype.SIGNAL_MESSAGE ->
+                    engine.decryptSignalMessage(macAddress, inner.ciphertext)
+                BlueWaveFrame.GroupEnvelope.Subtype.PREKEY_SIGNAL_MESSAGE ->
+                    engine.decryptPreKeyMessage(macAddress, inner.ciphertext)
+            }
+        } catch (e: SignalEngineException) {
+            Log.w(TAG, "Group decrypt failed for $macAddress: ${e.message}")
+            sessionStateFor(macAddress).value = E2EEState.FAILED
+            return
+        }
+        sessionStateFor(macAddress).value = E2EEState.SECURE
+        if (inner.subtype == BlueWaveFrame.GroupEnvelope.Subtype.PREKEY_SIGNAL_MESSAGE) {
+            // The peer's PreKeySignalMessage built our receiving session
+            // as a side effect — flush any queued chat / profile / group
+            // ops that were waiting on the handshake.
+            drainPendingQueue(engine, macAddress)
+            pushLocalProfileIfReady(engine, macAddress)
+            groups.onPeerSessionSecure(macAddress)
+        }
+        if (isInvite) {
+            groups.handleIncomingGroupInvite(macAddress, plaintext)
+        } else {
+            groups.handleIncomingGroupMessage(macAddress, senderName, plaintext)
+        }
+    }
+
+    /**
+     * Decrypts a `PROFILE_METADATA` frame and upserts the resulting
+     * card into the [peerProfileDao] cache. Tolerant of malformed
+     * payloads — anything that fails to decode is logged and dropped
+     * so a single bad frame can never poison the local DB.
+     */
+    private suspend fun handleIncomingProfileMetadata(
+        engine: SignalEngine,
+        macAddress: String,
+        body: ByteArray,
+    ) {
+        val dao = peerProfileDao ?: return
+        val inner = BlueWaveFrame.ProfileEnvelope.decode(body)
+        if (inner == null) {
+            Log.w(TAG, "Dropping malformed profile envelope from $macAddress (size=${body.size})")
+            return
+        }
+        val plaintext = try {
+            when (inner.subtype) {
+                BlueWaveFrame.ProfileEnvelope.Subtype.SIGNAL_MESSAGE ->
+                    engine.decryptSignalMessage(macAddress, inner.ciphertext)
+                BlueWaveFrame.ProfileEnvelope.Subtype.PREKEY_SIGNAL_MESSAGE ->
+                    engine.decryptPreKeyMessage(macAddress, inner.ciphertext)
+            }
+        } catch (e: SignalEngineException) {
+            Log.w(TAG, "Failed to decrypt profile metadata from $macAddress: ${e.message}")
+            sessionStateFor(macAddress).value = E2EEState.FAILED
+            return
+        }
+        sessionStateFor(macAddress).value = E2EEState.SECURE
+        if (inner.subtype == BlueWaveFrame.ProfileEnvelope.Subtype.PREKEY_SIGNAL_MESSAGE) {
+            // Side-effect of libsignal building the receiving session
+            // — drain any queued plaintext now that we can encrypt it.
+            drainPendingQueue(engine, macAddress)
+            pushLocalProfileIfReady(engine, macAddress)
+        }
+        val profile = LocalProfileCodec.decode(plaintext)
+        if (profile == null) {
+            Log.w(TAG, "Dropping malformed profile JSON from $macAddress")
+            return
+        }
+        dao.upsert(
+            PeerProfileEntity(
+                macAddress = macAddress,
+                displayName = profile.displayName,
+                handle = profile.handle,
+                bio = profile.bio,
+                avatarUri = profile.avatarUri,
+                updatedAt = System.currentTimeMillis(),
+            ),
+        )
+    }
+
+    /**
+     * Pushes the local user's profile card to [macAddress] iff the
+     * Signal session is established and a peer-profile cache is wired
+     * up (the latter is the only consumer of the inbound side, so
+     * skipping the push when no cache exists keeps tests honest).
+     *
+     * Safe to call multiple times — the wire frame is idempotent at
+     * the receiver thanks to the `peer_profile` PK on macAddress.
+     */
+    private suspend fun pushLocalProfileIfReady(
+        engine: SignalEngine,
+        macAddress: String,
+    ) {
+        val activeTransport = transport ?: return
+        if (peerProfileDao == null) return
+        val profile = runCatching { localProfileProvider() }.getOrNull() ?: return
+        val payload = LocalProfileCodec.encode(profile)
+        shipProfilePayload(engine, activeTransport, macAddress, payload)
+    }
+
+    /**
+     * Encrypts [payload] with the libsignal session for [macAddress]
+     * and ships it inside a `PROFILE_METADATA` frame. The inner
+     * envelope echoes the libsignal ciphertext type so the receiver
+     * can pick the right decrypt path without re-inspecting the wire
+     * bytes.
+     */
+    private suspend fun shipProfilePayload(
+        engine: SignalEngine,
+        transport: MessageTransport,
+        macAddress: String,
+        payload: ByteArray,
+    ) {
+        val ciphertext = try {
+            engine.encrypt(macAddress, payload)
+        } catch (e: SignalEngineException) {
+            Log.w(TAG, "Profile encrypt failed for $macAddress: ${e.message}")
+            return
+        }
+        val subtype = when (ciphertext.type) {
+            SignalEngine.Ciphertext.Type.SIGNAL_MESSAGE ->
+                BlueWaveFrame.ProfileEnvelope.Subtype.SIGNAL_MESSAGE
+            SignalEngine.Ciphertext.Type.PREKEY_SIGNAL_MESSAGE ->
+                BlueWaveFrame.ProfileEnvelope.Subtype.PREKEY_SIGNAL_MESSAGE
+        }
+        val body = BlueWaveFrame.ProfileEnvelope.encode(subtype, ciphertext.bytes)
+        val framed = BlueWaveFrame.encode(BlueWaveFrame.Type.PROFILE_METADATA, body)
+        transport.send(macAddress, framed)
     }
 
     private suspend fun drainPendingQueue(engine: SignalEngine, macAddress: String) {

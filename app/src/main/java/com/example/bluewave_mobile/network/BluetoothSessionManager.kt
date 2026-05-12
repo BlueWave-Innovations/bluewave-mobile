@@ -10,9 +10,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -69,6 +73,13 @@ class BluetoothSessionManager(
         MutableSharedFlow(replay = 0, extraBufferCapacity = 16)
     override val sessionAttached: Flow<String> = _sessionAttached.asSharedFlow()
 
+    private val _sessionDetached: MutableSharedFlow<String> =
+        MutableSharedFlow(replay = 0, extraBufferCapacity = 16)
+    override val sessionDetached: Flow<String> = _sessionDetached.asSharedFlow()
+
+    private val _connectedPeers: MutableStateFlow<Set<String>> = MutableStateFlow(emptySet())
+    override val connectedPeers: Flow<Set<String>> = _connectedPeers.asStateFlow()
+
     @Volatile
     private var serverSocket: BluetoothServerSocket? = null
 
@@ -111,33 +122,60 @@ class BluetoothSessionManager(
             Log.w(TAG, "BluetoothAdapter unavailable; accept loop will not start")
             return
         }
-        val socket: BluetoothServerSocket = try {
-            localAdapter.listenUsingRfcommWithServiceRecord(
-                BluetoothConstants.SERVICE_NAME,
-                BluetoothConstants.APP_UUID,
-            )
-        } catch (e: IOException) {
-            Log.e(TAG, "Failed to open RFCOMM server socket", e)
-            return
-        } catch (e: SecurityException) {
-            Log.e(TAG, "BLUETOOTH_CONNECT permission missing for listen()", e)
-            return
-        }
-        serverSocket = socket
-
-        try {
-            while (scope.isActive) {
-                val accepted: BluetoothSocket = try {
-                    withContext(Dispatchers.IO) { socket.accept() }
-                } catch (e: IOException) {
-                    Log.d(TAG, "Server socket closed: ${e.message}")
-                    break
-                }
-                attachSession(accepted)
+        // Outer loop: when the server socket dies (BT toggled off,
+        // transient driver error, …) we wait a short back-off and try
+        // again so the listener comes back online as soon as the
+        // adapter does — without forcing the user to restart the app.
+        // A `BLUETOOTH_CONNECT` permission failure is treated as
+        // terminal: there is nothing we can recover from in this
+        // process.
+        while (scope.isActive) {
+            if (!localAdapter.isEnabled) {
+                delay(BluetoothConstants.ACCEPT_RETRY_DELAY_MS)
+                continue
             }
-        } finally {
-            try { socket.close() } catch (_: IOException) { /* already closed */ }
-            serverSocket = null
+            val socket: BluetoothServerSocket = try {
+                // Insecure RFCOMM does NOT require the peer to be
+                // bonded — we lean on libsignal E2EE for end-to-end
+                // confidentiality, so the link-layer pairing
+                // dialog is pure friction. Two BlueWave installs
+                // can now exchange messages the moment both
+                // adapters are powered on, no "Pair this device?"
+                // popup required.
+                localAdapter.listenUsingInsecureRfcommWithServiceRecord(
+                    BluetoothConstants.SERVICE_NAME,
+                    BluetoothConstants.APP_UUID,
+                )
+            } catch (e: IOException) {
+                Log.w(TAG, "Failed to open RFCOMM server socket: ${e.message}; retrying")
+                delay(BluetoothConstants.ACCEPT_RETRY_DELAY_MS)
+                continue
+            } catch (e: SecurityException) {
+                Log.e(TAG, "BLUETOOTH_CONNECT permission missing for listen()", e)
+                return
+            }
+            serverSocket = socket
+
+            try {
+                while (scope.isActive) {
+                    val accepted: BluetoothSocket = try {
+                        withContext(Dispatchers.IO) { socket.accept() }
+                    } catch (e: IOException) {
+                        Log.d(TAG, "Server socket closed: ${e.message}")
+                        break
+                    }
+                    attachSession(accepted)
+                }
+            } finally {
+                try { socket.close() } catch (_: IOException) { /* already closed */ }
+                serverSocket = null
+            }
+            // accept() returned an error — wait a moment before
+            // re-listening so we don't burn CPU when the adapter is
+            // half-up / half-down during a toggle.
+            if (scope.isActive) {
+                delay(BluetoothConstants.ACCEPT_RETRY_DELAY_MS)
+            }
         }
     }
 
@@ -159,6 +197,8 @@ class BluetoothSessionManager(
         sessionLock.withLock {
             sessions.put(mac, session)?.cancel()
         }
+        _connectedPeers.update { current -> current + mac }
+        _sessionAttached.emit(mac)
         session.start(
             scope = scope,
             onFrame = { payload ->
@@ -171,10 +211,22 @@ class BluetoothSessionManager(
                 )
             },
             onClosed = {
-                sessionLock.withLock {
+                val evicted: Boolean = sessionLock.withLock {
                     if (sessions[mac] === session) {
                         sessions.remove(mac)
+                        _connectedPeers.update { current -> current - mac }
+                        true
+                    } else {
+                        false
                     }
+                }
+                if (evicted) {
+                    // Fire the detach hook outside the lock so
+                    // collectors (e.g. the application-scope wiring
+                    // that resets libsignal state for this peer) can
+                    // perform suspending work without holding up
+                    // future attach/detach plumbing.
+                    _sessionDetached.emit(mac)
                 }
             },
         )
@@ -201,13 +253,21 @@ class BluetoothSessionManager(
             Log.w(TAG, "cancelDiscovery() denied by permissions", e)
         }
 
+        // Symmetric with the accept side, which calls
+        // `listenUsingInsecureRfcommWithServiceRecord` — both endpoints
+        // must agree on the secure/insecure flag or the RFCOMM
+        // negotiation fails and the connect throws IOException
+        // ("read failed, socket might closed or timeout, read ret: -1"
+        // on the kernel side). The previous secure call here was a
+        // leftover from before the no-pairing switch and was the root
+        // cause of "messages don't pass between phones".
         val socket: BluetoothSocket = try {
-            device.createRfcommSocketToServiceRecord(BluetoothConstants.APP_UUID)
+            device.createInsecureRfcommSocketToServiceRecord(BluetoothConstants.APP_UUID)
         } catch (e: IOException) {
-            Log.w(TAG, "createRfcommSocketToServiceRecord failed for $key: ${e.message}")
+            Log.w(TAG, "createInsecureRfcommSocketToServiceRecord failed for $key: ${e.message}")
             return
         } catch (e: SecurityException) {
-            Log.w(TAG, "createRfcommSocketToServiceRecord denied by permissions for $key", e)
+            Log.w(TAG, "createInsecureRfcommSocketToServiceRecord denied by permissions for $key", e)
             return
         }
 
@@ -254,7 +314,7 @@ class BluetoothSessionManager(
      * subscribing to a separate state flow — the cost is a single
      * concurrent map lookup.
      */
-    fun isConnected(macAddress: String): Boolean =
+    override fun isConnected(macAddress: String): Boolean =
         sessions.containsKey(macAddress.uppercase())
 
     private companion object {
