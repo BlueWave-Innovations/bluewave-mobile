@@ -29,6 +29,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -53,6 +54,7 @@ import com.example.bluewave_mobile.data.BuiltInFolder
 import com.example.bluewave_mobile.data.ChatFolderEntity
 import com.example.bluewave_mobile.ui.components.ContactsList
 import com.example.bluewave_mobile.ui.components.EmptyStateView
+import com.example.bluewave_mobile.ui.components.MakeDiscoverableBanner
 import com.example.bluewave_mobile.ui.intent.DeviceListIntent
 import com.example.bluewave_mobile.ui.model.ContactRow
 import com.example.bluewave_mobile.ui.permissions.PermissionGateView
@@ -194,6 +196,7 @@ fun DeviceListScreen(
                     PermissionGateView(
                         missing = permissions.missingPermissions,
                         onGrantClick = { permissions.requestPermissions() },
+                        permanentlyDenied = permissions.permanentlyDenied,
                     )
                 }
                 uiState is DeviceListUiState.BluetoothDisabled -> {
@@ -224,6 +227,7 @@ fun DeviceListScreen(
                         derivedStateOf { applySearchFilter(rows, searchQuery) }
                     }
                     Column(modifier = Modifier.fillMaxSize()) {
+                        MakeDiscoverableBanner()
                         SearchField(
                             query = searchQuery,
                             onQueryChange = { searchQuery = it },
@@ -350,16 +354,20 @@ private fun SearchField(
     onQueryChange: (String) -> Unit,
     onClear: () -> Unit,
 ) {
-    OutlinedTextField(
+    androidx.compose.material3.TextField(
         value = query,
         onValueChange = onQueryChange,
         placeholder = {
-            Text(text = stringResource(id = R.string.search_placeholder))
+            Text(
+                text = stringResource(id = R.string.search_placeholder),
+                style = MaterialTheme.typography.bodyMedium,
+            )
         },
         leadingIcon = {
             Icon(
                 imageVector = Icons.Filled.Search,
                 contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         },
         trailingIcon = {
@@ -374,9 +382,18 @@ private fun SearchField(
         },
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+        colors = androidx.compose.material3.TextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surface,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+            disabledContainerColor = MaterialTheme.colorScheme.surface,
+            focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+            unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+            disabledIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+        ),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 6.dp),
     )
 }
 

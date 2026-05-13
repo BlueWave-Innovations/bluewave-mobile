@@ -45,6 +45,8 @@ import com.example.bluewave_mobile.R
 import com.example.bluewave_mobile.ui.model.ContactRow
 import com.example.bluewave_mobile.ui.preview.PreviewLightDark
 import com.example.bluewave_mobile.ui.theme.BlueWaveTheme
+import com.example.bluewave_mobile.ui.theme.BrandBlue
+import com.example.bluewave_mobile.ui.theme.BrandBlueLight
 import java.text.DateFormat
 import java.util.Date
 
@@ -423,19 +425,44 @@ private fun GroupAvatarTile() {
 
 @Composable
 private fun Avatar(badgeText: String) {
-    Box(
-        modifier = Modifier
-            .size(40.dp)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = badgeText,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.SemiBold,
-        )
+    Box(modifier = Modifier.size(48.dp)) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(
+                    androidx.compose.ui.graphics.Brush.linearGradient(
+                        colors = listOf(BrandBlue, BrandBlueLight),
+                    ),
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = badgeText,
+                style = MaterialTheme.typography.titleMedium,
+                color = androidx.compose.ui.graphics.Color.White,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        // Bluetooth status pip in the bottom-right corner. Mirrors
+        // the redesign mockup — contacts shown in this list have all
+        // been seen recently over Bluetooth, so the badge is always
+        // present on the "existing chats" surface.
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .size(14.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surface),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Bluetooth,
+                contentDescription = null,
+                tint = BrandBlue,
+                modifier = Modifier.size(10.dp),
+            )
+        }
     }
 }
 

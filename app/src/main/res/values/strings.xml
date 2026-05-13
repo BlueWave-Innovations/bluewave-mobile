@@ -18,6 +18,13 @@
     <string name="permission_message">BlueWave needs Bluetooth access to discover nearby peers and exchange messages over a local radio link.</string>
     <string name="permission_grant">Grant permission</string>
     <string name="permission_combined_cd">Bluetooth permission required. Grant Bluetooth access to discover nearby peers and exchange messages.</string>
+    <string name="permission_message_permanently_denied">Bluetooth access was turned off in Settings. Open BlueWave permissions and enable "Nearby devices" to find phones around you.</string>
+    <string name="permission_open_settings">Open app settings</string>
+
+    <!-- Make-discoverable banner -->
+    <string name="discoverable_banner_title">You\'re invisible to other phones</string>
+    <string name="discoverable_banner_message">Make this phone visible for 30 min so peers can find you on their first scan.</string>
+    <string name="discoverable_banner_cta">Make visible</string>
 
     <!-- Chat screen -->
     <string name="chat_title">Chat</string>
@@ -179,4 +186,37 @@
     <string name="search_clear">Clear search</string>
     <string name="search_empty_title">Nothing matches your search</string>
     <string name="search_empty_message">Try a different name, contact tag, or word from a recent message.</string>
+
+    <!-- Modern UI redesign — extra labels -->
+    <string name="settings_profile_card_status">Visible over Bluetooth</string>
+    <string name="settings_profile_card_status_offline">Bluetooth hidden</string>
+    <string name="settings_section_appearance_caps">Appearance</string>
+    <string name="settings_section_system_caps">System</string>
+    <string name="settings_theme_short">Theme</string>
+    <string name="settings_language_short">Language</string>
+    <string name="settings_bt_visibility_short">Bluetooth visibility</string>
+    <string name="settings_bt_visibility_short_summary">Let nearby users find your profile and send messages without an internet connection.</string>
+    <string name="settings_theme_picker_title">Pick a theme</string>
+    <string name="settings_language_picker_title">Pick a language</string>
+    <string name="settings_qr_share">Show QR code</string>
+    <string name="chats_tab_all">All chats</string>
+    <string name="chats_tab_messenger">Messenger</string>
+    <string name="chats_tab_work">Work</string>
+    <string name="chats_filter_nearby">Nearby</string>
+    <string name="chats_filter_family">Family</string>
+    <string name="chat_status_online_bt">Online via Bluetooth</string>
+    <string name="chat_today">Today</string>
+    <string name="chat_input_placeholder_bt">Message over Bluetooth…</string>
+    <string name="profile_section_about">About</string>
+    <string name="profile_action_edit_name">Edit name</string>
+    <string name="profile_action_edit_handle">Edit tag</string>
+    <string name="profile_action_privacy">Privacy settings</string>
+    <string name="profile_action_share_qr">Share QR code</string>
+    <string name="profile_edit_name_title">Edit display name</string>
+    <string name="profile_edit_handle_title">Edit @tag</string>
+    <string name="profile_edit_bio_title">Edit bio</string>
+    <string name="profile_default_bio">Tell others a bit about yourself.</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_save">Save</string>
+    <string name="common_done">Done</string>
 </resources>

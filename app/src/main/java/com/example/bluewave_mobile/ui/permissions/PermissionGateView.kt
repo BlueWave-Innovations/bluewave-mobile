@@ -58,6 +58,7 @@ fun PermissionGateView(
     missing: List<String>,
     onGrantClick: () -> Unit,
     modifier: Modifier = Modifier,
+    permanentlyDenied: Boolean = false,
 ) {
     val combinedCd = stringResource(id = R.string.permission_combined_cd)
     Column(
@@ -85,7 +86,13 @@ fun PermissionGateView(
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = stringResource(id = R.string.permission_message),
+            text = stringResource(
+                id = if (permanentlyDenied) {
+                    R.string.permission_message_permanently_denied
+                } else {
+                    R.string.permission_message
+                },
+            ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -99,7 +106,15 @@ fun PermissionGateView(
         }
         Spacer(Modifier.height(24.dp))
         Button(onClick = onGrantClick) {
-            Text(text = stringResource(id = R.string.permission_grant))
+            Text(
+                text = stringResource(
+                    id = if (permanentlyDenied) {
+                        R.string.permission_open_settings
+                    } else {
+                        R.string.permission_grant
+                    },
+                ),
+            )
         }
     }
 }

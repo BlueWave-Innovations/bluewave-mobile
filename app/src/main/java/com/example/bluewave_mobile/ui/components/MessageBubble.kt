@@ -1,5 +1,8 @@
 package com.example.bluewave_mobile.ui.components
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -18,9 +21,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -28,6 +36,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.bluewave_mobile.R
 import com.example.bluewave_mobile.ui.state.ChatMessage
+import com.example.bluewave_mobile.ui.theme.BrandBlue
+import com.example.bluewave_mobile.ui.theme.BrandBlueLight
 import java.text.DateFormat
 import java.util.Date
 
@@ -35,30 +45,56 @@ import java.util.Date
  * Renders a single chat bubble aligned to the start (incoming) or end
  * (outgoing) of the row.
  *
- * Material 3 colour roles are intentional:
- *  * outgoing → `primaryContainer` / `onPrimaryContainer`;
- *  * incoming → `surfaceVariant` / `onSurfaceVariant`.
+ * Bubble styling:
+ *  * outgoing → brand blue gradient, white text, tail in bottom-end corner.
+ *  * incoming → surface-variant fill, on-surface text, tail in bottom-start.
+ *  * corrupted → error container with a 1dp outline.
  *
- * The composable is stateless and pure — all timing / decryption happens
- * upstream in the ChatScreen mapper. Step 24 will add a security
- * indicator next to the timestamp; step 26 will switch corrupted
- * bubbles to `errorContainer`.
+ * The composable is stateless and pure — all timing / decryption
+ * happens upstream in the ChatScreen mapper.
  */
 @Composable
 fun MessageBubble(
     message: ChatMessage,
     modifier: Modifier = Modifier,
 ) {
-    val containerColor = when {
-        message.isCorrupted -> MaterialTheme.colorScheme.errorContainer
-        message.isOutgoing -> MaterialTheme.colorScheme.primaryContainer
-        else -> MaterialTheme.colorScheme.surfaceVariant
+    val outgoingBrush: Brush = remember {
+        Brush.linearGradient(colors = listOf(BrandBlue, BrandBlueLight))
     }
-    val contentColor = when {
+    val errorBrush: Brush = Brush.linearGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.errorContainer,
+            MaterialTheme.colorScheme.errorContainer,
+        ),
+    )
+    val incomingBrush: Brush = Brush.linearGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.surfaceVariant,
+            MaterialTheme.colorScheme.surfaceVariant,
+        ),
+    )
+    val containerBrush: Brush = when {
+        message.isCorrupted -> errorBrush
+        message.isOutgoing -> outgoingBrush
+        else -> incomingBrush
+    }
+    val contentColor: Color = when {
         message.isCorrupted -> MaterialTheme.colorScheme.onErrorContainer
-        message.isOutgoing -> MaterialTheme.colorScheme.onPrimaryContainer
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
+        message.isOutgoing -> Color.White
+        else -> MaterialTheme.colorScheme.onSurface
     }
+
+    // Subtle scale-in when a fresh bubble lands. The animation runs
+    // once per bubble — the key is the message id, so re-composing
+    // an already-mounted bubble doesn't re-animate it.
+    val initialScale: Float by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "bubble-in",
+    )
 
     val timeFormatter = remember { DateFormat.getTimeInstance(DateFormat.SHORT) }
     val formattedTime = remember(message.timestamp) {
@@ -89,27 +125,34 @@ fun MessageBubble(
     val corruptedLabel = stringResource(R.string.chat_corrupted_label)
     val corruptedMessage = stringResource(R.string.chat_corrupted_message)
 
+    val bubbleShape: Shape = if (message.isOutgoing) {
+        RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp, bottomStart = 22.dp, bottomEnd = 6.dp)
+    } else {
+        RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp, bottomStart = 6.dp, bottomEnd = 22.dp)
+    }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp),
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .scale(initialScale),
         horizontalArrangement = if (message.isOutgoing) Arrangement.End else Arrangement.Start,
     ) {
         val bubbleModifier = Modifier
             .widthIn(max = 320.dp)
-            .background(containerColor, RoundedCornerShape(16.dp))
+            .background(brush = containerBrush, shape = bubbleShape)
             .let { base ->
                 if (message.isCorrupted) {
                     base.border(
                         width = 1.dp,
                         color = MaterialTheme.colorScheme.error,
-                        shape = RoundedCornerShape(16.dp),
+                        shape = bubbleShape,
                     )
                 } else {
                     base
                 }
             }
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .padding(horizontal = 14.dp, vertical = 10.dp)
             // mergeDescendants collapses every nested Text / Icon
             // (timestamp, security indicator, warning row) into a
             // single TalkBack node. Without it, screen readers narrate
