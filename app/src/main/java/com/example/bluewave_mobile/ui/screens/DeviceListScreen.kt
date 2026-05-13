@@ -54,6 +54,7 @@ import com.example.bluewave_mobile.data.BuiltInFolder
 import com.example.bluewave_mobile.data.ChatFolderEntity
 import com.example.bluewave_mobile.ui.components.ContactsList
 import com.example.bluewave_mobile.ui.components.EmptyStateView
+import com.example.bluewave_mobile.ui.components.MakeDiscoverableBanner
 import com.example.bluewave_mobile.ui.intent.DeviceListIntent
 import com.example.bluewave_mobile.ui.model.ContactRow
 import com.example.bluewave_mobile.ui.permissions.PermissionGateView
@@ -195,6 +196,7 @@ fun DeviceListScreen(
                     PermissionGateView(
                         missing = permissions.missingPermissions,
                         onGrantClick = { permissions.requestPermissions() },
+                        permanentlyDenied = permissions.permanentlyDenied,
                     )
                 }
                 uiState is DeviceListUiState.BluetoothDisabled -> {
@@ -225,6 +227,7 @@ fun DeviceListScreen(
                         derivedStateOf { applySearchFilter(rows, searchQuery) }
                     }
                     Column(modifier = Modifier.fillMaxSize()) {
+                        MakeDiscoverableBanner()
                         SearchField(
                             query = searchQuery,
                             onQueryChange = { searchQuery = it },

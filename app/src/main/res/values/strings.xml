@@ -18,6 +18,13 @@
     <string name="permission_message">BlueWave needs Bluetooth access to discover nearby peers and exchange messages over a local radio link.</string>
     <string name="permission_grant">Grant permission</string>
     <string name="permission_combined_cd">Bluetooth permission required. Grant Bluetooth access to discover nearby peers and exchange messages.</string>
+    <string name="permission_message_permanently_denied">Bluetooth access was turned off in Settings. Open BlueWave permissions and enable "Nearby devices" to find phones around you.</string>
+    <string name="permission_open_settings">Open app settings</string>
+
+    <!-- Make-discoverable banner -->
+    <string name="discoverable_banner_title">You\'re invisible to other phones</string>
+    <string name="discoverable_banner_message">Make this phone visible for 30 min so peers can find you on their first scan.</string>
+    <string name="discoverable_banner_cta">Make visible</string>
 
     <!-- Chat screen -->
     <string name="chat_title">Chat</string>

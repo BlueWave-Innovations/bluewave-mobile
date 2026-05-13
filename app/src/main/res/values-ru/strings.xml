@@ -18,6 +18,13 @@
     <string name="permission_message">BlueWave нужен доступ к Bluetooth, чтобы находить устройства поблизости и обмениваться сообщениями по локальному радиоканалу.</string>
     <string name="permission_grant">Разрешить</string>
     <string name="permission_combined_cd">Нужно разрешение на Bluetooth. Разрешите доступ, чтобы находить устройства поблизости и обмениваться сообщениями.</string>
+    <string name="permission_message_permanently_denied">Доступ к Bluetooth выключен в системе. Откройте настройки BlueWave и включите «Устройства поблизости», чтобы видеть телефоны рядом.</string>
+    <string name="permission_open_settings">Открыть настройки приложения</string>
+
+    <!-- Make-discoverable banner -->
+    <string name="discoverable_banner_title">Вас не видят другие телефоны</string>
+    <string name="discoverable_banner_message">Сделайте телефон видимым на 30 минут — соседи увидят вас при первом сканировании.</string>
+    <string name="discoverable_banner_cta">Сделать видимым</string>
 
     <!-- Chat screen -->
     <string name="chat_title">Чат</string>
