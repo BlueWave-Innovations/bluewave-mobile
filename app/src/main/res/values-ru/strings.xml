@@ -178,4 +178,37 @@
     <string name="search_clear">Очистить поиск</string>
     <string name="search_empty_title">Ничего не найдено</string>
     <string name="search_empty_message">Попробуйте другое имя, тег контакта или слово из недавнего сообщения.</string>
+
+    <!-- Modern UI redesign — extra labels -->
+    <string name="settings_profile_card_status">Виден по Bluetooth</string>
+    <string name="settings_profile_card_status_offline">Скрыт по Bluetooth</string>
+    <string name="settings_section_appearance_caps">Внешний вид</string>
+    <string name="settings_section_system_caps">Система</string>
+    <string name="settings_theme_short">Темы</string>
+    <string name="settings_language_short">Язык</string>
+    <string name="settings_bt_visibility_short">Видимость Bluetooth</string>
+    <string name="settings_bt_visibility_short_summary">Разрешить находящимся рядом пользователям находить ваш профиль и отправлять сообщения без подключения к Интернету.</string>
+    <string name="settings_theme_picker_title">Выберите тему</string>
+    <string name="settings_language_picker_title">Выберите язык</string>
+    <string name="settings_qr_share">Показать QR-код</string>
+    <string name="chats_tab_all">Все чаты</string>
+    <string name="chats_tab_messenger">Мессенджер</string>
+    <string name="chats_tab_work">Работа</string>
+    <string name="chats_filter_nearby">Рядом</string>
+    <string name="chats_filter_family">Семья</string>
+    <string name="chat_status_online_bt">В сети через Bluetooth</string>
+    <string name="chat_today">Сегодня</string>
+    <string name="chat_input_placeholder_bt">Сообщение через Bluetooth…</string>
+    <string name="profile_section_about">О себе</string>
+    <string name="profile_action_edit_name">Изменить имя</string>
+    <string name="profile_action_edit_handle">Изменить тег</string>
+    <string name="profile_action_privacy">Настройки приватности</string>
+    <string name="profile_action_share_qr">Поделиться QR-кодом</string>
+    <string name="profile_edit_name_title">Изменить имя</string>
+    <string name="profile_edit_handle_title">Изменить @тег</string>
+    <string name="profile_edit_bio_title">Изменить описание</string>
+    <string name="profile_default_bio">Расскажите немного о себе.</string>
+    <string name="common_cancel">Отмена</string>
+    <string name="common_save">Сохранить</string>
+    <string name="common_done">Готово</string>
 </resources>
