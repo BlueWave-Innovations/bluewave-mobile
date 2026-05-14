@@ -219,6 +219,7 @@
     <string name="common_cancel">Cancel</string>
     <string name="common_save">Save</string>
     <string name="common_done">Done</string>
+    <string name="common_back">Back</string>
 
     <!-- Notification channels & foreground service -->
     <string name="notification_channel_service">Bluetooth Service</string>

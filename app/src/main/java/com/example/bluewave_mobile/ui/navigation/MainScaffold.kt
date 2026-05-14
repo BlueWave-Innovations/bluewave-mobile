@@ -155,7 +155,10 @@ fun MainScaffold() {
             }
             composable<ChatRoute> { backStackEntry ->
                 val chatRoute: ChatRoute = backStackEntry.toRoute()
-                ChatScreen(deviceMac = chatRoute.deviceMac)
+                ChatScreen(
+                    deviceMac = chatRoute.deviceMac,
+                    onBack = { navController.popBackStack() },
+                )
             }
             composable<GroupChatRoute> { backStackEntry ->
                 val groupRoute: GroupChatRoute = backStackEntry.toRoute()

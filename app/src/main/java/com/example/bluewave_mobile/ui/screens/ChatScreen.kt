@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -31,6 +32,7 @@ import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -98,6 +100,7 @@ import java.util.Locale
 @Composable
 fun ChatScreen(
     deviceMac: String,
+    onBack: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ChatViewModel = viewModel(
         factory = ChatViewModel.Factory,
@@ -143,6 +146,14 @@ fun ChatScreen(
             val handle: String? = peerProfile?.handle?.takeUnless(String::isBlank)
             val chatWithCd = stringResource(id = R.string.chat_with_cd, displayName)
             TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(id = R.string.common_back),
+                        )
+                    }
+                },
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,

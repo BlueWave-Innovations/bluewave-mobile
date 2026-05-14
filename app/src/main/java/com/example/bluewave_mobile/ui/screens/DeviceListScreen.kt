@@ -8,8 +8,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.BluetoothSearching
 import androidx.compose.material.icons.filled.BluetoothDisabled
@@ -20,7 +19,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,8 +48,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bluewave_mobile.R
-import com.example.bluewave_mobile.data.BuiltInFolder
-import com.example.bluewave_mobile.data.ChatFolderEntity
 import com.example.bluewave_mobile.ui.components.ContactsList
 import com.example.bluewave_mobile.ui.components.EmptyStateView
 import com.example.bluewave_mobile.ui.components.MakeDiscoverableBanner
@@ -115,8 +111,6 @@ fun DeviceListScreen(
     settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val availableFolders by viewModel.availableFolders.collectAsStateWithLifecycle()
-    val selectedFolderId by viewModel.selectedFolderId.collectAsStateWithLifecycle()
     val permissions = rememberBluetoothPermissionState()
     val snackbarHostState = remember { SnackbarHostState() }
     var searchQuery: String by rememberSaveable { mutableStateOf("") }
@@ -239,11 +233,6 @@ fun DeviceListScreen(
                             onQueryChange = { searchQuery = it },
                             onClear = { searchQuery = "" },
                         )
-                        FolderChipRow(
-                            folders = availableFolders,
-                            selectedFolderId = selectedFolderId,
-                            onSelect = viewModel::setFolder,
-                        )
                         Box(modifier = Modifier.fillMaxSize()) {
                             if (rows.isEmpty() && uiState is DeviceListUiState.Loaded) {
                                 EmptyStateView(
@@ -285,54 +274,6 @@ fun DeviceListScreen(
                     }
                 }
             }
-        }
-    }
-}
-
-/**
- * Horizontally scrollable chip row that drives the active folder
- * filter. Two categories of chips:
- *  * **All** — synthetic, encoded as `null` in
- *    [DeviceListViewModel.selectedFolderId]; surfaces the unfiltered
- *    contact list. Always rendered first.
- *  * **Persistent folders** — one chip per row in [folders],
- *    rendered in the order returned by
- *    [com.example.bluewave_mobile.data.FolderRepository.observeFolders].
- *    Built-in keys map to localised resources so "Work" reads as
- *    "Работа" / "Work" depending on locale.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun FolderChipRow(
-    folders: List<ChatFolderEntity>,
-    selectedFolderId: String?,
-    onSelect: (String?) -> Unit,
-) {
-    LazyRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp),
-    ) {
-        item(key = "chip:all") {
-            FilterChip(
-                selected = selectedFolderId == null,
-                onClick = { onSelect(null) },
-                label = { Text(text = stringResource(id = R.string.folders_chip_all)) },
-            )
-        }
-        items(items = folders, key = { "chip:" + it.id }) { folder ->
-            val label = when (folder.builtInKey) {
-                BuiltInFolder.WORK -> stringResource(id = R.string.folders_builtin_work)
-                BuiltInFolder.FAMILY -> stringResource(id = R.string.folders_builtin_family)
-                else -> folder.name.ifBlank { folder.id }
-            }
-            FilterChip(
-                selected = selectedFolderId == folder.id,
-                onClick = { onSelect(folder.id) },
-                label = { Text(text = label) },
-            )
         }
     }
 }

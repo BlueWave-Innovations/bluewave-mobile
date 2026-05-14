@@ -218,6 +218,7 @@
     <string name="common_cancel">Отмена</string>
     <string name="common_save">Сохранить</string>
     <string name="common_done">Готово</string>
+    <string name="common_back">Назад</string>
 
     <!-- Notification channels & foreground service -->
     <string name="notification_channel_service">Bluetooth-сервис</string>
