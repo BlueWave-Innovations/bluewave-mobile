@@ -110,6 +110,21 @@ class MessageRepositoryImpl(
         // be re-sent manually by the user once the link is restored.
         if (isPausedFor(macAddress)) return
 
+        // Just-in-time connect. The auto-connect fan-out on app
+        // launch (BlueWaveApplication.connectToBondedPeers) only
+        // covers already-bonded peers, and even for bonded peers it
+        // may not have completed by the time the user fires off the
+        // very first message. Without this check `transport.send`
+        // returns false (no live session) and the message is
+        // silently dropped — the user sees their own bubble and
+        // assumes everything worked while the peer never receives
+        // the bytes. The call is idempotent: when a session already
+        // exists, `connect` returns immediately.
+        val t = transport
+        if (t != null && !t.isConnected(macAddress)) {
+            runCatching { t.connect(macAddress) }
+        }
+
         // Hand the plaintext bytes to the transport. The transport
         // owns the framing (length-prefix wire format) and the
         // per-peer BluetoothSession; if it returns false the session
