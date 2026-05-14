@@ -65,6 +65,18 @@ class BlueWaveApplication : Application() {
         // manager itself defers all heavy work to Dispatchers.IO.
         container.bluetoothSessionManager.start()
 
+        // Register the SDP record receiver up-front so the device-list
+        // screen can probe peers as soon as the user taps "Scan".
+        container.sdpProber.start()
+
+        // Stage the running APK in the cache so `ApkSender.suggestInstall`
+        // has a FileProvider URI ready when the user taps the
+        // "Send via Bluetooth" CTA on a no-app peer. Cheap I/O on the
+        // app-private cache directory; safe to run on the main thread
+        // for hackathon-scale binaries.
+        runCatching { container.apkSender.stageApk() }
+            .onFailure { e -> Log.w(TAG, "APK staging failed at process start", e) }
+
         // Pump every framed payload received from any peer into the
         // repository. The repository owns at-rest encryption, dedupe
         // (via the database) and wakes the UI through Flow.
@@ -89,6 +101,7 @@ class BlueWaveApplication : Application() {
         // no leaked server sockets when the platform actually invokes
         // it.
         runCatching { container.bluetoothSessionManager.shutdown() }
+        runCatching { container.sdpProber.stop() }
         super.onTerminate()
     }
 

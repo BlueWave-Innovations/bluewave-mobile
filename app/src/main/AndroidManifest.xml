@@ -19,16 +19,13 @@
         android:name="android.permission.BLUETOOTH_ADVERTISE"
         tools:targetApi="31" />
 
-    <!-- Legacy permissions for devices running API 30 and below. -->
-    <uses-permission
-        android:name="android.permission.BLUETOOTH"
-        android:maxSdkVersion="30" />
-    <uses-permission
-        android:name="android.permission.BLUETOOTH_ADMIN"
-        android:maxSdkVersion="30" />
-    <uses-permission
-        android:name="android.permission.ACCESS_FINE_LOCATION"
-        android:maxSdkVersion="30" />
+    <!--
+        minSdk = 31, so the legacy `BLUETOOTH` / `BLUETOOTH_ADMIN` /
+        `ACCESS_FINE_LOCATION` triplet that was required for discovery
+        on API 30 and below is intentionally NOT declared. The runtime
+        Bluetooth permissions above already cover the full API surface
+        BlueWave touches.
+    -->
 
     <!-- Hardware feature declaration for Bluetooth. -->
     <uses-feature
@@ -53,6 +50,22 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            Exposes the staged BlueWave APK to the system Bluetooth
+            share activity so `ApkSender.suggestInstall` can hand the
+            installer over via Object Push Profile. Only files inside
+            the cache dir are exposed (see res/xml/file_paths.xml).
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>
