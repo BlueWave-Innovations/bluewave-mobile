@@ -1,5 +1,6 @@
 package com.example.bluewave_mobile.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -34,6 +35,12 @@ import androidx.room.PrimaryKey
  *                  `true`; incoming messages start as `false` and flip to
  *                  `true` once the user opens the matching conversation.
  *                  Drives the `unreadCount` badge on the device list.
+ * @property deliveryStatus Delivery lifecycle for outgoing messages:
+ *                          0 = SENT (written to local DB, pushed to socket),
+ *                          1 = DELIVERED (peer acknowledged receipt).
+ *                          Incoming messages always stay at 0.
+ * @property messageUuid Application-level unique id (UUID) used to
+ *                       correlate outgoing messages with their ACKs.
  */
 @Entity(
     tableName = "messages",
@@ -49,7 +56,15 @@ data class MessageEntity(
     val isOutgoing: Boolean,
     val senderName: String = "",
     val isRead: Boolean = false,
+    @ColumnInfo(defaultValue = "0")
+    val deliveryStatus: Int = 0,
+    @ColumnInfo(defaultValue = "")
+    val messageUuid: String = "",
 ) {
+    companion object {
+        const val STATUS_SENT = 0
+        const val STATUS_DELIVERED = 1
+    }
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -64,6 +79,8 @@ data class MessageEntity(
         if (isOutgoing != other.isOutgoing) return false
         if (senderName != other.senderName) return false
         if (isRead != other.isRead) return false
+        if (deliveryStatus != other.deliveryStatus) return false
+        if (messageUuid != other.messageUuid) return false
 
         return true
     }
@@ -77,6 +94,8 @@ data class MessageEntity(
         result = 31 * result + isOutgoing.hashCode()
         result = 31 * result + senderName.hashCode()
         result = 31 * result + isRead.hashCode()
+        result = 31 * result + deliveryStatus.hashCode()
+        result = 31 * result + messageUuid.hashCode()
         return result
     }
 }

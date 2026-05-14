@@ -63,6 +63,7 @@ object BlueWaveFrame {
         GROUP_INVITE(0x05),
         GROUP_MESSAGE(0x06),
         HEARTBEAT(0x07),
+        MESSAGE_ACK(0x08),
         ;
 
         companion object {

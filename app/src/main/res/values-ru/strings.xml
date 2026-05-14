@@ -218,4 +218,12 @@
     <string name="common_cancel">Отмена</string>
     <string name="common_save">Сохранить</string>
     <string name="common_done">Готово</string>
+
+    <!-- Notification channels & foreground service -->
+    <string name="notification_channel_service">Bluetooth-сервис</string>
+    <string name="notification_channel_service_desc">Поддерживает Bluetooth-соединения в фоне</string>
+    <string name="notification_channel_messages">Новые сообщения</string>
+    <string name="notification_channel_messages_desc">Уведомления о входящих сообщениях</string>
+    <string name="notification_service_title">BlueWave</string>
+    <string name="notification_service_text">Bluetooth-мессенджер активен</string>
 </resources>

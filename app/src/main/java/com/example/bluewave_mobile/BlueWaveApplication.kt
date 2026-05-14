@@ -10,6 +10,7 @@ import android.content.IntentFilter
 import android.util.Log
 import com.example.bluewave_mobile.di.AppContainer
 import com.example.bluewave_mobile.network.BluetoothConstants
+import com.example.bluewave_mobile.service.BluetoothForegroundService
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -283,6 +284,10 @@ class BlueWaveApplication : Application() {
                 }
             }
         }
+
+        // Start the foreground service so Bluetooth stays active in
+        // the background and message notifications are posted.
+        BluetoothForegroundService.start(this)
 
         // NOTE: the user-facing "Bluetooth visibility" selector in the
         // Settings screen only controls the Android *discoverable*

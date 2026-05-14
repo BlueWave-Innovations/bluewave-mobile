@@ -104,6 +104,9 @@ interface MessageDao {
      */
     @Query("UPDATE messages SET isRead = 1 WHERE macAddress = :macAddress AND isOutgoing = 0 AND isRead = 0")
     suspend fun markPeerAsRead(macAddress: String)
+
+    @Query("UPDATE messages SET deliveryStatus = :status WHERE messageUuid = :uuid")
+    suspend fun updateDeliveryStatus(uuid: String, status: Int)
 }
 
 /**

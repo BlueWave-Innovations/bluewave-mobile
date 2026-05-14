@@ -219,4 +219,12 @@
     <string name="common_cancel">Cancel</string>
     <string name="common_save">Save</string>
     <string name="common_done">Done</string>
+
+    <!-- Notification channels & foreground service -->
+    <string name="notification_channel_service">Bluetooth Service</string>
+    <string name="notification_channel_service_desc">Keeps Bluetooth connections alive in the background</string>
+    <string name="notification_channel_messages">New Messages</string>
+    <string name="notification_channel_messages_desc">Notifications for incoming messages</string>
+    <string name="notification_service_title">BlueWave</string>
+    <string name="notification_service_text">Bluetooth messaging is active</string>
 </resources>

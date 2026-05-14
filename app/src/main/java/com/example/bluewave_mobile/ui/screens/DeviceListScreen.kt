@@ -62,10 +62,6 @@ import com.example.bluewave_mobile.ui.permissions.rememberBluetoothPermissionSta
 import com.example.bluewave_mobile.ui.state.DeviceListUiState
 import com.example.bluewave_mobile.ui.viewmodel.DeviceListViewModel
 import androidx.compose.foundation.text.KeyboardOptions
-import android.bluetooth.BluetoothAdapter
-import android.content.Intent
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalContext
 import com.example.bluewave_mobile.preferences.BluetoothVisibility
@@ -125,30 +121,6 @@ fun DeviceListScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var searchQuery: String by rememberSaveable { mutableStateOf("") }
     val btVisibility by settingsViewModel.bluetoothVisibility.collectAsStateWithLifecycle()
-
-    val discoverableLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult(),
-    ) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_CANCELED) {
-            settingsViewModel.setBluetoothVisibility(BluetoothVisibility.OFF)
-        }
-    }
-
-    // Auto-request Bluetooth discoverability when the user enters this
-    // screen so that both peers can see each other during discovery.
-    // Without this, a device is hidden from inquiry scans unless the
-    // user manually opens system Bluetooth settings.
-    LaunchedEffect(permissions.allGranted, btVisibility) {
-        if (permissions.allGranted && btVisibility == BluetoothVisibility.OFF) {
-            settingsViewModel.setBluetoothVisibility(BluetoothVisibility.MIN_30)
-            val intent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE)
-                .putExtra(
-                    BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION,
-                    BluetoothVisibility.MIN_30.durationSeconds,
-                )
-            runCatching { discoverableLauncher.launch(intent) }
-        }
-    }
 
     // Auto-start the first scan once permissions come back as granted —
     // the user shouldn't have to tap the FAB after dismissing the

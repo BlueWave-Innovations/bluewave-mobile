@@ -175,6 +175,19 @@ object DatabaseProvider {
     }
 
     /**
+     * v6 → v7: adds delivery-status tracking to messages.
+     *  * `deliveryStatus` — 0 = SENT, 1 = DELIVERED.
+     *  * `messageUuid` — application-level UUID used to correlate
+     *    outgoing messages with their ACKs from the peer.
+     */
+    private val MIGRATION_6_7: Migration = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE messages ADD COLUMN deliveryStatus INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE messages ADD COLUMN messageUuid TEXT NOT NULL DEFAULT ''")
+        }
+    }
+
+    /**
      * Returns the singleton [AppDatabase] instance, creating it if necessary.
      *
      * @param context Application context (not Activity context) to prevent memory leaks.
@@ -187,7 +200,7 @@ object DatabaseProvider {
                 AppDatabase::class.java,
                 "bluewave_messages.db",
             )
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 // Destructive fallback as a last-resort net for older
                 // unreleased schema revisions; production v2+ → v6 always
                 // uses the explicit migrations above.

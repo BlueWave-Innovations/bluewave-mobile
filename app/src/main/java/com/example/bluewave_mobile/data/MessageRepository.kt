@@ -222,4 +222,12 @@ interface MessageRepository {
      *                   a valid encryption key.
      */
     suspend fun resumeNetworkOperations(macAddress: String)
+
+    /**
+     * Callback invoked after an incoming text message is persisted.
+     * Used by the foreground service to post notifications.
+     */
+    var onMessageReceived: ((senderMac: String, senderName: String, plaintext: String) -> Unit)?
+        get() = null
+        set(_) {}
 }

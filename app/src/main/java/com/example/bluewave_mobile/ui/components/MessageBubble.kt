@@ -35,6 +35,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.bluewave_mobile.R
+import com.example.bluewave_mobile.data.MessageEntity
 import com.example.bluewave_mobile.ui.state.ChatMessage
 import com.example.bluewave_mobile.ui.theme.BrandBlue
 import com.example.bluewave_mobile.ui.theme.BrandBlueLight
@@ -212,6 +213,15 @@ fun MessageBubble(
                     style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier.padding(start = 4.dp),
                 )
+                if (message.isOutgoing && !message.isCorrupted) {
+                    val statusText = if (message.deliveryStatus >= MessageEntity.STATUS_DELIVERED) "✓✓" else "✓"
+                    Text(
+                        text = statusText,
+                        color = contentColor.copy(alpha = 0.7f),
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(start = 4.dp),
+                    )
+                }
             }
         }
     }

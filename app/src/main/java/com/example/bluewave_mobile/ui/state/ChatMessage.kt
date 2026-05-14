@@ -30,4 +30,5 @@ data class ChatMessage(
     val isOutgoing: Boolean,
     val timestamp: Long,
     val isCorrupted: Boolean = false,
+    val deliveryStatus: Int = 0,
 )

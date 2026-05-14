@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -85,6 +86,15 @@ class UserPreferencesRepository(
         dataStore.edit { it[KEY_BT_VISIBILITY] = value.name }
     }
 
+    /** Whether the one-time BT visibility prompt has been shown. */
+    val isBtVisibilityPromptShown: Flow<Boolean> =
+        dataStore.data.map { prefs -> prefs[KEY_BT_VISIBILITY_PROMPT_SHOWN] ?: false }
+
+    /** Mark the BT visibility prompt as shown. */
+    suspend fun setBtVisibilityPromptShown() {
+        dataStore.edit { it[KEY_BT_VISIBILITY_PROMPT_SHOWN] = true }
+    }
+
     private companion object {
         // Keep keys explicit so a future migration or rename does
         // not silently zero out values.
@@ -95,6 +105,7 @@ class UserPreferencesRepository(
         val KEY_PROFILE_BIO = stringPreferencesKey("profile_bio")
         val KEY_PROFILE_AVATAR_URI = stringPreferencesKey("profile_avatar_uri")
         val KEY_BT_VISIBILITY = stringPreferencesKey("bluetooth_visibility")
+        val KEY_BT_VISIBILITY_PROMPT_SHOWN = booleanPreferencesKey("bt_visibility_prompt_shown")
     }
 }
 

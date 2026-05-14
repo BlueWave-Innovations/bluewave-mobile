@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.util.UUID
 
 /**
  * Concrete implementation of [MessageRepository] serving as the Single Source of Truth.
@@ -62,6 +63,8 @@ class MessageRepositoryImpl(
     private val localProfileProvider: suspend () -> LocalProfile = { LocalProfile.EMPTY },
     private val groupRepository: GroupRepository? = null,
 ) : MessageRepository {
+
+    override var onMessageReceived: ((String, String, String) -> Unit)? = null
 
     override fun getMessagesByDevice(macAddress: String): Flow<List<MessageEntity>> {
         return messageDao.getMessagesByDevice(macAddress)
@@ -209,13 +212,9 @@ class MessageRepositoryImpl(
                 engine, key, senderName, frame.payload, isInvite = false,
             )
             BlueWaveFrame.Type.HEARTBEAT -> {
-                // Heartbeats are transport-internal — `BluetoothSession`
-                // filters them out before they reach the repository.
-                // We still handle the case defensively in case a heartbeat
-                // ever leaks through (e.g. a unit-test wire harness or a
-                // future routing change) — silently dropping keeps the
-                // application layer unaware of liveness machinery.
+                // Heartbeats are transport-internal — silently dropped.
             }
+            BlueWaveFrame.Type.MESSAGE_ACK -> handleIncomingAck(frame.payload)
         }
     }
 
@@ -223,9 +222,7 @@ class MessageRepositoryImpl(
         val key = macAddress.uppercase()
         val plaintextBytes = plaintext.toByteArray(Charsets.UTF_8)
         val (iv, ciphertext) = cryptoManager.encrypt(plaintextBytes)
-        // Persist the encrypted payload locally first — Single Source of
-        // Truth: the UI subscribes to the DB and updates automatically
-        // as soon as the row lands.
+        val uuid = UUID.randomUUID().toString()
         messageDao.insertMessage(
             MessageEntity(
                 macAddress = macAddress,
@@ -234,6 +231,8 @@ class MessageRepositoryImpl(
                 isOutgoing = true,
                 senderName = "Me",
                 isRead = true,
+                deliveryStatus = MessageEntity.STATUS_SENT,
+                messageUuid = uuid,
             )
         )
         // Suppress radio writes when the peer is paused due to a
@@ -264,22 +263,19 @@ class MessageRepositoryImpl(
                 }
         }
 
+        // Prepend the message UUID so the receiver can ACK it.
+        val wirePayload = (uuid + "\n").toByteArray(Charsets.UTF_8) + plaintextBytes
+
         val engine = signalEngine
         if (engine == null) {
-            // Legacy plaintext-on-wire path: the transport length-prefixes
-            // these bytes for free, no E2EE wrapping required.
-            activeTransport.send(macAddress, plaintextBytes)
+            activeTransport.send(macAddress, wirePayload)
             return
         }
 
-        // E2EE path: if we already have a Signal session for this
-        // peer encrypt + ship now; otherwise queue the plaintext and
-        // make sure our key bundle is in flight so the handshake can
-        // complete and drain the queue.
         if (engine.hasSession(key)) {
-            shipEncrypted(engine, activeTransport, key, plaintextBytes)
+            shipEncrypted(engine, activeTransport, key, wirePayload)
         } else {
-            enqueuePending(key, plaintextBytes)
+            enqueuePending(key, wirePayload)
             sendLocalKeyBundleIfNeeded(key)
         }
     }
@@ -624,7 +620,21 @@ class MessageRepositoryImpl(
         senderName: String,
         plaintext: ByteArray,
     ) {
-        val (iv, ciphertext) = cryptoManager.encrypt(plaintext)
+        // Extract the UUID prefix if present: "<uuid>\n<message>"
+        val raw = String(plaintext, Charsets.UTF_8)
+        val nlIdx = raw.indexOf('\n')
+        val messageUuid: String
+        val messageText: String
+        if (nlIdx == UUID_LENGTH) {
+            messageUuid = raw.substring(0, UUID_LENGTH)
+            messageText = raw.substring(UUID_LENGTH + 1)
+        } else {
+            messageUuid = ""
+            messageText = raw
+        }
+
+        val messageBytes = messageText.toByteArray(Charsets.UTF_8)
+        val (iv, ciphertext) = cryptoManager.encrypt(messageBytes)
         messageDao.insertMessage(
             MessageEntity(
                 macAddress = macAddress,
@@ -634,9 +644,48 @@ class MessageRepositoryImpl(
                 senderName = senderName,
             )
         )
+
+        // Send delivery ACK back to the sender.
+        if (messageUuid.isNotBlank()) {
+            sendAckForMessage(macAddress.uppercase(), messageUuid)
+        }
+
+        onMessageReceived?.invoke(macAddress, senderName, messageText)
+    }
+
+    private suspend fun sendAckForMessage(macAddress: String, messageUuid: String) {
+        val activeTransport = transport ?: return
+        val payload = messageUuid.toByteArray(Charsets.UTF_8)
+        val engine = signalEngine
+        if (engine != null && engine.hasSession(macAddress)) {
+            val ct = try {
+                engine.encrypt(macAddress, payload)
+            } catch (e: SignalEngineException) {
+                Log.w(TAG, "ACK encrypt failed for $macAddress")
+                return
+            }
+            val frameType = when (ct.type) {
+                SignalEngine.Ciphertext.Type.SIGNAL_MESSAGE -> BlueWaveFrame.Type.SIGNAL_MESSAGE
+                SignalEngine.Ciphertext.Type.PREKEY_SIGNAL_MESSAGE -> BlueWaveFrame.Type.PREKEY_SIGNAL_MESSAGE
+            }
+            val innerFramed = BlueWaveFrame.encode(frameType, ct.bytes)
+            val ackFrame = BlueWaveFrame.encode(BlueWaveFrame.Type.MESSAGE_ACK, innerFramed)
+            activeTransport.send(macAddress, ackFrame)
+        } else {
+            val ackFrame = BlueWaveFrame.encode(BlueWaveFrame.Type.MESSAGE_ACK, payload)
+            activeTransport.send(macAddress, ackFrame)
+        }
+    }
+
+    private suspend fun handleIncomingAck(body: ByteArray) {
+        val uuid = String(body, Charsets.UTF_8)
+        if (uuid.isNotBlank()) {
+            messageDao.updateDeliveryStatus(uuid, MessageEntity.STATUS_DELIVERED)
+        }
     }
 
     private companion object {
         const val TAG = "MessageRepository"
+        const val UUID_LENGTH = 36
     }
 }

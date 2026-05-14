@@ -43,6 +43,7 @@ import com.example.bluewave_mobile.ui.screens.ChatScreen
 import com.example.bluewave_mobile.ui.screens.DeviceListScreen
 import com.example.bluewave_mobile.ui.theme.BlueWaveTheme
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
@@ -84,6 +85,7 @@ class MainActivity : ComponentActivity() {
             // the launcher is a SystemUI activity, so we don't have
             // to chain it behind PermissionGateView.
             EnsureBluetoothEnabled()
+            OneTimeBluetoothVisibilityPrompt(prefs)
 
             // Drive the per-app locale picker. The activity is a
             // `ComponentActivity`, not an `AppCompatActivity`, so
@@ -249,5 +251,29 @@ private fun EnsureBluetoothEnabled() {
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+}
+
+/**
+ * One-time side-effect that requests Bluetooth discoverability
+ * on the very first app launch. Subsequent launches skip the
+ * prompt — the user manages visibility from Settings.
+ */
+@Composable
+private fun OneTimeBluetoothVisibilityPrompt(
+    prefs: UserPreferencesRepository,
+) {
+    val shown by prefs.isBtVisibilityPromptShown.collectAsStateWithLifecycle(initialValue = true)
+    val discoverableLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+    ) { /* result ignored — flag is set regardless */ }
+
+    LaunchedEffect(shown) {
+        if (!shown) {
+            val intent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE)
+                .putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120)
+            runCatching { discoverableLauncher.launch(intent) }
+            launch { prefs.setBtVisibilityPromptShown() }
+        }
     }
 }

@@ -273,6 +273,7 @@ class ChatViewModel(
                 text = result.plaintext.toString(Charsets.UTF_8),
                 isOutgoing = entity.isOutgoing,
                 timestamp = entity.timestamp,
+                deliveryStatus = entity.deliveryStatus,
             )
             is DecryptionResult.Tampered -> ChatMessage(
                 id = entity.id,
@@ -280,6 +281,7 @@ class ChatViewModel(
                 isOutgoing = entity.isOutgoing,
                 timestamp = entity.timestamp,
                 isCorrupted = true,
+                deliveryStatus = entity.deliveryStatus,
             )
         }
     }
