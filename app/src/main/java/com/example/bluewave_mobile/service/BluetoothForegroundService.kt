@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.example.bluewave_mobile.BlueWaveApplication
@@ -35,8 +36,43 @@ class BluetoothForegroundService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // Re-verify the BLUETOOTH_CONNECT runtime permission inside
+        // onStartCommand, not only in the static `start(context)`
+        // companion. Two paths can bring us here without the
+        // permission held:
+        //   * Android can resurrect a `START_STICKY` service whose
+        //     process was killed by the OS — by the time it does so,
+        //     the user may have revoked Nearby devices.
+        //   * On Android 16 (targetSdk 36) the OS validates the
+        //     `connectedDevice` foreground-service type at the
+        //     moment `startForeground` is invoked, not when
+        //     `startForegroundService` was queued. If permission
+        //     was revoked between those two calls, startForeground
+        //     throws SecurityException and crashes the process.
+        // In either case, stop quietly with START_NOT_STICKY so the
+        // OS doesn't retry the loop; the next user-driven permission
+        // grant in DeviceListScreen will start the service cleanly.
+        if (!hasConnectedDevicePermission()) {
+            Log.w(
+                TAG,
+                "BLUETOOTH_CONNECT not granted; aborting foreground service start",
+            )
+            stopSelf(startId)
+            return START_NOT_STICKY
+        }
+
         val notification = buildForegroundNotification()
-        startForeground(FOREGROUND_NOTIFICATION_ID, notification)
+        try {
+            startForeground(FOREGROUND_NOTIFICATION_ID, notification)
+        } catch (e: SecurityException) {
+            // Race window: permission was revoked between the
+            // permission check above and the actual `startForeground`
+            // call. The system has already rejected us, so the only
+            // safe move is to stop quietly.
+            Log.w(TAG, "startForeground rejected by system", e)
+            stopSelf(startId)
+            return START_NOT_STICKY
+        }
 
         val app = application as BlueWaveApplication
         app.container.messageRepository.onMessageReceived = { senderMac, senderName, text ->
@@ -44,6 +80,13 @@ class BluetoothForegroundService : Service() {
         }
 
         return START_STICKY
+    }
+
+    private fun hasConnectedDevicePermission(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.BLUETOOTH_CONNECT,
+        ) == PackageManager.PERMISSION_GRANTED
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -120,6 +163,7 @@ class BluetoothForegroundService : Service() {
     }
 
     companion object {
+        private const val TAG = "BluetoothFgService"
         const val CHANNEL_SERVICE = "bluewave_service"
         const val CHANNEL_MESSAGES = "bluewave_messages"
         const val FOREGROUND_NOTIFICATION_ID = 1
@@ -131,7 +175,20 @@ class BluetoothForegroundService : Service() {
             ) == PackageManager.PERMISSION_GRANTED
             if (!hasPermission) return
             val intent = Intent(context, BluetoothForegroundService::class.java)
-            context.startForegroundService(intent)
+            try {
+                context.startForegroundService(intent)
+            } catch (e: SecurityException) {
+                // Background-start restrictions or a freshly revoked
+                // permission can still trip this on Android 12+. The
+                // foreground-service launch path is best-effort — if
+                // the OS rejects us here, the in-process RFCOMM accept
+                // loop launched by BlueWaveApplication.onCreate keeps
+                // running while the activity is alive, so messaging
+                // works inside the app even without the service.
+                Log.w(TAG, "startForegroundService rejected by system", e)
+            } catch (e: IllegalStateException) {
+                Log.w(TAG, "startForegroundService rejected by system", e)
+            }
         }
     }
 }
