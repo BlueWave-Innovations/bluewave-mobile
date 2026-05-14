@@ -61,6 +61,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalContext
 import com.example.bluewave_mobile.preferences.BluetoothVisibility
+import com.example.bluewave_mobile.service.BluetoothForegroundService
 import com.example.bluewave_mobile.ui.viewmodel.SettingsViewModel
 
 /**
@@ -119,10 +120,12 @@ fun DeviceListScreen(
     // Auto-start the first scan once permissions come back as granted —
     // the user shouldn't have to tap the FAB after dismissing the
     // permission dialog.
+    val context = LocalContext.current
     LaunchedEffect(permissions.allGranted) {
         if (permissions.allGranted && uiState is DeviceListUiState.Idle) {
             viewModel.handleIntent(DeviceListIntent.PermissionsGranted)
             viewModel.handleIntent(DeviceListIntent.StartScan)
+            BluetoothForegroundService.start(context)
         }
     }
 
