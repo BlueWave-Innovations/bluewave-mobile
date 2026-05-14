@@ -1,5 +1,6 @@
 package com.example.bluewave_mobile
 
+import android.annotation.SuppressLint
 import android.app.Application
 import android.util.Log
 import com.example.bluewave_mobile.di.AppContainer
@@ -7,49 +8,27 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
  * Application subclass that owns the process-wide [AppContainer].
  *
- * The container is instantiated exactly once per process in
- * [onCreate] and exposed as a public property so [MainActivity] /
- * ViewModelProviders can pull singletons without going through a
- * static `getInstance()` anti-pattern.
- *
- * In addition to the container, [onCreate] launches the network
- * plumbing that ties the radio to the Room database:
- *
- *  * [com.example.bluewave_mobile.network.BluetoothSessionManager.start]
- *    opens the long-lived RFCOMM server socket and starts the accept
- *    loop, so every BlueWave install on the device is automatically
- *    reachable as soon as the app process is alive;
- *  * a single application-scoped collector forwards every
- *    [com.example.bluewave_mobile.network.IncomingPeerMessage] into
- *    [com.example.bluewave_mobile.data.MessageRepository.processIncomingMessage],
- *    which encrypts the plaintext for at-rest storage and lets the UI
- *    update through Room's invalidation tracker.
- *
- * Registered through `<application android:name=".BlueWaveApplication" />`
- * in `AndroidManifest.xml`.
+ * On [onCreate] the container is built once and the RFCOMM plumbing
+ * is wired up: the accept loop opens its server socket, the SDP
+ * prober subscribes to discovery broadcasts, the live APK is staged
+ * for `ApkSender.suggestInstall`, every framed payload coming out of
+ * the session manager is pushed through the repository, and a small
+ * grace-delayed auto-connect fan-out fires outbound connect attempts
+ * against every already-bonded peer so we don't have to wait for the
+ * user to tap "send" before two BlueWave instances become reachable
+ * to each other.
  */
 class BlueWaveApplication : Application() {
 
-    /**
-     * Process-wide DI container. Initialised on [onCreate] before any
-     * Activity callback fires, so accessing it from `MainActivity` is
-     * always safe.
-     */
     lateinit var container: AppContainer
         private set
 
-    /**
-     * Application-scoped coroutine scope used for plumbing that must
-     * outlive any single Activity (e.g. the inbound-message pump).
-     * Backed by a [SupervisorJob] so an exception in one collector
-     * does not bring down the others.
-     */
     private val applicationScope: CoroutineScope = CoroutineScope(
         SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, throwable ->
             Log.e(TAG, "Uncaught exception in application scope", throwable)
@@ -60,14 +39,22 @@ class BlueWaveApplication : Application() {
         super.onCreate()
         container = AppContainer(this)
 
-        // Spin up the perpetual RFCOMM accept loop so every device
-        // running BlueWave is automatically reachable. The session
-        // manager itself defers all heavy work to Dispatchers.IO.
+        // Open the long-lived RFCOMM server socket so every BlueWave
+        // install is reachable as soon as the process is alive.
         container.bluetoothSessionManager.start()
 
-        // Pump every framed payload received from any peer into the
-        // repository. The repository owns at-rest encryption, dedupe
-        // (via the database) and wakes the UI through Flow.
+        // Subscribe to system Bluetooth discovery broadcasts so the
+        // device-list screen can probe peers for the BlueWave SDP
+        // record without re-registering its own receiver.
+        container.sdpProber.start()
+
+        // Stage the running APK into the cache so the "Send via
+        // Bluetooth" CTA on no-app rows has a FileProvider URI ready.
+        runCatching { container.apkSender.stageApk() }
+            .onFailure { e -> Log.w(TAG, "APK staging failed at process start", e) }
+
+        // Pump every framed payload from any peer through the
+        // repository (encrypt at rest, dedupe, notify UI via Room).
         applicationScope.launch {
             container.bluetoothSessionManager.incoming.collect { incoming ->
                 runCatching {
@@ -81,18 +68,65 @@ class BlueWaveApplication : Application() {
                 }
             }
         }
+
+        // Eager auto-connect on cold launch. RFCOMM sessions are
+        // otherwise only created the first time the user taps a
+        // contact, which means two BlueWave phones sitting side by
+        // side with their accept loops up still need a manual nudge
+        // before the first message can flow. Firing outbound
+        // connect attempts at every already-bonded device a few
+        // hundred ms after start lets two installs converge to
+        // "ready to chat" without user input. The session manager
+        // already evicts the older session inside [attachSession]
+        // when an outbound + inbound connect collide on the same
+        // MAC, so a racing accept on the peer side is harmless.
+        applicationScope.launch {
+            delay(AUTO_CONNECT_INITIAL_DELAY_MS)
+            connectToBondedPeers()
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private suspend fun connectToBondedPeers() {
+        val adapter = container.bluetoothAdapter ?: return
+        if (!adapter.isEnabled) return
+        val bonded = try {
+            adapter.bondedDevices ?: emptySet()
+        } catch (e: SecurityException) {
+            Log.w(TAG, "bondedDevices denied by permissions; skipping auto-connect", e)
+            return
+        }
+        if (bonded.isEmpty()) return
+        for (device in bonded) {
+            val mac = device.address ?: continue
+            applicationScope.launch {
+                runCatching {
+                    container.bluetoothSessionManager.connect(mac)
+                }.onFailure { e ->
+                    // Normal for bonded peers that don't run BlueWave
+                    // (headphones, smartwatches, …) — SDP misses the
+                    // service UUID and `connect()` returns.
+                    Log.d(TAG, "auto-connect skipped for $mac: ${e.message}")
+                }
+            }
+        }
     }
 
     override fun onTerminate() {
-        // onTerminate() only fires on the emulator but tearing the
-        // session manager down is cheap and idempotent — guarantees
-        // no leaked server sockets when the platform actually invokes
-        // it.
         runCatching { container.bluetoothSessionManager.shutdown() }
+        runCatching { container.sdpProber.stop() }
         super.onTerminate()
     }
 
     private companion object {
         const val TAG = "BlueWaveApplication"
+
+        /**
+         * Grace period before the first auto-connect fan-out so the
+         * local accept loop has time to register its SDP service
+         * record. Without it, the first outbound connect can race
+         * the listener and fail with "service discovery failed".
+         */
+        const val AUTO_CONNECT_INITIAL_DELAY_MS: Long = 500L
     }
 }

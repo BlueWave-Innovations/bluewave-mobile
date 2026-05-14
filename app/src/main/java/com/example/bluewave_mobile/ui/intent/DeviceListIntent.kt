@@ -20,4 +20,12 @@ sealed interface DeviceListIntent {
 
     /** User tapped a row — the chat destination should be opened. */
     data class DeviceSelected(val macAddress: String) : DeviceListIntent
+
+    /**
+     * User tapped the "Suggest install" CTA on a peer that is visible
+     * on the radio but does not advertise the BlueWave SDP UUID. The
+     * VM hands the staged APK to the system Bluetooth share UI via
+     * [com.example.bluewave_mobile.network.ApkSender.suggestInstall].
+     */
+    data class SuggestInstall(val macAddress: String) : DeviceListIntent
 }

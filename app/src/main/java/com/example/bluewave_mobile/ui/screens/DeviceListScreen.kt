@@ -13,19 +13,22 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.bluewave_mobile.ui.components.DeviceGrid
+import com.example.bluewave_mobile.ui.components.ContactsList
 import com.example.bluewave_mobile.ui.components.EmptyStateView
 import com.example.bluewave_mobile.ui.intent.DeviceListIntent
 import com.example.bluewave_mobile.ui.permissions.PermissionGateView
@@ -35,50 +38,39 @@ import com.example.bluewave_mobile.ui.strings.rememberAppStrings
 import com.example.bluewave_mobile.ui.viewmodel.DeviceListViewModel
 
 /**
- * Scaffold-based screen that lists Bluetooth peers and lets the user
- * jump into a one-on-one chat by tapping a device row.
- *
- * The screen forwards the user's intent (`StartScan`, `DeviceSelected`)
- * to a [DeviceListViewModel] and reacts to the resulting
- * [DeviceListUiState] snapshots. Three orthogonal gates are layered
- * before the grid is rendered:
- *
- *  1. **Runtime permissions** — shown via [PermissionGateView] until
- *     all permissions returned by `PermissionManager.missingBluetoothPermissions`
- *     are granted.
- *  2. **Bluetooth disabled** — emitted by the ViewModel when the
- *     adapter throws on `startDiscovery()`. The gate offers a
- *     "Try again" CTA that re-fires `StartScan`.
- *  3. **Empty list** — discovery completed without finding any peer.
- *     Renders the same [EmptyStateView] with a "Scan again" CTA.
- *
- * `contentWindowInsets = WindowInsets(0)` is intentional: the root
- * `Surface` in `MainActivity` already applies `systemBarsPadding()`,
- * so letting [Scaffold] re-apply its default insets would double-pad
- * the content on phones with a notch / nav bar.
- *
- * @param onDeviceClick Invoked with the MAC address of the peer the
- *                      user picked. The caller is expected to navigate
- *                      to the chat destination defined in
- *                      [com.example.bluewave_mobile.ui.navigation.ChatRoute].
+ * Sectioned contact list. Renders three groups in order: existing
+ * chats, peers that can chat right now, peers without the app (with
+ * an Install-suggest CTA). All copy goes through [rememberAppStrings]
+ * so the screen stays pure-Compose with no `R.string` lookups.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeviceListScreen(
-    onDeviceClick: (String) -> Unit,
-    viewModel: DeviceListViewModel = viewModel(factory = DeviceListViewModel.Factory)
+    onDeviceClick: (mac: String, displayName: String) -> Unit,
+    viewModel: DeviceListViewModel = viewModel(factory = DeviceListViewModel.Factory),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val permissions = rememberBluetoothPermissionState()
     val strings = rememberAppStrings()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    // Auto-start the first scan once permissions come back as granted —
-    // the user shouldn't have to tap the FAB after dismissing the
-    // permission dialog.
     LaunchedEffect(permissions.allGranted) {
         if (permissions.allGranted && uiState is DeviceListUiState.Idle) {
             viewModel.handleIntent(DeviceListIntent.PermissionsGranted)
             viewModel.handleIntent(DeviceListIntent.StartScan)
+        }
+    }
+
+    val installSuggestedMsg = strings.contactsInstallSuggestedSnack
+    val installFailedMsg = strings.contactsInstallFailedSnack
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is DeviceListViewModel.DeviceListEvent.InstallSuggested ->
+                    snackbarHostState.showSnackbar(installSuggestedMsg)
+                is DeviceListViewModel.DeviceListEvent.InstallSuggestionFailed ->
+                    snackbarHostState.showSnackbar(installFailedMsg)
+            }
         }
     }
 
@@ -87,8 +79,6 @@ fun DeviceListScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    // `heading()` lets TalkBack users jump between
-                    // screens via the heading-navigation gesture.
                     Text(
                         text = strings.deviceListTitle,
                         modifier = Modifier.semantics { heading() },
@@ -100,7 +90,7 @@ fun DeviceListScreen(
         floatingActionButton = {
             if (permissions.allGranted) {
                 FloatingActionButton(
-                    onClick = { viewModel.handleIntent(DeviceListIntent.StartScan) }
+                    onClick = { viewModel.handleIntent(DeviceListIntent.StartScan) },
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Refresh,
@@ -108,18 +98,19 @@ fun DeviceListScreen(
                     )
                 }
             }
-        }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(innerPadding),
         ) {
             when {
                 !permissions.allGranted -> {
                     PermissionGateView(
                         missing = permissions.missingPermissions,
-                        onGrantClick = { permissions.requestPermissions() }
+                        onGrantClick = { permissions.requestPermissions() },
                     )
                 }
                 uiState is DeviceListUiState.BluetoothDisabled -> {
@@ -137,16 +128,16 @@ fun DeviceListScreen(
                         title = strings.deviceListErrorTitle,
                         message = (uiState as DeviceListUiState.Error).message,
                         actionLabel = strings.deviceListRetry,
-                        onAction = { viewModel.handleIntent(DeviceListIntent.StartScan) }
+                        onAction = { viewModel.handleIntent(DeviceListIntent.StartScan) },
                     )
                 }
                 else -> {
-                    val devices = when (val s = uiState) {
-                        is DeviceListUiState.Scanning -> s.devices
-                        is DeviceListUiState.Loaded -> s.devices
+                    val rows = when (val s = uiState) {
+                        is DeviceListUiState.Scanning -> s.rows
+                        is DeviceListUiState.Loaded -> s.rows
                         else -> emptyList()
                     }
-                    if (devices.isEmpty() && uiState is DeviceListUiState.Loaded) {
+                    if (rows.isEmpty() && uiState is DeviceListUiState.Loaded) {
                         EmptyStateView(
                             icon = Icons.AutoMirrored.Filled.BluetoothSearching,
                             title = strings.deviceListEmptyTitle,
@@ -154,23 +145,24 @@ fun DeviceListScreen(
                             actionLabel = strings.deviceListScanAgain,
                             onAction = { viewModel.handleIntent(DeviceListIntent.StartScan) },
                         )
-                    } else {
-                        if (uiState is DeviceListUiState.Idle) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator()
-                            }
-                        } else {
-                            DeviceGrid(
-                                devices = devices,
-                                onDeviceClick = { device ->
-                                    viewModel.handleIntent(DeviceListIntent.DeviceSelected(device.macAddress))
-                                    onDeviceClick(device.macAddress)
-                                }
-                            )
+                    } else if (uiState is DeviceListUiState.Idle && rows.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
                         }
+                    } else {
+                        ContactsList(
+                            rows = rows,
+                            onRowClick = { mac, displayName ->
+                                viewModel.handleIntent(DeviceListIntent.DeviceSelected(mac))
+                                onDeviceClick(mac, displayName)
+                            },
+                            onSuggestInstall = { mac ->
+                                viewModel.handleIntent(DeviceListIntent.SuggestInstall(mac))
+                            },
+                        )
                     }
                 }
             }

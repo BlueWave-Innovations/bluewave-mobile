@@ -7,9 +7,16 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.bluewave_mobile.BlueWaveApplication
+import com.example.bluewave_mobile.crypto.CryptoManager
+import com.example.bluewave_mobile.crypto.DecryptionResult
 import com.example.bluewave_mobile.data.BluetoothDeviceInfo
+import com.example.bluewave_mobile.data.ConversationSummary
+import com.example.bluewave_mobile.data.MessageRepository
+import com.example.bluewave_mobile.network.ApkSender
+import com.example.bluewave_mobile.network.BlueWaveSdpProber
 import com.example.bluewave_mobile.network.BluetoothDiscovery
 import com.example.bluewave_mobile.ui.intent.DeviceListIntent
+import com.example.bluewave_mobile.ui.model.ContactRow
 import com.example.bluewave_mobile.ui.state.DeviceListUiState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -19,48 +26,77 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
- * ViewModel that drives the device-list screen.
+ * ViewModel that drives the sectioned device-list screen.
  *
- * The model is a plain MVI reducer:
- *  * UI sends a [DeviceListIntent] through [handleIntent].
- *  * The reducer mutates [_uiState] (and, for scans, kicks off the
- *    cold [BluetoothDiscovery.discoverDevices] flow on
- *    `viewModelScope`).
- *  * The composable observes the resulting [uiState] via
- *    `collectAsStateWithLifecycle`.
+ * The reducer receives a [DeviceListIntent] through [handleIntent],
+ * mutates [_uiState] and (for scans) collects the cold combine of:
+ *
+ *  * [BluetoothDiscovery.bondedDevices] / [BluetoothDiscovery.discoverDevices]
+ *    — peers visible on the radio right now;
+ *  * [MessageRepository.observeAllConversations] — peers we already
+ *    have persisted chat history with;
+ *  * [BlueWaveSdpProber.appPresence] — whether each visible peer's
+ *    SDP record advertises the BlueWave service UUID.
+ *
+ * The combined snapshot is reshaped into a flat
+ * `List<ContactRow>` whose subtypes drive the three on-screen
+ * sections — see [ContactRow] kdoc.
  *
  * **`stateIn` semantics.** A naive ViewModel would expose
  * `_uiState.asStateFlow()` directly, which keeps the discovery flow
- * collected even after the screen leaves composition (e.g. user
- * rotates the device, briefly backgrounded). Wrapping with
- * `stateIn(SharingStarted.WhileSubscribed(5000), Idle)` gives us:
+ * collected even after the screen leaves composition (e.g. the user
+ * rotates the device or backgrounds the app). Wrapping with
+ * `stateIn(SharingStarted.WhileSubscribed(5_000), Idle)` gives us:
  *
  *  * Configuration changes do **not** cancel the scan, so flipping
- *    the device 180° doesn't drop the partial device list — we keep
- *    the upstream live for 5 s of "no subscribers".
- *  * Putting the app in the background *does* eventually cancel the
- *    flow once the 5 s grace window elapses, releasing the radio
- *    chipset (a non-trivial battery saving on Android 16).
+ *    the device 180° doesn't drop the partial list — we keep the
+ *    upstream live for 5 s of "no subscribers".
+ *  * Putting the app in the background eventually cancels the flow
+ *    once the 5 s grace window elapses, releasing the radio chipset
+ *    (a non-trivial battery saving on Android 16).
  *
- * Constructor takes a [BluetoothDiscovery] rather than the singleton
- * [BlueWaveApplication.container] so the unit tests in step 40 can
- * drop in a fake without touching the global container.
+ * Constructor takes the collaborators rather than the singleton
+ * [BlueWaveApplication.container] so unit tests can drop in fakes
+ * without touching the global container.
+ *
+ * @property crypto Optional handle used to decrypt the *last message*
+ *                  preview shown next to each chat row. Decryption
+ *                  runs lazily — if the call returns a tampered
+ *                  result the preview falls back to a localized
+ *                  placeholder so the row stays renderable.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class DeviceListViewModel(
-    private val bluetoothDiscovery: BluetoothDiscovery
+    private val bluetoothDiscovery: BluetoothDiscovery,
+    private val messageRepository: MessageRepository,
+    private val sdpProber: BlueWaveSdpProber,
+    private val apkSender: ApkSender,
+    private val crypto: CryptoManager? = null,
 ) : ViewModel() {
 
     private val intents: MutableSharedFlow<DeviceListIntent> = MutableSharedFlow(extraBufferCapacity = 16)
 
     private val _uiState: MutableStateFlow<DeviceListUiState> = MutableStateFlow(DeviceListUiState.Idle)
+
+    /**
+     * One-shot signals fired by intents that don't directly mutate
+     * [uiState] but still need to surface a confirmation to the screen
+     * (e.g. "system Bluetooth share couldn't be opened").
+     */
+    private val _events: MutableSharedFlow<DeviceListEvent> = MutableSharedFlow(extraBufferCapacity = 4)
+
+    /** External event channel mirroring [DeviceListEvent]. */
+    val events: Flow<DeviceListEvent> = _events
 
     /**
      * Public, lifecycle-friendly snapshot of the screen state. Wrapped
@@ -73,13 +109,10 @@ class DeviceListViewModel(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000L),
-            initialValue = DeviceListUiState.Idle
+            initialValue = DeviceListUiState.Idle,
         )
 
     init {
-        // The reducer runs for the lifetime of the ViewModel; viewModelScope
-        // cancels it on ViewModel.onCleared, which is the canonical
-        // structured-concurrency boundary for this layer.
         viewModelScope.launch {
             intents
                 .flatMapLatest { intent -> reduce(intent) }
@@ -100,47 +133,214 @@ class DeviceListViewModel(
     /**
      * Pure-function reducer: maps an [intent] to a [Flow] of
      * [DeviceListUiState] emissions. Returning a flow (instead of a
-     * single state) lets [DeviceListIntent.StartScan] stream the
-     * intermediate `Scanning(devices)` snapshots while discovery is
-     * still running.
+     * single state) lets [DeviceListIntent.StartScan] stream
+     * intermediate `Scanning(rows)` snapshots while discovery and DB
+     * observation are still live.
      */
     private fun reduce(intent: DeviceListIntent): Flow<DeviceListUiState> = when (intent) {
         DeviceListIntent.StartScan -> scanFlow()
         DeviceListIntent.StopScan -> {
             val current = _uiState.value
-            val devices = if (current is DeviceListUiState.Scanning) current.devices else emptyList()
-            flowOf(DeviceListUiState.Loaded(devices))
+            val rows = if (current is DeviceListUiState.Scanning) current.rows else emptyList()
+            flowOf(DeviceListUiState.Loaded(rows))
         }
         DeviceListIntent.PermissionsGranted -> flowOf(DeviceListUiState.Idle)
-        is DeviceListIntent.DeviceSelected -> flowOf(_uiState.value) // pure navigation
+        is DeviceListIntent.DeviceSelected -> {
+            // Fire-and-forget: marking-as-read is a side effect that
+            // should not gate the navigation — the screen will fire
+            // the navigation callback regardless.
+            viewModelScope.launch {
+                runCatching { messageRepository.markPeerAsRead(intent.macAddress) }
+            }
+            flowOf(_uiState.value) // pure navigation; state unchanged
+        }
+        is DeviceListIntent.SuggestInstall -> {
+            viewModelScope.launch {
+                val outcome = apkSender.suggestInstall()
+                _events.emit(
+                    if (outcome.isSuccess) {
+                        DeviceListEvent.InstallSuggested(intent.macAddress)
+                    } else {
+                        DeviceListEvent.InstallSuggestionFailed(intent.macAddress)
+                    },
+                )
+            }
+            flowOf(_uiState.value)
+        }
     }
 
     /**
-     * Cold flow that performs a single discovery cycle and emits
-     * incremental [DeviceListUiState.Scanning] / final
-     * [DeviceListUiState.Loaded] / fault [DeviceListUiState.BluetoothDisabled]
-     * snapshots.
+     * Cold flow that performs a single discovery cycle while
+     * combining radio-side observations with the live conversation
+     * roster, emitting `Scanning(rows)` snapshots while discovery is
+     * live and a `BluetoothDisabled` / `Error` state on faults.
+     *
+     * Implementation note: `radioPeers` is itself a flow that
+     * synchronously collects bonded devices, then collects
+     * `discoverDevices()` inline. Wiring it into the [combine] this
+     * way means any exception thrown by the radio (e.g. an
+     * `IllegalStateException` when Bluetooth is disabled) propagates
+     * straight into the `catch` operator chained on the result —
+     * we don't need a side-effect [Job] to forward errors.
      */
-    private fun scanFlow(): Flow<DeviceListUiState> = flow {
+    private fun scanFlow(): Flow<DeviceListUiState> {
+        sdpProber.start()
         val seen: MutableMap<String, BluetoothDeviceInfo> = LinkedHashMap()
-        bluetoothDiscovery.bondedDevices().forEach { seen[it.macAddress] = it }
-        emit(DeviceListUiState.Scanning(seen.values.toList()))
-        try {
-            bluetoothDiscovery.discoverDevices().collect { device ->
-                seen[device.macAddress] = device
-                emit(DeviceListUiState.Scanning(seen.values.toList()))
+        val radioPeers: Flow<Map<String, BluetoothDeviceInfo>> = flow {
+            bluetoothDiscovery.bondedDevices().forEach { peer ->
+                seen[peer.macAddress.uppercase()] = peer
+                sdpProber.probe(peer.macAddress)
             }
-            emit(DeviceListUiState.Loaded(seen.values.toList()))
-        } catch (e: IllegalStateException) {
-            emit(DeviceListUiState.BluetoothDisabled)
+            emit(seen.toMap())
+            bluetoothDiscovery
+                .discoverDevices()
+                .onEach { peer ->
+                    val mac = peer.macAddress.uppercase()
+                    seen[mac] = peer
+                    sdpProber.probe(peer.macAddress)
+                }
+                .collect { emit(seen.toMap()) }
+            emit(seen.toMap())
         }
+
+        return combine(
+            radioPeers,
+            messageRepository.observeAllConversations(),
+            sdpProber.appPresence,
+        ) { peers, conversations, presence ->
+            buildRows(peers, conversations, presence)
+        }
+            .map<List<ContactRow>, DeviceListUiState> { rows -> DeviceListUiState.Scanning(rows) }
+            .catch { throwable ->
+                if (throwable is IllegalStateException) {
+                    emit(DeviceListUiState.BluetoothDisabled)
+                } else {
+                    throw throwable
+                }
+            }
+    }
+
+    /**
+     * Pure projection: combine the three input flows into the flat
+     * sectioned list consumed by the screen.
+     *
+     *  * [peers] — MAC → metadata for everything visible on the radio
+     *    right now (bonded + freshly-discovered).
+     *  * [conversations] — DB-backed roster of peers we already have
+     *    persisted chat history with.
+     *  * [presence] — MAC → did we observe the BlueWave UUID in the
+     *    SDP record yet? Missing keys mean "not probed yet".
+     *
+     * Visible, "BlueWave-on-board" peers without history go to the
+     * "Can start chat" section. Visible peers without the BlueWave
+     * UUID go to the "No app yet" section. Peers that are off-radio
+     * but show up in the conversation roster still appear in the
+     * "Chats" section so old conversations remain reachable.
+     */
+    internal fun buildRows(
+        peers: Map<String, BluetoothDeviceInfo>,
+        conversations: List<ConversationSummary>,
+        presence: Map<String, Boolean>,
+    ): List<ContactRow> {
+        val chatMacs: MutableSet<String> = HashSet()
+        val chatRows: MutableList<ContactRow.ExistingChat> = ArrayList(conversations.size)
+
+        for (summary in conversations) {
+            val mac = summary.macAddress.uppercase()
+            chatMacs += mac
+            val displayName: String = peers[mac]?.name?.takeUnless(String::isBlank)
+                ?: summary.lastMessage.senderName.takeUnless(String::isBlank)
+                ?: mac
+            chatRows += ContactRow.ExistingChat(
+                displayName = displayName,
+                macAddress = mac,
+                lastMessagePreview = decryptPreview(summary),
+                lastMessageTimestamp = summary.lastMessage.timestamp,
+                unreadCount = summary.unreadCount,
+                isOnline = peers.containsKey(mac),
+            )
+        }
+
+        val candidateRows: MutableList<ContactRow.StartChatCandidate> = ArrayList()
+        val installRows: MutableList<ContactRow.InstallSuggestion> = ArrayList()
+
+        for ((mac, peer) in peers) {
+            if (mac in chatMacs) continue
+            val hasApp: Boolean? = presence[mac]
+            if (hasApp == true) {
+                candidateRows += ContactRow.StartChatCandidate(
+                    displayName = peer.name.ifBlank { mac },
+                    macAddress = mac,
+                    isBonded = peer.isPaired,
+                )
+            } else if (hasApp == false) {
+                installRows += ContactRow.InstallSuggestion(
+                    displayName = peer.name.ifBlank { mac },
+                    macAddress = mac,
+                )
+            } else {
+                // SDP record not yet resolved — assume the peer might
+                // run BlueWave to keep the row in the "can start chat"
+                // section while the probe is in flight. The row will
+                // re-route to "no app yet" automatically once the
+                // negative answer lands through `presence`.
+                candidateRows += ContactRow.StartChatCandidate(
+                    displayName = peer.name.ifBlank { mac },
+                    macAddress = mac,
+                    isBonded = peer.isPaired,
+                )
+            }
+        }
+
+        // Sort each section locally — chats by recency, candidates by
+        // bonded-first then alphabetical, install suggestions
+        // alphabetically. The screen renders sections in the order
+        // [chats, candidates, installs] and uses the row subtype as
+        // the section divider.
+        chatRows.sortByDescending(ContactRow.ExistingChat::lastMessageTimestamp)
+        candidateRows.sortWith(
+            compareByDescending(ContactRow.StartChatCandidate::isBonded)
+                .thenBy(String.CASE_INSENSITIVE_ORDER) { it.displayName },
+        )
+        installRows.sortWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.displayName })
+
+        // The result is concatenated in render order so a `LazyColumn`
+        // can iterate without a secondary group-by pass.
+        val combined: MutableList<ContactRow> = ArrayList(
+            chatRows.size + candidateRows.size + installRows.size,
+        )
+        combined += chatRows
+        combined += candidateRows
+        combined += installRows
+        return combined
+    }
+
+    private fun decryptPreview(summary: ConversationSummary): String {
+        val crypto = this.crypto ?: return ""
+        val entity = summary.lastMessage
+        if (entity.iv.isEmpty() || entity.encryptedPayload.isEmpty()) return ""
+        return when (val result = crypto.decrypt(entity.iv, entity.encryptedPayload)) {
+            is DecryptionResult.Success -> result.plaintext.toString(Charsets.UTF_8)
+            is DecryptionResult.Tampered -> ""
+        }
+    }
+
+    /**
+     * One-shot side-effect events surfaced by the reducer. Use
+     * [events] to subscribe.
+     */
+    sealed interface DeviceListEvent {
+        /** System bluetooth-share dialog was successfully launched. */
+        data class InstallSuggested(val macAddress: String) : DeviceListEvent
+
+        /** No activity was available to handle the APK share intent. */
+        data class InstallSuggestionFailed(val macAddress: String) : DeviceListEvent
     }
 
     companion object {
         /**
-         * `ViewModelProvider.Factory` that pulls the
-         * [BluetoothDiscovery] singleton out of the
-         * [BlueWaveApplication.container]. Compose host:
+         * `ViewModelProvider.Factory` that pulls dependencies out of
+         * the [BlueWaveApplication.container]. Compose host:
          *
          * ```kotlin
          * val vm: DeviceListViewModel = viewModel(factory = DeviceListViewModel.Factory)
@@ -149,7 +349,13 @@ class DeviceListViewModel(
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val app = application()
-                DeviceListViewModel(app.container.bluetoothDiscovery)
+                DeviceListViewModel(
+                    bluetoothDiscovery = app.container.bluetoothDiscovery,
+                    messageRepository = app.container.messageRepository,
+                    sdpProber = app.container.sdpProber,
+                    apkSender = app.container.apkSender,
+                    crypto = app.container.cryptoManager,
+                )
             }
         }
     }

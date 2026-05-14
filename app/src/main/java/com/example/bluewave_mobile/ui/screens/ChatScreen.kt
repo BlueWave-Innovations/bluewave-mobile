@@ -76,12 +76,21 @@ import com.example.bluewave_mobile.ui.viewmodel.ChatViewModel
 @Composable
 fun ChatScreen(
     deviceMac: String,
+    deviceName: String = "",
     modifier: Modifier = Modifier,
     viewModel: ChatViewModel = viewModel(
         factory = ChatViewModel.Factory,
         key = deviceMac,
     ),
 ) {
+    // Prefer the runtime-injected display name from the ViewModel
+    // (populated from the navigation route via SavedStateHandle).
+    // Fall back to the composable argument so single-pane navigation
+    // and the two-pane tablet layout can both pass the name without
+    // changing the SavedStateHandle plumbing.
+    val peerLabel: String = viewModel.deviceName
+        .ifBlank { deviceName }
+        .ifBlank { deviceMac }
     val messages by viewModel.messages.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val bannerVisible by viewModel.bondLossBannerVisible.collectAsStateWithLifecycle()
@@ -118,17 +127,24 @@ fun ChatScreen(
                     Column(
                         modifier = Modifier.semantics(mergeDescendants = true) {
                             heading()
-                            contentDescription = "Chat with $deviceMac"
+                            contentDescription = "Chat with $peerLabel"
                         },
                     ) {
                         Text(
-                            text = "Chat",
+                            text = peerLabel,
                             style = MaterialTheme.typography.titleMedium,
                         )
-                        Text(
-                            text = deviceMac,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
+                        // Only show the MAC as a secondary line when
+                        // it is genuinely distinct from the title.
+                        // For peers with no Bluetooth name the
+                        // TopAppBar already renders the MAC as the
+                        // title, so a second line would be noise.
+                        if (peerLabel != deviceMac) {
+                            Text(
+                                text = deviceMac,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
                     }
                 },
             )

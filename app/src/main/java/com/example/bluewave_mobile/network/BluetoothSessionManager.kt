@@ -197,13 +197,21 @@ class BluetoothSessionManager(
             Log.w(TAG, "cancelDiscovery() denied by permissions", e)
         }
 
+        // Symmetric with the accept side, which calls
+        // `listenUsingInsecureRfcommWithServiceRecord` — both endpoints
+        // must agree on the secure/insecure flag or the RFCOMM
+        // negotiation fails and the connect throws IOException
+        // ("read failed, socket might closed or timeout, read ret: -1"
+        // on the kernel side). The previous secure call here was a
+        // leftover from before the no-pairing switch and was the root
+        // cause of "messages don't pass between phones".
         val socket: BluetoothSocket = try {
-            device.createRfcommSocketToServiceRecord(BluetoothConstants.APP_UUID)
+            device.createInsecureRfcommSocketToServiceRecord(BluetoothConstants.APP_UUID)
         } catch (e: IOException) {
-            Log.w(TAG, "createRfcommSocketToServiceRecord failed for $key: ${e.message}")
+            Log.w(TAG, "createInsecureRfcommSocketToServiceRecord failed for $key: ${e.message}")
             return
         } catch (e: SecurityException) {
-            Log.w(TAG, "createRfcommSocketToServiceRecord denied by permissions for $key", e)
+            Log.w(TAG, "createInsecureRfcommSocketToServiceRecord denied by permissions for $key", e)
             return
         }
 
@@ -250,7 +258,7 @@ class BluetoothSessionManager(
      * subscribing to a separate state flow — the cost is a single
      * concurrent map lookup.
      */
-    fun isConnected(macAddress: String): Boolean =
+    override fun isConnected(macAddress: String): Boolean =
         sessions.containsKey(macAddress.uppercase())
 
     private companion object {

@@ -10,6 +10,8 @@ import com.example.bluewave_mobile.data.DatabaseProvider
 import com.example.bluewave_mobile.data.MessageDao
 import com.example.bluewave_mobile.data.MessageRepository
 import com.example.bluewave_mobile.data.MessageRepositoryImpl
+import com.example.bluewave_mobile.network.ApkSender
+import com.example.bluewave_mobile.network.BlueWaveSdpProber
 import com.example.bluewave_mobile.network.BluetoothDiscovery
 import com.example.bluewave_mobile.network.BluetoothSessionManager
 import com.example.bluewave_mobile.network.MessageTransport
@@ -100,5 +102,25 @@ class AppContainer(applicationContext: Context) {
      */
     val bluetoothSessionManager: BluetoothSessionManager by lazy {
         BluetoothSessionManager(bluetoothAdapter)
+    }
+
+    /**
+     * Reactive SDP probe used by the device-list screen to decide
+     * whether a discovered peer already runs BlueWave (lands in the
+     * "Can start chat" section) or needs the install CTA (lands in
+     * "No app yet"). The receiver is started by [BlueWaveApplication]
+     * at process start-up.
+     */
+    val sdpProber: BlueWaveSdpProber by lazy {
+        BlueWaveSdpProber(appContext, bluetoothAdapter)
+    }
+
+    /**
+     * APK transfer helper backing the "Suggest install" action on
+     * peers that don't yet run BlueWave — delegates to the system
+     * Bluetooth share UI through `Intent.ACTION_SEND`.
+     */
+    val apkSender: ApkSender by lazy {
+        ApkSender(appContext)
     }
 }

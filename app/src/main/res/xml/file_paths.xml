@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!--
+        Exposes the cached BlueWave APK to the system Bluetooth share
+        activity through `ApkSender`. The path is scoped to the cache
+        directory so neither private user data nor the Room database
+        ever become accessible through the FileProvider.
+    -->
+    <cache-path name="apk_cache" path="." />
+</paths>

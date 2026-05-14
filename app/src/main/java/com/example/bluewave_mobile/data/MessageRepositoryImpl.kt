@@ -3,6 +3,8 @@ package com.example.bluewave_mobile.data
 import com.example.bluewave_mobile.crypto.CryptoManager
 import com.example.bluewave_mobile.network.MessageTransport
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * Concrete implementation of [MessageRepository] serving as the Single Source of Truth.
@@ -34,6 +36,30 @@ class MessageRepositoryImpl(
 
     override fun getLatestMessagePerDevice(): Flow<List<MessageEntity>> {
         return messageDao.getLatestMessagePerDevice()
+    }
+
+    override fun observeAllConversations(): Flow<List<ConversationSummary>> {
+        return combine(
+            messageDao.getLatestMessagePerDevice(),
+            messageDao.observeUnreadCounts(),
+        ) { lasts, unread ->
+            // Index unread counts by uppercase MAC for stable lookups.
+            val unreadByMac: Map<String, Int> = unread.associate {
+                it.macAddress.uppercase() to it.unreadCount
+            }
+            lasts.map { last ->
+                val key = last.macAddress.uppercase()
+                ConversationSummary(
+                    macAddress = key,
+                    lastMessage = last,
+                    unreadCount = unreadByMac[key] ?: 0,
+                )
+            }
+        }.distinctUntilChanged()
+    }
+
+    override suspend fun markPeerAsRead(macAddress: String) {
+        messageDao.markPeerAsRead(macAddress.uppercase())
     }
 
     override suspend fun insertMessage(message: MessageEntity): Long {
@@ -83,6 +109,21 @@ class MessageRepositoryImpl(
         // bond-loss event — the message stays in the local DB and will
         // be re-sent manually by the user once the link is restored.
         if (isPausedFor(macAddress)) return
+
+        // Just-in-time connect. The auto-connect fan-out on app
+        // launch (BlueWaveApplication.connectToBondedPeers) only
+        // covers already-bonded peers, and even for bonded peers it
+        // may not have completed by the time the user fires off the
+        // very first message. Without this check `transport.send`
+        // returns false (no live session) and the message is
+        // silently dropped — the user sees their own bubble and
+        // assumes everything worked while the peer never receives
+        // the bytes. The call is idempotent: when a session already
+        // exists, `connect` returns immediately.
+        val t = transport
+        if (t != null && !t.isConnected(macAddress)) {
+            runCatching { t.connect(macAddress) }
+        }
 
         // Hand the plaintext bytes to the transport. The transport
         // owns the framing (length-prefix wire format) and the

@@ -59,6 +59,20 @@ interface MessageTransport {
     suspend fun connect(macAddress: String)
 
     /**
+     * Returns `true` when a live session exists for [macAddress]. The
+     * repository calls this immediately before [send] to decide
+     * whether a just-in-time [connect] is needed — without this check
+     * the very first message a user types in a fresh chat is silently
+     * dropped because the auto-connect fan-out on launch has not yet
+     * completed.
+     *
+     * Implementations must make this cheap (no I/O, no `suspend`) —
+     * a single [java.util.concurrent.ConcurrentHashMap] lookup is the
+     * intended cost profile.
+     */
+    fun isConnected(macAddress: String): Boolean
+
+    /**
      * Sends [payload] to the peer identified by [macAddress]. Returns
      * `true` when the bytes were handed to the underlying socket,
      * `false` when no live session exists for that peer or the write

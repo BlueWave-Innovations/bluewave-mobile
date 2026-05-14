@@ -13,7 +13,11 @@ android {
 
     defaultConfig {
         applicationId = "com.example.bluewave_mobile"
-        minSdk = 28
+        // Android 12+ — runtime BLUETOOTH_CONNECT/SCAN landed in API 31, and
+        // the legacy ACCESS_FINE_LOCATION-for-discovery dance is gone above
+        // that level. Keeping minSdk = 31 lets the permission gate stay on
+        // the modern split-permission code path only.
+        minSdk = 31
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
