@@ -57,11 +57,16 @@ class BluetoothDiscovery(
                             intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
                         device?.let {
                             val name = it.name ?: it.address
+                            val rssi = intent.getShortExtra(
+                                BluetoothDevice.EXTRA_RSSI,
+                                Short.MIN_VALUE,
+                            ).takeIf { v -> v != Short.MIN_VALUE }
                             trySend(
                                 BluetoothDeviceInfo(
                                     name = name,
                                     macAddress = it.address,
-                                    isPaired = false
+                                    isPaired = false,
+                                    rssi = rssi,
                                 )
                             )
                         }

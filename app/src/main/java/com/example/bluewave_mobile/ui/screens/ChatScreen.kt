@@ -69,6 +69,11 @@ import com.example.bluewave_mobile.ui.intent.ChatIntent
 import com.example.bluewave_mobile.ui.state.ChatMessage
 import com.example.bluewave_mobile.ui.state.ChatUiState
 import com.example.bluewave_mobile.ui.viewmodel.ChatViewModel
+import com.example.bluewave_mobile.ui.viewmodel.ConnectionQuality
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.Calendar
@@ -111,6 +116,7 @@ fun ChatScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val bannerVisible by viewModel.bondLossBannerVisible.collectAsStateWithLifecycle()
     val peerProfile by viewModel.peerProfile.collectAsStateWithLifecycle()
+    val connQuality by viewModel.connectionQuality.collectAsStateWithLifecycle()
 
     var draft: String by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
@@ -175,20 +181,7 @@ fun ChatScreen(
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
                             )
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Filled.Bluetooth,
-                                    contentDescription = null,
-                                    tint = com.example.bluewave_mobile.ui.theme.BrandBlue,
-                                    modifier = Modifier.size(12.dp),
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = stringResource(id = R.string.chat_status_online_bt).uppercase(),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = com.example.bluewave_mobile.ui.theme.BrandBlue,
-                                )
-                            }
+                            ConnectionQualityRow(quality = connQuality)
                             if (handle != null) {
                                 Text(
                                     text = handle,
@@ -531,4 +524,95 @@ private fun E2EEIndicator(
             .padding(start = 8.dp)
             .size(20.dp),
     )
+}
+
+/**
+ * Compact row showing the peer's connection status: a coloured dot
+ * (green = online, grey = offline), the quality label derived from
+ * the heartbeat RTT, and the raw ping value when available.
+ */
+@Composable
+private fun ConnectionQualityRow(
+    quality: ConnectionQuality,
+    modifier: Modifier = Modifier,
+) {
+    val dotColor = if (quality.isOnline) {
+        com.example.bluewave_mobile.ui.theme.SuccessGreen
+    } else {
+        MaterialTheme.colorScheme.outline
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(dotColor),
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = quality.label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (quality.isOnline) {
+                com.example.bluewave_mobile.ui.theme.BrandBlue
+            } else {
+                MaterialTheme.colorScheme.outline
+            },
+        )
+        if (quality.pingMs != null) {
+            Spacer(modifier = Modifier.width(6.dp))
+            SignalBars(pingMs = quality.pingMs)
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "${quality.pingMs} ms",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * Four tiny vertical bars whose fill colour reflects the heartbeat
+ * ping latency — a familiar "signal strength" metaphor.
+ *
+ *  * <100 ms → 4 green bars
+ *  * <300 ms → 3 green bars
+ *  * <600 ms → 2 yellow bars
+ *  * ≥600 ms → 1 red bar
+ */
+@Composable
+private fun SignalBars(
+    pingMs: Long,
+    modifier: Modifier = Modifier,
+) {
+    val filledBars: Int = when {
+        pingMs < 100L -> 4
+        pingMs < 300L -> 3
+        pingMs < 600L -> 2
+        else -> 1
+    }
+    val activeColor: Color = when {
+        pingMs < 300L -> com.example.bluewave_mobile.ui.theme.SuccessGreen
+        pingMs < 600L -> Color(0xFFFFA726) // orange / yellow
+        else -> Color(0xFFEF5350) // red
+    }
+    val inactiveColor: Color = MaterialTheme.colorScheme.outlineVariant
+    val totalBars = 4
+    Canvas(modifier = modifier.size(width = 16.dp, height = 12.dp)) {
+        val barWidth = size.width / (totalBars * 2f - 1f)
+        val gap = barWidth
+        for (i in 0 until totalBars) {
+            val barHeight = size.height * (i + 1) / totalBars
+            val x = i * (barWidth + gap)
+            val y = size.height - barHeight
+            drawRect(
+                color = if (i < filledBars) activeColor else inactiveColor,
+                topLeft = Offset(x, y),
+                size = Size(barWidth, barHeight),
+            )
+        }
+    }
 }

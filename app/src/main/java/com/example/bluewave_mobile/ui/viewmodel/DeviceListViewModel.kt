@@ -440,6 +440,7 @@ class DeviceListViewModel(
                 lastMessagePreview = decryptPreview(summary),
                 lastMessageTimestamp = summary.lastMessage.timestamp,
                 unreadCount = summary.unreadCount,
+                rssi = peers[mac]?.rssi,
             )
         }
 
@@ -477,6 +478,7 @@ class DeviceListViewModel(
                     displayName = name,
                     macAddress = mac,
                     isBonded = peer.isPaired,
+                    rssi = peer.rssi,
                 )
             } else {
                 installRows += ContactRow.InstallSuggestion(

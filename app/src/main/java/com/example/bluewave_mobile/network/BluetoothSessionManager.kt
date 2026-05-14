@@ -317,6 +317,17 @@ class BluetoothSessionManager(
     override fun isConnected(macAddress: String): Boolean =
         sessions.containsKey(macAddress.uppercase())
 
+    /**
+     * Returns the most recently measured round-trip heartbeat latency
+     * in milliseconds for [macAddress], or `null` when no session
+     * exists or no measurement has been taken yet.
+     */
+    fun getPingMs(macAddress: String): Long? {
+        val session = sessions[macAddress.uppercase()] ?: return null
+        val ping = session.lastPingMs
+        return if (ping > 0L) ping else null
+    }
+
     private companion object {
         const val TAG = "BluetoothSessionManager"
     }

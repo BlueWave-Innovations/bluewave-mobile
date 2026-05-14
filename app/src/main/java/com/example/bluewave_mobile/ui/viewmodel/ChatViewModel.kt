@@ -14,12 +14,14 @@ import com.example.bluewave_mobile.data.MessageEntity
 import com.example.bluewave_mobile.data.MessageRepository
 import com.example.bluewave_mobile.data.MessageRepositoryImpl
 import com.example.bluewave_mobile.data.PeerProfileEntity
+import com.example.bluewave_mobile.network.BluetoothSessionManager
 import com.example.bluewave_mobile.network.MessageTransport
 import com.example.bluewave_mobile.ui.intent.ChatIntent
 import com.example.bluewave_mobile.ui.state.ChatMessage
 import com.example.bluewave_mobile.ui.state.ChatUiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -29,6 +31,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -129,6 +132,25 @@ class ChatViewModel(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000L),
             initialValue = null,
+        )
+
+    /**
+     * Connection quality snapshot polled every 3 seconds. Contains
+     * the peer's online state and the most recent heartbeat RTT.
+     */
+    val connectionQuality: StateFlow<ConnectionQuality> = flow {
+        while (true) {
+            val sessionManager = transport as? BluetoothSessionManager
+            val isOnline = sessionManager?.isConnected(deviceMac) ?: false
+            val pingMs = sessionManager?.getPingMs(deviceMac)
+            emit(ConnectionQuality(isOnline = isOnline, pingMs = pingMs))
+            delay(CONNECTION_QUALITY_POLL_MS)
+        }
+    }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000L),
+            initialValue = ConnectionQuality(),
         )
 
     /**
@@ -333,6 +355,9 @@ class ChatViewModel(
          */
         private const val BANNER_DEBOUNCE_MS: Long = 600L
 
+        /** Polling interval for the [connectionQuality] flow. */
+        private const val CONNECTION_QUALITY_POLL_MS: Long = 3_000L
+
         /**
          * `ViewModelProvider.Factory` that pulls dependencies from the
          * [com.example.bluewave_mobile.BlueWaveApplication.container].
@@ -355,4 +380,27 @@ class ChatViewModel(
             }
         }
     }
+}
+
+/**
+ * Snapshot of the Bluetooth connection health for a single peer.
+ *
+ * @property isOnline `true` when an RFCOMM session is currently active.
+ * @property pingMs Most recently measured heartbeat round-trip time in
+ *   milliseconds. `null` when no measurement is available yet.
+ */
+data class ConnectionQuality(
+    val isOnline: Boolean = false,
+    val pingMs: Long? = null,
+) {
+    /** Human-readable quality label derived from the ping RTT. */
+    val label: String
+        get() = when {
+            !isOnline -> "Offline"
+            pingMs == null -> "Online"
+            pingMs < 100L -> "Excellent"
+            pingMs < 300L -> "Good"
+            pingMs < 600L -> "Fair"
+            else -> "Poor"
+        }
 }

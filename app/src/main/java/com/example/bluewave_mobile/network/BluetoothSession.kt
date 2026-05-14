@@ -90,6 +90,25 @@ internal class BluetoothSession(
     private var lastInboundMs: Long = System.currentTimeMillis()
 
     /**
+     * Timestamp of the last heartbeat *send*. Updated by
+     * [runHeartbeatSender] right before writing the ping frame.
+     * The read loop refreshes [lastPingMs] when the very next
+     * inbound frame arrives — the delta is a rough RTT proxy.
+     */
+    @Volatile
+    private var lastHeartbeatSendMs: Long = 0L
+
+    /**
+     * Most recently measured round-trip latency in milliseconds.
+     * Updated every time the watchdog observes a fresh inbound
+     * frame after a heartbeat was sent. Zero until the first
+     * measurement. Negative values are clamped to zero.
+     */
+    @Volatile
+    var lastPingMs: Long = 0L
+        private set
+
+    /**
      * Stream of byte chunks straight from the underlying
      * [ConnectedThread]. Exposed so [start] can subscribe to it after
      * the read loop is launched — external callers should never use
@@ -113,7 +132,15 @@ internal class BluetoothSession(
                     // Any byte from the peer — even a partial frame
                     // header — proves the link is alive, so refresh
                     // the watchdog timestamp before parsing.
-                    lastInboundMs = System.currentTimeMillis()
+                    val now = System.currentTimeMillis()
+                    lastInboundMs = now
+                    // Approximate RTT: time between our last heartbeat
+                    // send and the next inbound frame (which should be
+                    // the peer's heartbeat reply or data).
+                    val hbSend = lastHeartbeatSendMs
+                    if (hbSend > 0L) {
+                        lastPingMs = (now - hbSend).coerceAtLeast(0L)
+                    }
                     val frames = try {
                         accumulator.append(chunk)
                     } catch (e: IllegalStateException) {
@@ -156,6 +183,7 @@ internal class BluetoothSession(
         val pingFrame = BlueWaveFrame.encode(BlueWaveFrame.Type.HEARTBEAT, EMPTY_PAYLOAD)
         while (true) {
             delay(BluetoothConstants.HEARTBEAT_INTERVAL_MS)
+            lastHeartbeatSendMs = System.currentTimeMillis()
             val framed = try {
                 MessageFraming.frame(pingFrame)
             } catch (e: IllegalArgumentException) {
