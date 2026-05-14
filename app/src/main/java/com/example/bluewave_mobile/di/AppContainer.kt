@@ -5,16 +5,28 @@ import android.bluetooth.BluetoothManager
 import android.content.Context
 import com.example.bluewave_mobile.crypto.CryptoManager
 import com.example.bluewave_mobile.crypto.KeyManager
+import com.example.bluewave_mobile.crypto.LibSignalEngine
+import com.example.bluewave_mobile.crypto.SignalEngine
 import com.example.bluewave_mobile.data.AppDatabase
+import com.example.bluewave_mobile.data.ChatFolderDao
+import com.example.bluewave_mobile.data.ChatGroupDao
 import com.example.bluewave_mobile.data.DatabaseProvider
+import com.example.bluewave_mobile.data.FolderRepository
+import com.example.bluewave_mobile.data.GroupRepository
+import com.example.bluewave_mobile.data.GroupRepositoryImpl
 import com.example.bluewave_mobile.data.MessageDao
 import com.example.bluewave_mobile.data.MessageRepository
 import com.example.bluewave_mobile.data.MessageRepositoryImpl
+import com.example.bluewave_mobile.data.PeerProfileDao
 import com.example.bluewave_mobile.network.ApkSender
 import com.example.bluewave_mobile.network.BlueWaveSdpProber
 import com.example.bluewave_mobile.network.BluetoothDiscovery
 import com.example.bluewave_mobile.network.BluetoothSessionManager
 import com.example.bluewave_mobile.network.MessageTransport
+import com.example.bluewave_mobile.preferences.LocalProfile
+import com.example.bluewave_mobile.preferences.UserPreferencesRepository
+import com.example.bluewave_mobile.preferences.bluewavePreferencesDataStore
+import kotlinx.coroutines.flow.first
 
 /**
  * Manual dependency injection container — the BlueWave equivalent of a
@@ -52,6 +64,69 @@ class AppContainer(applicationContext: Context) {
         database.messageDao()
     }
 
+    /**
+     * DAO handle for the cached profile cards peers have pushed to
+     * us through `PROFILE_METADATA` frames.
+     */
+    val peerProfileDao: PeerProfileDao by lazy {
+        database.peerProfileDao()
+    }
+
+    /**
+     * DAO handle for the chat-folder taxonomy and the
+     * peer→folder bridge table.
+     */
+    val chatFolderDao: ChatFolderDao by lazy {
+        database.chatFolderDao()
+    }
+
+    /**
+     * Single Source of Truth for the chat-folder taxonomy. Used by
+     * the device-list filter chips and the folders-management
+     * screen. `BlueWaveApplication` calls
+     * [FolderRepository.seedBuiltInsIfNeeded] at process startup.
+     */
+    val folderRepository: FolderRepository by lazy {
+        FolderRepository(chatFolderDao)
+    }
+
+    /**
+     * DAO handle for the multi-peer group taxonomy
+     * ([com.example.bluewave_mobile.data.ChatGroupEntity] +
+     * [com.example.bluewave_mobile.data.GroupMemberEntity] +
+     * [com.example.bluewave_mobile.data.GroupMessageEntity]).
+     */
+    val chatGroupDao: ChatGroupDao by lazy {
+        database.chatGroupDao()
+    }
+
+    /**
+     * Single Source of Truth for groups. Owns the wire-level
+     * fan-out logic — every outgoing group message is encrypted
+     * once per recipient under the existing pairwise libsignal
+     * session and shipped via [bluetoothSessionManager].
+     */
+    val groupRepository: GroupRepository by lazy {
+        GroupRepositoryImpl(
+            chatGroupDao = chatGroupDao,
+            cryptoManager = cryptoManager,
+            signalEngine = signalEngine,
+            transport = bluetoothSessionManager,
+            // Resolve the local MAC and display name lazily so the
+            // ViewModel layer never reaches into BluetoothAdapter
+            // directly. `bluetoothAdapter?.address` is empty on
+            // emulators and Android 12+ devices that haven't granted
+            // the runtime permission yet — we fall back to "" so the
+            // group repo just labels outgoing rows as anonymous in
+            // those cases.
+            localMacProvider = { bluetoothAdapter?.address?.uppercase().orEmpty() },
+            localNameProvider = {
+                val name = bluetoothAdapter?.name
+                if (name.isNullOrBlank()) "Me" else name
+            },
+        )
+    }
+
     /** Android Keystore-backed AES-256 key holder. */
     val keyManager: KeyManager by lazy {
         KeyManager()
@@ -72,7 +147,33 @@ class AppContainer(applicationContext: Context) {
      * over RFCOMM and incoming frames flow back into Room.
      */
     val messageRepository: MessageRepository by lazy {
-        MessageRepositoryImpl(messageDao, cryptoManager, transport = bluetoothSessionManager)
+        MessageRepositoryImpl(
+            messageDao = messageDao,
+            cryptoManager = cryptoManager,
+            transport = bluetoothSessionManager,
+            signalEngine = signalEngine,
+            peerProfileDao = peerProfileDao,
+            // Pull the latest local profile lazily on every push —
+            // DataStore reads are cheap and this keeps the
+            // repository decoupled from the long-lived flow
+            // collector that drives [onLocalProfileChanged].
+            localProfileProvider = { userPreferencesRepository.localProfile.first() },
+            // Wires Phase 6 group routing into the inbound
+            // dispatcher: GROUP_INVITE / GROUP_MESSAGE frames are
+            // decrypted via the same pairwise libsignal session and
+            // then handed to [groupRepository] for persistence.
+            groupRepository = groupRepository,
+        )
+    }
+
+    /**
+     * Process-wide [SignalEngine] backed by libsignal's X3DH +
+     * Double Ratchet primitives. The engine owns a fresh identity
+     * key pair per cold launch (in-memory store — see
+     * [LibSignalEngine] for the persistence trade-off).
+     */
+    val signalEngine: SignalEngine by lazy {
+        LibSignalEngine.create()
     }
 
     /**
@@ -122,5 +223,17 @@ class AppContainer(applicationContext: Context) {
      */
     val apkSender: ApkSender by lazy {
         ApkSender(appContext)
+    }
+
+    /**
+     * DataStore-backed source of truth for user preferences —
+     * theme mode, UI language, the local profile card, and the
+     * Bluetooth-visibility timer. ViewModels for the Settings and
+     * Profile tabs pull this in directly through the
+     * [androidx.lifecycle.viewmodel.viewmodel.compose.viewModel]
+     * factory.
+     */
+    val userPreferencesRepository: UserPreferencesRepository by lazy {
+        UserPreferencesRepository(appContext.bluewavePreferencesDataStore)
     }
 }

@@ -21,10 +21,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.bluewave_mobile.R
 
 /**
  * Renders an explanation of why BlueWave needs Bluetooth permissions
@@ -56,14 +58,15 @@ fun PermissionGateView(
     missing: List<String>,
     onGrantClick: () -> Unit,
     modifier: Modifier = Modifier,
+    permanentlyDenied: Boolean = false,
 ) {
+    val combinedCd = stringResource(id = R.string.permission_combined_cd)
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(32.dp)
             .semantics(mergeDescendants = true) {
-                contentDescription = "Bluetooth permission required. " +
-                    "Grant Bluetooth access to discover nearby peers and exchange messages."
+                contentDescription = combinedCd
             },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -76,15 +79,20 @@ fun PermissionGateView(
         )
         Spacer(Modifier.height(16.dp))
         Text(
-            text = "Bluetooth permission required",
+            text = stringResource(id = R.string.permission_title),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "BlueWave needs Bluetooth access to discover nearby peers and " +
-                "exchange messages over a local radio link.",
+            text = stringResource(
+                id = if (permanentlyDenied) {
+                    R.string.permission_message_permanently_denied
+                } else {
+                    R.string.permission_message
+                },
+            ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -98,7 +106,15 @@ fun PermissionGateView(
         }
         Spacer(Modifier.height(24.dp))
         Button(onClick = onGrantClick) {
-            Text(text = "Grant permission")
+            Text(
+                text = stringResource(
+                    id = if (permanentlyDenied) {
+                        R.string.permission_open_settings
+                    } else {
+                        R.string.permission_grant
+                    },
+                ),
+            )
         }
     }
 }

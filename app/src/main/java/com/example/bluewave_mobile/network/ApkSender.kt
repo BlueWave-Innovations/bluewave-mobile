@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
 import androidx.core.content.FileProvider
+import com.example.bluewave_mobile.R
 import java.io.File
 
 /**
@@ -102,7 +103,7 @@ class ApkSender(private val context: Context) {
      *    [stageApk] first) or when no activity could handle the
      *    send intent at all.
      */
-    fun suggestInstall(chooserTitle: String = DEFAULT_CHOOSER_TITLE): Result<Unit> {
+    fun suggestInstall(): Result<Unit> {
         if (!stagedFile.exists()) {
             Log.w(TAG, "Cannot suggest install — APK has not been staged yet")
             return Result.failure(IllegalStateException("APK not staged"))
@@ -136,7 +137,7 @@ class ApkSender(private val context: Context) {
                         putExtra(Intent.EXTRA_STREAM, uri)
                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     },
-                    chooserTitle,
+                    context.getString(R.string.action_suggest_install),
                 ).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
@@ -153,9 +154,5 @@ class ApkSender(private val context: Context) {
         const val TAG = "ApkSender"
         const val APK_MIME_TYPE = "application/vnd.android.package-archive"
         const val SYSTEM_BLUETOOTH_PACKAGE = "com.android.bluetooth"
-        // Plain-English fallback for the chooser sheet when the caller
-        // does not pass a localized title. The Compose layer at the
-        // call site normally provides a localized [AppStrings] value.
-        const val DEFAULT_CHOOSER_TITLE = "Send BlueWave via Bluetooth"
     }
 }

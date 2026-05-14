@@ -9,9 +9,11 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.bluewave_mobile.crypto.CryptoManager
 import com.example.bluewave_mobile.crypto.DecryptionResult
+import com.example.bluewave_mobile.data.E2EEState
 import com.example.bluewave_mobile.data.MessageEntity
 import com.example.bluewave_mobile.data.MessageRepository
 import com.example.bluewave_mobile.data.MessageRepositoryImpl
+import com.example.bluewave_mobile.data.PeerProfileEntity
 import com.example.bluewave_mobile.network.MessageTransport
 import com.example.bluewave_mobile.ui.intent.ChatIntent
 import com.example.bluewave_mobile.ui.state.ChatMessage
@@ -22,12 +24,14 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -60,24 +64,10 @@ import kotlinx.coroutines.launch
  */
 class ChatViewModel(
     private val deviceMac: String,
-    /**
-     * User-visible peer label rendered in the chat screen's
-     * TopAppBar. Falls back to [deviceMac] when blank so older
-     * saved-state restores (from before the name was added to the
-     * navigation route) keep showing *something*.
-     */
-    val deviceName: String,
     private val repository: MessageRepository,
     private val crypto: CryptoManager,
     private val transport: MessageTransport? = null,
 ) : ViewModel() {
-
-    /**
-     * Convenience accessor for screens: the peer label to render in
-     * the TopAppBar / chat title. Always non-empty.
-     */
-    val displayName: String
-        get() = deviceName.ifBlank { deviceMac }
 
     /**
      * Optimistic in-memory list of outgoing messages that have been
@@ -90,38 +80,27 @@ class ChatViewModel(
     private val intents: MutableSharedFlow<ChatIntent> = MutableSharedFlow(extraBufferCapacity = 16)
 
     /**
-     * Decrypted persisted history for [deviceMac], reactive to Room
-     * invalidations. Kept as a private intermediate so [uiState] and
-     * [messages] can both consume it without registering two separate
-     * Room collectors and without going through two independent
-     * decrypt passes.
-     */
-    private val persistedMessages = repository
-        .getMessagesByDevice(deviceMac)
-        .map(::decryptAll)
-        .flowOn(Dispatchers.Default)
-
-    /**
-     * Public, lifecycle-friendly UI state. Reactive to BOTH the
-     * persisted Room rows AND the optimistic in-flight outgoing
-     * bubbles via [combine] — without that, an `optimistic.update`
-     * after [sendMessage] would not trigger a recomposition until
-     * the next Room invalidation, which is exactly the window where
-     * the user sees their own bubble twice (one persisted, one
-     * still-pending optimistic with a different `id`). Filtering
-     * duplicates on every emission also makes the dedupe correct
-     * regardless of emission ordering between Room and the
-     * optimistic state.
+     * Public, lifecycle-friendly UI state. The upstream flow:
+     *
+     *  1. observes the persisted Room rows for [deviceMac];
+     *  2. decrypts each on [Dispatchers.Default];
+     *  3. merges any pending [optimistic] outgoing messages on top;
+     *  4. wraps everything as a [ChatUiState.Success].
+     *
+     * Errors from the DB / decryption pipeline collapse into
+     * [ChatUiState.Error]; the screen surfaces a retry CTA that
+     * dispatches [ChatIntent.Retry].
      */
     val uiState: StateFlow<ChatUiState> = combine(
-        persistedMessages,
-        optimistic,
-    ) { persisted, opt ->
-        val cleanOpt = filterAlreadyPersisted(opt, persisted)
-        val combined = (persisted + cleanOpt).sortedBy(ChatMessage::timestamp)
+        repository.getMessagesByDevice(deviceMac).map(::decryptAll).flowOn(Dispatchers.Default),
+        repository.observeSessionState(deviceMac).distinctUntilChanged(),
+    ) { persisted: List<ChatMessage>, e2eeState: E2EEState ->
+        val merged = (persisted + optimistic.value)
+            .sortedBy(ChatMessage::timestamp)
         ChatUiState.Success(
-            messages = combined.map(::toEntityShim),
+            messages = merged.map(::toEntityShim),
             isPeerPaused = isPaused(),
+            e2eeState = e2eeState,
         ) as ChatUiState
     }
         .catch { throwable ->
@@ -131,6 +110,20 @@ class ChatViewModel(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000L),
             initialValue = ChatUiState.Loading,
+        )
+
+    /**
+     * Reactive view of the peer's last-seen profile card. Emits
+     * `null` until the first `PROFILE_METADATA` frame from the
+     * peer has been received and persisted; the chat top bar
+     * gracefully falls back to the [deviceMac] in that case.
+     */
+    val peerProfile: StateFlow<PeerProfileEntity?> = repository
+        .observePeerProfile(deviceMac)
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000L),
+            initialValue = null,
         )
 
     /**
@@ -162,55 +155,32 @@ class ChatViewModel(
      * this directly for rendering — the [uiState] flow above is the
      * MVI-shaped projection used for higher-level screen branches
      * (Loading / Error / PeerOffline).
-     *
-     * Using [combine] over the persisted-history flow AND the
-     * [optimistic] state flow is what kills the "I see my own message
-     * twice" bug. Previously the messages flow only emitted on Room
-     * invalidations; an `optimistic.update` after the user tapped
-     * Send would NOT re-emit, so the UI would either show the
-     * optimistic bubble alone (until Room caught up) or both bubbles
-     * side by side (until the next Room emission triggered the
-     * onEach cleanup). With combine + a deterministic
-     * [filterAlreadyPersisted] dedupe every emission produces the
-     * exact same set the next emission would converge to.
      */
-    val messages: StateFlow<List<ChatMessage>> = combine(
-        persistedMessages,
-        optimistic,
-    ) { persisted, opt ->
-        val cleanOpt = filterAlreadyPersisted(opt, persisted)
-        (persisted + cleanOpt)
-            .distinctBy(ChatMessage::id)
-            .sortedBy(ChatMessage::timestamp)
-    }
+    val messages: StateFlow<List<ChatMessage>> = repository
+        .getMessagesByDevice(deviceMac)
+        .map(::decryptAll)
+        .flowOn(Dispatchers.Default)
+        .map { persisted ->
+            (persisted + optimistic.value)
+                .distinctBy(ChatMessage::id)
+                .sortedBy(ChatMessage::timestamp)
+        }
+        .onEach { combined ->
+            // Drop optimistic items whose plaintext now appears in the
+            // persisted set — naive but sufficient for short messages
+            // typed by the user.
+            val persistedTexts = combined
+                .filter { it.id >= 0 }
+                .mapTo(HashSet(), ChatMessage::text)
+            optimistic.update { current ->
+                current.filterNot { it.text in persistedTexts }
+            }
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000L),
             initialValue = emptyList(),
         )
-
-    /**
-     * Drops any optimistic entries whose plaintext text already
-     * appears in the persisted set. We dedupe by text rather than id
-     * because the optimistic id is a negative monotonic counter
-     * minted client-side while the persisted id is a Room auto-pk —
-     * they will never collide by construction. Text-based dedupe is
-     * fine for hackathon-scale chats; if two adjacent outgoing
-     * messages have the exact same text the second one will be
-     * filtered for a single emission, which is harmless (the next
-     * Room emit re-includes both).
-     */
-    private fun filterAlreadyPersisted(
-        optimisticItems: List<ChatMessage>,
-        persisted: List<ChatMessage>,
-    ): List<ChatMessage> {
-        if (optimisticItems.isEmpty()) return optimisticItems
-        val persistedTexts: HashSet<String> = persisted
-            .asSequence()
-            .filter { it.isOutgoing }
-            .mapTo(HashSet(), ChatMessage::text)
-        return optimisticItems.filterNot { it.text in persistedTexts }
-    }
 
     init {
         viewModelScope.launch {
@@ -267,12 +237,6 @@ class ChatViewModel(
         optimistic.update { it + pending }
         try {
             repository.sendMessage(deviceMac, plaintext)
-            // Persistence succeeded — drop the optimistic placeholder
-            // we appended above. The persisted row will surface
-            // through the Room flow and be rendered with its real
-            // (positive) id, while [filterAlreadyPersisted] guards
-            // the UI against any transient overlap between the two.
-            optimistic.update { current -> current.filterNot { it.id == pendingId } }
         } catch (cause: Exception) {
             optimistic.update { current ->
                 current.map { item ->
@@ -348,13 +312,6 @@ class ChatViewModel(
         const val ARG_DEVICE_MAC: String = "deviceMac"
 
         /**
-         * SavedStateHandle key for the user-visible peer display
-         * name. Optional — restores from the typed Navigation route
-         * populate it automatically.
-         */
-        const val ARG_DEVICE_NAME: String = "deviceName"
-
-        /**
          * Debounce window applied in both directions to the bond-loss
          * banner visibility flag. 600 ms is a comfortable middle ground:
          * shorter than a typical re-bond cycle so the banner does
@@ -377,10 +334,8 @@ class ChatViewModel(
                 val mac: String = checkNotNull(handle[ARG_DEVICE_MAC]) {
                     "ChatViewModel requires SavedStateHandle[\"$ARG_DEVICE_MAC\"]"
                 }
-                val name: String = handle[ARG_DEVICE_NAME] ?: ""
                 ChatViewModel(
                     deviceMac = mac,
-                    deviceName = name,
                     repository = app.container.messageRepository,
                     crypto = app.container.cryptoManager,
                     transport = app.container.bluetoothSessionManager,

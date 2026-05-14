@@ -96,6 +96,27 @@ class BlueWaveSdpProber(
     }
 
     /**
+     * Hard signal: we just opened a live RFCOMM session to this
+     * MAC, so the peer must be running BlueWave regardless of what
+     * the cached SDP record says. The receiver-driven path is
+     * still authoritative — once a fresh `ACTION_UUID` lands it can
+     * flip the entry to `false` if the user uninstalled — but
+     * until that happens the row should sit in "Можно написать"
+     * instead of "Без приложения". This fixes the asymmetry where
+     * one phone sees the other as a chat (because messages flowed
+     * through fine) but the second phone still shows
+     * "install suggestion" because its SDP cache for the first
+     * phone was populated *before* the first phone's accept loop
+     * came online and never invalidated.
+     */
+    fun markPresent(macAddress: String) {
+        val mac = macAddress.uppercase()
+        _appPresence.update { current ->
+            if (current[mac] == true) current else current + (mac to true)
+        }
+    }
+
+    /**
      * Asks the system to (re-)fetch the SDP record for [device] and
      * deliver the result through `ACTION_UUID`. Cheap when the SDP
      * cache already holds the record; the manager debounces repeat

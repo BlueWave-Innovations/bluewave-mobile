@@ -19,7 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BluetoothConnected
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Icon
@@ -33,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -40,10 +41,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.bluewave_mobile.R
 import com.example.bluewave_mobile.ui.model.ContactRow
-import com.example.bluewave_mobile.ui.strings.rememberAppStrings
 import com.example.bluewave_mobile.ui.preview.PreviewLightDark
 import com.example.bluewave_mobile.ui.theme.BlueWaveTheme
+import com.example.bluewave_mobile.ui.theme.BrandBlue
+import com.example.bluewave_mobile.ui.theme.BrandBlueLight
 import java.text.DateFormat
 import java.util.Date
 
@@ -61,14 +64,10 @@ import java.util.Date
  * Each individual row is its own composable so previews can target
  * one section at a time without spinning up the entire screen.
  *
- * @param onRowClick Invoked with the tapped row's `macAddress` and
- *                   user-visible `displayName` when the user picks
- *                   a chat or a "can start" candidate. The chat
- *                   screen renders [displayName] in the TopAppBar
- *                   while keeping the MAC as the internal RFCOMM
- *                   identifier. Suppressed for
- *                   [ContactRow.InstallSuggestion] rows — those
- *                   route to [onSuggestInstall] instead.
+ * @param onRowClick Invoked with the tapped row's MAC address when
+ *                   the user picks a chat or a "can start" candidate.
+ *                   Suppressed for [ContactRow.InstallSuggestion]
+ *                   rows — those route to [onSuggestInstall] instead.
  * @param onSuggestInstall Invoked with the tapped row's MAC address
  *                         when the user taps the "share APK" CTA on
  *                         a no-app row.
@@ -76,10 +75,11 @@ import java.util.Date
 @Composable
 fun ContactsList(
     rows: List<ContactRow>,
-    onRowClick: (mac: String, displayName: String) -> Unit,
+    onRowClick: (String) -> Unit,
     onSuggestInstall: (String) -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(vertical = 8.dp),
+    onGroupClick: (String) -> Unit = onRowClick,
 ) {
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
@@ -96,15 +96,19 @@ fun ContactsList(
                 when (row) {
                     is ContactRow.ExistingChat -> ExistingChatRow(
                         row = row,
-                        onClick = { onRowClick(row.macAddress, row.displayName) },
+                        onClick = { onRowClick(row.macAddress) },
                     )
                     is ContactRow.StartChatCandidate -> StartChatRow(
                         row = row,
-                        onClick = { onRowClick(row.macAddress, row.displayName) },
+                        onClick = { onRowClick(row.macAddress) },
                     )
                     is ContactRow.InstallSuggestion -> InstallSuggestionRow(
                         row = row,
                         onSuggestInstall = { onSuggestInstall(row.macAddress) },
+                    )
+                    is ContactRow.GroupChat -> GroupChatRow(
+                        row = row,
+                        onClick = { onGroupClick(row.groupId) },
                     )
                 }
             }
@@ -117,6 +121,7 @@ fun ContactsList(
  * for picking the localized header label.
  */
 private fun sectionKeyOf(row: ContactRow): String = when (row) {
+    is ContactRow.GroupChat -> "groups"
     is ContactRow.ExistingChat -> "chats"
     is ContactRow.StartChatCandidate -> "candidates"
     is ContactRow.InstallSuggestion -> "installs"
@@ -124,11 +129,11 @@ private fun sectionKeyOf(row: ContactRow): String = when (row) {
 
 @Composable
 private fun SectionHeader(sectionKey: String) {
-    val strings = rememberAppStrings()
     val label = when (sectionKey) {
-        "chats" -> strings.contactsSectionChats
-        "candidates" -> strings.contactsSectionCanChat
-        "installs" -> strings.contactsSectionInstallSuggest
+        "groups" -> stringResource(id = R.string.contacts_groups_section)
+        "chats" -> stringResource(id = R.string.contacts_section_chats)
+        "candidates" -> stringResource(id = R.string.contacts_section_can_chat)
+        "installs" -> stringResource(id = R.string.contacts_section_install_suggest)
         else -> ""
     }
     Surface(
@@ -156,9 +161,8 @@ private fun ExistingChatRow(
         DateFormat.getTimeInstance(DateFormat.SHORT)
             .format(Date(row.lastMessageTimestamp))
     }
-    val strings = rememberAppStrings()
     val unreadDescription = if (row.unreadCount > 0) {
-        strings.contactsChatUnreadBadgeCd(row.unreadCount)
+        stringResource(id = R.string.contacts_chat_unread_badge_cd, row.unreadCount)
     } else {
         ""
     }
@@ -176,7 +180,6 @@ private fun ExistingChatRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Avatar(
-            online = row.isOnline,
             badgeText = row.displayName.firstOrNull()?.uppercase() ?: "?",
         )
         Spacer(Modifier.width(12.dp))
@@ -200,7 +203,9 @@ private fun ExistingChatRow(
             Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = row.lastMessagePreview.ifEmpty { strings.contactsChatEmptyPreview },
+                    text = row.lastMessagePreview.ifEmpty {
+                        stringResource(id = R.string.contacts_chat_empty_preview)
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (row.unreadCount > 0) {
                         MaterialTheme.colorScheme.onSurface
@@ -234,7 +239,6 @@ private fun StartChatRow(
     row: ContactRow.StartChatCandidate,
     onClick: () -> Unit,
 ) {
-    val strings = rememberAppStrings()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -262,7 +266,11 @@ private fun StartChatRow(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = if (row.isBonded) strings.contactsPairedLabel else row.macAddress,
+                text = if (row.isBonded) {
+                    stringResource(id = R.string.contacts_paired_label)
+                } else {
+                    row.macAddress
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -277,7 +285,6 @@ private fun InstallSuggestionRow(
     row: ContactRow.InstallSuggestion,
     onSuggestInstall: () -> Unit,
 ) {
-    val strings = rememberAppStrings()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -300,7 +307,7 @@ private fun InstallSuggestionRow(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = strings.contactsInstallSuggestSubtitle,
+                text = stringResource(id = R.string.contacts_install_suggest_subtitle),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
@@ -308,13 +315,98 @@ private fun InstallSuggestionRow(
             )
         }
         TextButton(onClick = onSuggestInstall) {
-            Text(text = strings.contactsInstallSuggestAction)
+            Text(text = stringResource(id = R.string.contacts_install_suggest_action))
         }
     }
 }
 
 @Composable
-private fun Avatar(online: Boolean, badgeText: String) {
+private fun GroupChatRow(
+    row: ContactRow.GroupChat,
+    onClick: () -> Unit,
+) {
+    val timestampLabel: String = if (row.lastMessageTimestamp > 0L) {
+        remember(row.lastMessageTimestamp) {
+            DateFormat.getTimeInstance(DateFormat.SHORT)
+                .format(Date(row.lastMessageTimestamp))
+        }
+    } else {
+        ""
+    }
+    val unreadDescription = if (row.unreadCount > 0) {
+        stringResource(id = R.string.contacts_chat_unread_badge_cd, row.unreadCount)
+    } else {
+        ""
+    }
+    val memberCountLabel = stringResource(id = R.string.group_chat_member_count, row.memberCount)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                contentDescription = listOf(row.displayName, memberCountLabel, unreadDescription)
+                    .filter(String::isNotEmpty)
+                    .joinToString(separator = ", ")
+            },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        GroupAvatarTile()
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = row.displayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                if (timestampLabel.isNotEmpty()) {
+                    Text(
+                        text = timestampLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = row.lastMessagePreview.ifEmpty { memberCountLabel },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (row.unreadCount > 0) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    fontWeight = if (row.unreadCount > 0) FontWeight.Medium else FontWeight.Normal,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                if (row.unreadCount > 0) {
+                    Spacer(Modifier.width(8.dp))
+                    Badge(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ) {
+                        Text(
+                            text = row.unreadCount.coerceAtMost(99).toString(),
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GroupAvatarTile() {
     Box(
         modifier = Modifier
             .size(40.dp)
@@ -322,19 +414,53 @@ private fun Avatar(online: Boolean, badgeText: String) {
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = badgeText,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.SemiBold,
+        Icon(
+            imageVector = Icons.Filled.Group,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(22.dp),
         )
-        if (online) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(12.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
+    }
+}
+
+@Composable
+private fun Avatar(badgeText: String) {
+    Box(modifier = Modifier.size(48.dp)) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(
+                    androidx.compose.ui.graphics.Brush.linearGradient(
+                        colors = listOf(BrandBlue, BrandBlueLight),
+                    ),
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = badgeText,
+                style = MaterialTheme.typography.titleMedium,
+                color = androidx.compose.ui.graphics.Color.White,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        // Bluetooth status pip in the bottom-right corner. Mirrors
+        // the redesign mockup — contacts shown in this list have all
+        // been seen recently over Bluetooth, so the badge is always
+        // present on the "existing chats" surface.
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .size(14.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surface),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Bluetooth,
+                contentDescription = null,
+                tint = BrandBlue,
+                modifier = Modifier.size(10.dp),
             )
         }
     }
@@ -355,13 +481,20 @@ private fun ContactsListPreview() {
     BlueWaveTheme {
         ContactsList(
             rows = listOf(
+                ContactRow.GroupChat(
+                    displayName = "Дизайн-команда",
+                    groupId = "group:design",
+                    memberCount = 4,
+                    lastMessagePreview = "Алекс: ок, заливаю",
+                    lastMessageTimestamp = System.currentTimeMillis() - 2_000L,
+                    unreadCount = 5,
+                ),
                 ContactRow.ExistingChat(
                     displayName = "Aleksandr",
                     macAddress = "AA:BB:CC:11:22:33",
                     lastMessagePreview = "Готово, забрал. Встречаемся в 19?",
                     lastMessageTimestamp = System.currentTimeMillis() - 5_000L,
                     unreadCount = 2,
-                    isOnline = true,
                 ),
                 ContactRow.ExistingChat(
                     displayName = "Mama",
@@ -369,7 +502,6 @@ private fun ContactsListPreview() {
                     lastMessagePreview = "Ужин на столе.",
                     lastMessageTimestamp = System.currentTimeMillis() - 60_000L,
                     unreadCount = 0,
-                    isOnline = false,
                 ),
                 ContactRow.StartChatCandidate(
                     displayName = "Pixel 9 Pro",
@@ -381,7 +513,7 @@ private fun ContactsListPreview() {
                     macAddress = "DD:EE:FF:44:55:66",
                 ),
             ),
-            onRowClick = { _, _ -> },
+            onRowClick = {},
             onSuggestInstall = {},
         )
     }
