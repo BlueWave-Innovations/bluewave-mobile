@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.util.Log
 import com.example.bluewave_mobile.di.AppContainer
-import com.example.bluewave_mobile.network.BluetoothConstants
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -129,13 +128,5 @@ class BlueWaveApplication : Application() {
          * the listener and fail with "service discovery failed".
          */
         const val AUTO_CONNECT_INITIAL_DELAY_MS: Long = 500L
-
-        /**
-         * Reserved for a future "reconnect on detach" path once the
-         * session manager exposes a per-peer detach signal. Currently
-         * unused — kept for documentation of the intended cool-down.
-         */
-        @Suppress("unused")
-        const val AUTO_RECONNECT_BACKOFF_MS: Long = BluetoothConstants.HEARTBEAT_INTERVAL_MS * 2
     }
 }

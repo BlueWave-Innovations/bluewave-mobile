@@ -20,7 +20,7 @@ import androidx.compose.ui.platform.LocalConfiguration
  * [rememberAppStrings] to obtain the instance.
  */
 @Immutable
-class AppStrings(isRu: Boolean) {
+class AppStrings(private val isRu: Boolean) {
     val deviceListTitle: String = "BlueWave"
 
     val deviceListRescanCd: String = if (isRu) {

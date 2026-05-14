@@ -381,7 +381,7 @@ private fun ContactsListPreview() {
                     macAddress = "DD:EE:FF:44:55:66",
                 ),
             ),
-            onRowClick = {},
+            onRowClick = { _, _ -> },
             onSuggestInstall = {},
         )
     }
