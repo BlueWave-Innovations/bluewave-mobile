@@ -21,18 +21,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.bluewave_mobile.R
 import com.example.bluewave_mobile.ui.components.DeviceGrid
 import com.example.bluewave_mobile.ui.components.EmptyStateView
 import com.example.bluewave_mobile.ui.intent.DeviceListIntent
 import com.example.bluewave_mobile.ui.permissions.PermissionGateView
 import com.example.bluewave_mobile.ui.permissions.rememberBluetoothPermissionState
 import com.example.bluewave_mobile.ui.state.DeviceListUiState
+import com.example.bluewave_mobile.ui.strings.rememberAppStrings
 import com.example.bluewave_mobile.ui.viewmodel.DeviceListViewModel
 
 /**
@@ -71,6 +70,7 @@ fun DeviceListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val permissions = rememberBluetoothPermissionState()
+    val strings = rememberAppStrings()
 
     // Auto-start the first scan once permissions come back as granted —
     // the user shouldn't have to tap the FAB after dismissing the
@@ -90,7 +90,7 @@ fun DeviceListScreen(
                     // `heading()` lets TalkBack users jump between
                     // screens via the heading-navigation gesture.
                     Text(
-                        text = stringResource(id = R.string.device_list_title),
+                        text = strings.deviceListTitle,
                         modifier = Modifier.semantics { heading() },
                     )
                 },
@@ -104,9 +104,7 @@ fun DeviceListScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Refresh,
-                        contentDescription = stringResource(
-                            id = R.string.device_list_rescan_cd,
-                        ),
+                        contentDescription = strings.deviceListRescanCd,
                     )
                 }
             }
@@ -127,18 +125,18 @@ fun DeviceListScreen(
                 uiState is DeviceListUiState.BluetoothDisabled -> {
                     EmptyStateView(
                         icon = Icons.Filled.BluetoothDisabled,
-                        title = stringResource(id = R.string.device_list_bluetooth_off_title),
-                        message = stringResource(id = R.string.device_list_bluetooth_off_message),
-                        actionLabel = stringResource(id = R.string.device_list_try_again),
+                        title = strings.deviceListBluetoothOffTitle,
+                        message = strings.deviceListBluetoothOffMessage,
+                        actionLabel = strings.deviceListTryAgain,
                         onAction = { viewModel.handleIntent(DeviceListIntent.StartScan) },
                     )
                 }
                 uiState is DeviceListUiState.Error -> {
                     EmptyStateView(
                         icon = Icons.Filled.BluetoothDisabled,
-                        title = "Discovery failed",
+                        title = strings.deviceListErrorTitle,
                         message = (uiState as DeviceListUiState.Error).message,
-                        actionLabel = "Retry",
+                        actionLabel = strings.deviceListRetry,
                         onAction = { viewModel.handleIntent(DeviceListIntent.StartScan) }
                     )
                 }
@@ -151,9 +149,9 @@ fun DeviceListScreen(
                     if (devices.isEmpty() && uiState is DeviceListUiState.Loaded) {
                         EmptyStateView(
                             icon = Icons.AutoMirrored.Filled.BluetoothSearching,
-                            title = stringResource(id = R.string.device_list_empty_title),
-                            message = stringResource(id = R.string.device_list_empty_message),
-                            actionLabel = stringResource(id = R.string.device_list_scan_again),
+                            title = strings.deviceListEmptyTitle,
+                            message = strings.deviceListEmptyMessage,
+                            actionLabel = strings.deviceListScanAgain,
                             onAction = { viewModel.handleIntent(DeviceListIntent.StartScan) },
                         )
                     } else {
