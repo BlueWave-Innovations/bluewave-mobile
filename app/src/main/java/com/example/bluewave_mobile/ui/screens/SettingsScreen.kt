@@ -25,7 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
-import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.QrCode2
@@ -73,7 +72,6 @@ import com.example.bluewave_mobile.ui.components.SettingsCard
 import com.example.bluewave_mobile.ui.components.SettingsRow
 import com.example.bluewave_mobile.ui.components.SettingsRowDivider
 import com.example.bluewave_mobile.ui.components.pressScale
-import com.example.bluewave_mobile.ui.theme.AccentCyan
 import com.example.bluewave_mobile.ui.theme.AccentIndigo
 import com.example.bluewave_mobile.ui.theme.BrandBlue
 import com.example.bluewave_mobile.ui.theme.SuccessGreen
@@ -102,7 +100,7 @@ import com.example.bluewave_mobile.ui.viewmodel.SettingsViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onOpenFolders: () -> Unit,
+    onOpenFolders: () -> Unit = {},
     onOpenProfile: () -> Unit = {},
     viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory),
 ) {
@@ -173,13 +171,6 @@ fun SettingsScreen(
                     trailing = {
                         TrailingValue(text = themeLabel(themeMode))
                     },
-                )
-                SettingsRowDivider()
-                SettingsRow(
-                    icon = Icons.Filled.Folder,
-                    title = stringResource(id = R.string.settings_open_folders),
-                    iconTint = AccentCyan,
-                    onClick = onOpenFolders,
                 )
             }
 
