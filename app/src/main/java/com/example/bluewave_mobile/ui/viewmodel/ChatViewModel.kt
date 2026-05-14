@@ -12,6 +12,7 @@ import com.example.bluewave_mobile.crypto.DecryptionResult
 import com.example.bluewave_mobile.data.MessageEntity
 import com.example.bluewave_mobile.data.MessageRepository
 import com.example.bluewave_mobile.data.MessageRepositoryImpl
+import com.example.bluewave_mobile.network.MessageTransport
 import com.example.bluewave_mobile.ui.intent.ChatIntent
 import com.example.bluewave_mobile.ui.state.ChatMessage
 import com.example.bluewave_mobile.ui.state.ChatUiState
@@ -62,6 +63,7 @@ class ChatViewModel(
     private val deviceMac: String,
     private val repository: MessageRepository,
     private val crypto: CryptoManager,
+    private val transport: MessageTransport? = null,
 ) : ViewModel() {
 
     /**
@@ -172,6 +174,16 @@ class ChatViewModel(
                     ChatIntent.ClearHistory -> repository.deleteMessagesByDevice(deviceMac)
                 }
             }
+        }
+        // Best-effort RFCOMM auto-connect on chat entry. The transport
+        // is null in unit tests and idempotent in production: calling
+        // `connect` for a peer with an active session is a no-op, and
+        // a failed connect logs and returns rather than throwing —
+        // the user can retry by tapping Send (the next attempt will
+        // re-trigger the connect on demand).
+        val transport = this.transport
+        if (transport != null) {
+            viewModelScope.launch { transport.connect(deviceMac) }
         }
     }
 
@@ -302,6 +314,7 @@ class ChatViewModel(
                     deviceMac = mac,
                     repository = app.container.messageRepository,
                     crypto = app.container.cryptoManager,
+                    transport = app.container.bluetoothSessionManager,
                 )
             }
         }

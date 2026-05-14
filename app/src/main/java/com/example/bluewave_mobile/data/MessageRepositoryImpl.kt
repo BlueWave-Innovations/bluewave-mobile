@@ -1,7 +1,7 @@
 package com.example.bluewave_mobile.data
 
 import com.example.bluewave_mobile.crypto.CryptoManager
-import com.example.bluewave_mobile.crypto.DecryptionResult
+import com.example.bluewave_mobile.network.MessageTransport
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -15,12 +15,17 @@ import kotlinx.coroutines.flow.Flow
  * instantiation of DAO or database inside this class.
  *
  * @property messageDao The Room DAO for message CRUD operations.
- * @property cryptoManager AES-256-GCM facade used to encrypt outgoing
- *                          messages and decrypt incoming ones.
+ * @property cryptoManager AES-256-GCM facade used to encrypt messages
+ *                          for at-rest storage in the local database.
+ * @property transport     Optional [MessageTransport] used to push
+ *                          plaintext bytes to the peer over RFCOMM.
+ *                          Defaults to `null` so unit tests can run
+ *                          without a Bluetooth radio.
  */
 class MessageRepositoryImpl(
     private val messageDao: MessageDao,
-    private val cryptoManager: CryptoManager = CryptoManager()
+    private val cryptoManager: CryptoManager = CryptoManager(),
+    private val transport: MessageTransport? = null,
 ) : MessageRepository {
 
     override fun getMessagesByDevice(macAddress: String): Flow<List<MessageEntity>> {
@@ -40,49 +45,28 @@ class MessageRepositoryImpl(
         senderName: String,
         rawData: ByteArray
     ) {
-        // Wire-format produced by sendMessage / step 19:
-        //   [12 bytes IV][N bytes ciphertext+GCM-tag]
-        // Anything shorter than 12 bytes cannot be a valid encrypted frame,
-        // so we persist it as a corrupted record with empty IV — the UI
-        // (step 26) renders this with the errorContainer treatment.
-        if (rawData.size <= IV_LENGTH_BYTES) {
-            messageDao.insertMessage(
-                MessageEntity(
-                    macAddress = macAddress,
-                    encryptedPayload = rawData,
-                    iv = ByteArray(0),
-                    isOutgoing = false,
-                    senderName = senderName
-                )
+        // [rawData] is the plaintext UTF-8 payload of one fully
+        // reassembled BlueWave wire frame (the length prefix has
+        // already been stripped by the network layer's
+        // FrameAccumulator). We re-encrypt it with the local AES key
+        // for encryption-at-rest so the on-disk shape stays identical
+        // to outgoing messages and the UI's render-time decrypt path
+        // works without branching.
+        val (iv, ciphertext) = cryptoManager.encrypt(rawData)
+        messageDao.insertMessage(
+            MessageEntity(
+                macAddress = macAddress,
+                encryptedPayload = ciphertext,
+                iv = iv,
+                isOutgoing = false,
+                senderName = senderName,
             )
-            return
-        }
-
-        val iv = rawData.copyOfRange(0, IV_LENGTH_BYTES)
-        val ciphertext = rawData.copyOfRange(IV_LENGTH_BYTES, rawData.size)
-
-        when (cryptoManager.decrypt(iv, ciphertext)) {
-            is DecryptionResult.Success,
-            is DecryptionResult.Tampered -> {
-                // Both branches persist the same on-disk shape; the UI
-                // distinguishes a corrupted message by attempting to
-                // decrypt at render time (step 26 will move that logic
-                // here when it lands).
-                messageDao.insertMessage(
-                    MessageEntity(
-                        macAddress = macAddress,
-                        encryptedPayload = ciphertext,
-                        iv = iv,
-                        isOutgoing = false,
-                        senderName = senderName
-                    )
-                )
-            }
-        }
+        )
     }
 
     override suspend fun sendMessage(macAddress: String, plaintext: String) {
-        val (iv, ciphertext) = cryptoManager.encrypt(plaintext.toByteArray(Charsets.UTF_8))
+        val plaintextBytes = plaintext.toByteArray(Charsets.UTF_8)
+        val (iv, ciphertext) = cryptoManager.encrypt(plaintextBytes)
         // Persist the encrypted payload locally first — Single Source of
         // Truth: the UI subscribes to the DB and updates automatically
         // as soon as the row lands.
@@ -95,9 +79,16 @@ class MessageRepositoryImpl(
                 senderName = "Me"
             )
         )
-        // The actual transmission over the BluetoothSocket is delegated
-        // to ConnectedThread in step 35 (cleanup / final wiring); for
-        // now we keep the network layer pluggable.
+        // Suppress radio writes when the peer is paused due to a
+        // bond-loss event — the message stays in the local DB and will
+        // be re-sent manually by the user once the link is restored.
+        if (isPausedFor(macAddress)) return
+
+        // Hand the plaintext bytes to the transport. The transport
+        // owns the framing (length-prefix wire format) and the
+        // per-peer BluetoothSession; if it returns false the session
+        // has gone stale and the user can retry from the chat input.
+        transport?.send(macAddress, plaintextBytes)
     }
 
     override suspend fun deleteMessagesByDevice(macAddress: String) {
@@ -122,9 +113,11 @@ class MessageRepositoryImpl(
         synchronized(pausedPeers) {
             pausedPeers.add(macAddress.uppercase())
         }
-        // The actual socket close lives in step 35 (cleanup) once the
-        // active connection registry is wired into the repository; for
-        // now flipping the flag is enough to suppress sendMessage().
+        // Tear down any live RFCOMM session for this peer so we don't
+        // try to write into a socket that has lost its bond key. The
+        // transport is idempotent — calling disconnect on an unknown
+        // peer is a no-op.
+        transport?.disconnect(macAddress)
     }
 
     override suspend fun resumeNetworkOperations(macAddress: String) {
@@ -139,15 +132,5 @@ class MessageRepositoryImpl(
      */
     internal fun isPausedFor(macAddress: String): Boolean {
         return synchronized(pausedPeers) { macAddress.uppercase() in pausedPeers }
-    }
-
-    private companion object {
-        /**
-         * Length of the GCM IV prefix in the on-wire frame. Kept in sync
-         * with [CryptoManager.GCM_IV_LENGTH_BYTES] but duplicated here so
-         * the data layer doesn't take a hard compile-time dependency on
-         * the constant.
-         */
-        const val IV_LENGTH_BYTES: Int = 12
     }
 }
