@@ -64,10 +64,14 @@ fun AdaptiveAppRoot() {
         val info = AdaptiveWindowInfo(widthDp = maxWidth, heightDp = maxHeight)
         if (info.isExpandedWidth) {
             var selectedMac: String? by rememberSaveable { mutableStateOf<String?>(null) }
+            var selectedName: String by rememberSaveable { mutableStateOf("") }
             TwoPaneLayout(
                 primary = {
                     DeviceListScreen(
-                        onDeviceClick = { mac -> selectedMac = mac },
+                        onDeviceClick = { mac, name ->
+                            selectedMac = mac
+                            selectedName = name
+                        },
                     )
                 },
                 secondary = {
@@ -79,7 +83,10 @@ fun AdaptiveAppRoot() {
                             message = "Pick a device on the left to start chatting.",
                         )
                     } else {
-                        ChatScreen(deviceMac = mac)
+                        ChatScreen(
+                            deviceMac = mac,
+                            deviceName = selectedName,
+                        )
                     }
                 },
             )
@@ -99,14 +106,19 @@ fun MainNavigation() {
     ) {
         composable<DeviceListRoute> {
             DeviceListScreen(
-                onDeviceClick = { mac ->
-                    navController.navigate(ChatRoute(deviceMac = mac))
+                onDeviceClick = { mac, name ->
+                    navController.navigate(
+                        ChatRoute(deviceMac = mac, deviceName = name),
+                    )
                 },
             )
         }
         composable<ChatRoute> { backStackEntry ->
             val chatRoute: ChatRoute = backStackEntry.toRoute()
-            ChatScreen(deviceMac = chatRoute.deviceMac)
+            ChatScreen(
+                deviceMac = chatRoute.deviceMac,
+                deviceName = chatRoute.deviceName,
+            )
         }
     }
 }

@@ -61,10 +61,14 @@ import java.util.Date
  * Each individual row is its own composable so previews can target
  * one section at a time without spinning up the entire screen.
  *
- * @param onRowClick Invoked with the tapped row's MAC address when
- *                   the user picks a chat or a "can start" candidate.
- *                   Suppressed for [ContactRow.InstallSuggestion]
- *                   rows — those route to [onSuggestInstall] instead.
+ * @param onRowClick Invoked with the tapped row's `macAddress` and
+ *                   user-visible `displayName` when the user picks
+ *                   a chat or a "can start" candidate. The chat
+ *                   screen renders [displayName] in the TopAppBar
+ *                   while keeping the MAC as the internal RFCOMM
+ *                   identifier. Suppressed for
+ *                   [ContactRow.InstallSuggestion] rows — those
+ *                   route to [onSuggestInstall] instead.
  * @param onSuggestInstall Invoked with the tapped row's MAC address
  *                         when the user taps the "share APK" CTA on
  *                         a no-app row.
@@ -72,7 +76,7 @@ import java.util.Date
 @Composable
 fun ContactsList(
     rows: List<ContactRow>,
-    onRowClick: (String) -> Unit,
+    onRowClick: (mac: String, displayName: String) -> Unit,
     onSuggestInstall: (String) -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(vertical = 8.dp),
@@ -92,11 +96,11 @@ fun ContactsList(
                 when (row) {
                     is ContactRow.ExistingChat -> ExistingChatRow(
                         row = row,
-                        onClick = { onRowClick(row.macAddress) },
+                        onClick = { onRowClick(row.macAddress, row.displayName) },
                     )
                     is ContactRow.StartChatCandidate -> StartChatRow(
                         row = row,
-                        onClick = { onRowClick(row.macAddress) },
+                        onClick = { onRowClick(row.macAddress, row.displayName) },
                     )
                     is ContactRow.InstallSuggestion -> InstallSuggestionRow(
                         row = row,

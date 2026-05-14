@@ -46,7 +46,7 @@ import com.example.bluewave_mobile.ui.viewmodel.DeviceListViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeviceListScreen(
-    onDeviceClick: (String) -> Unit,
+    onDeviceClick: (mac: String, displayName: String) -> Unit,
     viewModel: DeviceListViewModel = viewModel(factory = DeviceListViewModel.Factory),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -155,9 +155,9 @@ fun DeviceListScreen(
                     } else {
                         ContactsList(
                             rows = rows,
-                            onRowClick = { mac ->
+                            onRowClick = { mac, displayName ->
                                 viewModel.handleIntent(DeviceListIntent.DeviceSelected(mac))
-                                onDeviceClick(mac)
+                                onDeviceClick(mac, displayName)
                             },
                             onSuggestInstall = { mac ->
                                 viewModel.handleIntent(DeviceListIntent.SuggestInstall(mac))
