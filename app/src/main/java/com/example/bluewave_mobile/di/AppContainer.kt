@@ -11,6 +11,8 @@ import com.example.bluewave_mobile.data.MessageDao
 import com.example.bluewave_mobile.data.MessageRepository
 import com.example.bluewave_mobile.data.MessageRepositoryImpl
 import com.example.bluewave_mobile.network.BluetoothDiscovery
+import com.example.bluewave_mobile.network.BluetoothSessionManager
+import com.example.bluewave_mobile.network.MessageTransport
 
 /**
  * Manual dependency injection container — the BlueWave equivalent of a
@@ -62,9 +64,13 @@ class AppContainer(applicationContext: Context) {
      * Single Source of Truth for message data exposed to the UI layer.
      * The interface type [MessageRepository] is intentionally returned
      * so ViewModels never depend on the concrete impl.
+     *
+     * Wires the freshly-constructed [BluetoothSessionManager] in as
+     * the [MessageTransport] so `sendMessage` actually pushes bytes
+     * over RFCOMM and incoming frames flow back into Room.
      */
     val messageRepository: MessageRepository by lazy {
-        MessageRepositoryImpl(messageDao, cryptoManager)
+        MessageRepositoryImpl(messageDao, cryptoManager, transport = bluetoothSessionManager)
     }
 
     /**
@@ -82,5 +88,17 @@ class AppContainer(applicationContext: Context) {
     /** Reactive wrapper over [BluetoothAdapter.startDiscovery]. */
     val bluetoothDiscovery: BluetoothDiscovery by lazy {
         BluetoothDiscovery(appContext, bluetoothAdapter)
+    }
+
+    /**
+     * Process-wide RFCOMM session manager. Owns the perpetual accept
+     * loop and the per-peer [com.example.bluewave_mobile.network.BluetoothSession]
+     * map. `BlueWaveApplication.onCreate` is responsible for calling
+     * [BluetoothSessionManager.start] once permissions are available
+     * and for forwarding [BluetoothSessionManager.incoming] into
+     * [messageRepository].
+     */
+    val bluetoothSessionManager: BluetoothSessionManager by lazy {
+        BluetoothSessionManager(bluetoothAdapter)
     }
 }
