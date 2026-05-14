@@ -162,6 +162,17 @@ class DeviceListViewModel(
                     _uiState.value = newState
                 }
         }
+        // When a peer opens an RFCOMM session to us (or we to them),
+        // that is definitive proof that BlueWave is running on their
+        // side — mark the MAC as present so the SDP prober's stale
+        // cache does not keep the peer stuck in "Install suggestion".
+        transport?.let { t ->
+            viewModelScope.launch {
+                t.sessionAttached.collect { mac ->
+                    sdpProber.markPresent(mac)
+                }
+            }
+        }
     }
 
     /** Submit an intent for the reducer to process. */
