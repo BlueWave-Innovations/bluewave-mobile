@@ -214,7 +214,7 @@ class MessageRepositoryImpl(
             BlueWaveFrame.Type.HEARTBEAT -> {
                 // Heartbeats are transport-internal — silently dropped.
             }
-            BlueWaveFrame.Type.MESSAGE_ACK -> handleIncomingAck(frame.payload)
+            BlueWaveFrame.Type.MESSAGE_ACK -> handleIncomingAck(engine, key, frame.payload)
         }
     }
 
@@ -259,7 +259,17 @@ class MessageRepositoryImpl(
         if (!activeTransport.isConnected(key)) {
             runCatching { activeTransport.connect(key) }
                 .onFailure { e ->
-                    Log.w(TAG, "send-side connect attempt failed for $key: ${e.message}")
+                    Log.w(TAG, "send-side connect attempt 1 failed for $key: ${e.message}")
+                }
+        }
+        // Retry once after a short pause if the first attempt failed —
+        // the peer's accept loop may need a moment to spin up after
+        // Bluetooth pairing completes.
+        if (!activeTransport.isConnected(key)) {
+            kotlinx.coroutines.delay(500L)
+            runCatching { activeTransport.connect(key) }
+                .onFailure { e ->
+                    Log.w(TAG, "send-side connect attempt 2 failed for $key: ${e.message}")
                 }
         }
 
@@ -677,9 +687,36 @@ class MessageRepositoryImpl(
         }
     }
 
-    private suspend fun handleIncomingAck(body: ByteArray) {
-        val uuid = String(body, Charsets.UTF_8)
-        if (uuid.isNotBlank()) {
+    private suspend fun handleIncomingAck(
+        engine: SignalEngine,
+        macAddress: String,
+        body: ByteArray,
+    ) {
+        // The ACK payload may be:
+        //  * plaintext UUID (legacy / no E2EE) — 36 ASCII bytes
+        //  * an inner BlueWaveFrame wrapping the encrypted UUID
+        //    (sent by sendAckForMessage when a Signal session exists)
+        val plaintext: ByteArray = run {
+            val inner = BlueWaveFrame.decode(body)
+            if (inner != null) {
+                val decrypted = try {
+                    when (inner.type) {
+                        BlueWaveFrame.Type.PREKEY_SIGNAL_MESSAGE ->
+                            engine.decryptPreKeyMessage(macAddress, inner.payload)
+                        BlueWaveFrame.Type.SIGNAL_MESSAGE ->
+                            engine.decryptSignalMessage(macAddress, inner.payload)
+                        else -> null
+                    }
+                } catch (e: SignalEngineException) {
+                    Log.w(TAG, "ACK decrypt failed for $macAddress: ${e.message}")
+                    null
+                }
+                if (decrypted != null) return@run decrypted
+            }
+            body
+        }
+        val uuid = String(plaintext, Charsets.UTF_8).trim()
+        if (uuid.isNotBlank() && uuid.length == UUID_LENGTH) {
             messageDao.updateDeliveryStatus(uuid, MessageEntity.STATUS_DELIVERED)
         }
     }

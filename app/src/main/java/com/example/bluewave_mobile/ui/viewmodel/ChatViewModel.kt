@@ -95,7 +95,12 @@ class ChatViewModel(
         repository.getMessagesByDevice(deviceMac).map(::decryptAll).flowOn(Dispatchers.Default),
         repository.observeSessionState(deviceMac).distinctUntilChanged(),
     ) { persisted: List<ChatMessage>, e2eeState: E2EEState ->
-        val merged = (persisted + optimistic.value)
+        val persistedTexts = persisted
+            .filter { it.isOutgoing }
+            .mapTo(HashSet(), ChatMessage::text)
+        val dedupedOptimistic = optimistic.value
+            .filterNot { it.text in persistedTexts }
+        val merged = (persisted + dedupedOptimistic)
             .sortedBy(ChatMessage::timestamp)
         ChatUiState.Success(
             messages = merged.map(::toEntityShim),
@@ -161,14 +166,19 @@ class ChatViewModel(
         .map(::decryptAll)
         .flowOn(Dispatchers.Default)
         .map { persisted ->
-            (persisted + optimistic.value)
+            // Eagerly filter out optimistic items whose text already
+            // appears in the persisted set so the UI never shows the
+            // duplicate, even for a single frame.
+            val persistedTexts = persisted
+                .filter { it.isOutgoing }
+                .mapTo(HashSet(), ChatMessage::text)
+            val dedupedOptimistic = optimistic.value
+                .filterNot { it.text in persistedTexts }
+            (persisted + dedupedOptimistic)
                 .distinctBy(ChatMessage::id)
                 .sortedBy(ChatMessage::timestamp)
         }
         .onEach { combined ->
-            // Drop optimistic items whose plaintext now appears in the
-            // persisted set — naive but sufficient for short messages
-            // typed by the user.
             val persistedTexts = combined
                 .filter { it.id >= 0 }
                 .mapTo(HashSet(), ChatMessage::text)

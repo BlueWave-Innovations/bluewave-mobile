@@ -1,5 +1,6 @@
 package com.example.bluewave_mobile.ui.screens
 
+import android.bluetooth.BluetoothAdapter
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,9 +58,14 @@ import com.example.bluewave_mobile.ui.permissions.PermissionGateView
 import com.example.bluewave_mobile.ui.permissions.rememberBluetoothPermissionState
 import com.example.bluewave_mobile.ui.state.DeviceListUiState
 import com.example.bluewave_mobile.ui.viewmodel.DeviceListViewModel
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.FilterChip
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalContext
+import com.example.bluewave_mobile.data.BuiltInFolder
+import com.example.bluewave_mobile.data.ChatFolderEntity
 import com.example.bluewave_mobile.preferences.BluetoothVisibility
 import com.example.bluewave_mobile.service.BluetoothForegroundService
 import com.example.bluewave_mobile.ui.viewmodel.SettingsViewModel
@@ -112,6 +118,8 @@ fun DeviceListScreen(
     settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val availableFolders by viewModel.availableFolders.collectAsStateWithLifecycle()
+    val selectedFolderId by viewModel.selectedFolderId.collectAsStateWithLifecycle()
     val permissions = rememberBluetoothPermissionState()
     val snackbarHostState = remember { SnackbarHostState() }
     var searchQuery: String by rememberSaveable { mutableStateOf("") }
@@ -126,6 +134,32 @@ fun DeviceListScreen(
             viewModel.handleIntent(DeviceListIntent.PermissionsGranted)
             viewModel.handleIntent(DeviceListIntent.StartScan)
             BluetoothForegroundService.start(context)
+        }
+    }
+
+    // Auto-activate Bluetooth discoverable mode when the user enters
+    // the device list and visibility is OFF. Without this, two phones
+    // with BlueWave open in the connection section won't see each other
+    // because classic Bluetooth discovery only finds devices that are
+    // in discoverable mode. We request a 5-minute window which is long
+    // enough for the user to find and connect to the other device.
+    val discoverableLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_CANCELED) {
+            settingsViewModel.setBluetoothVisibility(BluetoothVisibility.OFF)
+        } else {
+            settingsViewModel.setBluetoothVisibility(BluetoothVisibility.MIN_5)
+        }
+    }
+    LaunchedEffect(permissions.allGranted, btVisibility) {
+        if (permissions.allGranted && btVisibility == BluetoothVisibility.OFF) {
+            val intent = android.content.Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE)
+                .putExtra(
+                    BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION,
+                    BluetoothVisibility.MIN_5.durationSeconds,
+                )
+            runCatching { discoverableLauncher.launch(intent) }
         }
     }
 
@@ -236,6 +270,11 @@ fun DeviceListScreen(
                             onQueryChange = { searchQuery = it },
                             onClear = { searchQuery = "" },
                         )
+                        FolderChipRow(
+                            folders = availableFolders,
+                            selectedFolderId = selectedFolderId,
+                            onSelect = viewModel::setFolder,
+                        )
                         Box(modifier = Modifier.fillMaxSize()) {
                             if (rows.isEmpty() && uiState is DeviceListUiState.Loaded) {
                                 EmptyStateView(
@@ -277,6 +316,46 @@ fun DeviceListScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Horizontally scrollable chip row that drives the active folder
+ * filter. "All" is always first, then one chip per persisted folder.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FolderChipRow(
+    folders: List<ChatFolderEntity>,
+    selectedFolderId: String?,
+    onSelect: (String?) -> Unit,
+) {
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 8.dp),
+    ) {
+        item(key = "chip:all") {
+            FilterChip(
+                selected = selectedFolderId == null,
+                onClick = { onSelect(null) },
+                label = { Text(text = stringResource(id = R.string.folders_chip_all)) },
+            )
+        }
+        items(items = folders, key = { "chip:" + it.id }) { folder ->
+            val label = when (folder.builtInKey) {
+                BuiltInFolder.WORK -> stringResource(id = R.string.folders_builtin_work)
+                BuiltInFolder.FAMILY -> stringResource(id = R.string.folders_builtin_family)
+                else -> folder.name.ifBlank { folder.id }
+            }
+            FilterChip(
+                selected = selectedFolderId == folder.id,
+                onClick = { onSelect(folder.id) },
+                label = { Text(text = label) },
+            )
         }
     }
 }
