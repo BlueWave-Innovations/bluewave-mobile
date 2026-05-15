@@ -1,0 +1,403 @@
+Initialized native services in: C:\Users\vgvkg\.gradle\native
+Initialized jansi services in: C:\Users\vgvkg\.gradle\native
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Starting process 'Gradle build daemon'. Working directory: C:\Users\vgvkg\.gradle\daemon\9.4.1 Command: C:\Program Files (x86)\Android\openjdk\jdk-17.0.8.101-hotspot\bin\java.exe --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-opens=java.base/java.nio.charset=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.xml/javax.xml.namespace=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED -Xmx2048m -Dfile.encoding=UTF-8 -Duser.country=RU -Duser.language=ru -Duser.variant -cp C:\Users\vgvkg\.gradle\wrapper\dists\gradle-9.4.1-bin\arn2x92ynaizyzdaamcbpbhtj\gradle-9.4.1\lib\gradle-daemon-main-9.4.1.jar -javaagent:C:\Users\vgvkg\.gradle\wrapper\dists\gradle-9.4.1-bin\arn2x92ynaizyzdaamcbpbhtj\gradle-9.4.1\lib\agents\gradle-instrumentation-agent-9.4.1.jar org.gradle.launcher.daemon.bootstrap.GradleDaemon 9.4.1
+Successfully started process 'Gradle build daemon'
+An attempt to start the daemon took 1.718 secs.
+The client will now receive all logging from the daemon (pid: 25456). The daemon log file: C:\Users\vgvkg\.gradle\daemon\9.4.1\daemon-25456.out.log
+Daemon will be stopped at the end of the build 
+Using 16 worker leases.
+Operational build model parameters: {cachingModelBuilding=false, configurationCache=false, configurationCacheDisabledReason=null, configurationCacheParallelLoad=false, configurationCacheParallelStore=false, configureOnDemand=false, invalidateCoupledProjects=false, isolatedProjects=false, modelAsProjectDependency=false, modelBuilding=false, parallelModelBuilding=false, parallelProjectConfiguration=false, parallelProjectExecution=false, resilientModelBuilding=false}
+Received JVM installation metadata from 'C:\Program Files (x86)\Android\openjdk\jdk-17.0.8.101-hotspot': {JAVA_HOME=C:\Program Files (x86)\Android\openjdk\jdk-17.0.8.101-hotspot, JAVA_VERSION=17.0.8.1, JAVA_VENDOR=Microsoft, RUNTIME_NAME=OpenJDK Runtime Environment, RUNTIME_VERSION=17.0.8.1+1-LTS, VM_NAME=OpenJDK 64-Bit Server VM, VM_VERSION=17.0.8.1+1-LTS, VM_VENDOR=Microsoft, OS_ARCH=amd64}
+Watching the file system is configured to be enabled if available
+Now considering [C:\Users\vgvkg\AndroidStudioProjects\MyApplication] as hierarchies to watch
+File system watching is active
+Starting Build
+Resolved plugin [id: 'org.gradle.toolchains.foojay-resolver-convention', version: '1.0.0']
+Settings evaluated using settings file 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\settings.gradle.kts'.
+Projects loaded. Root project using build file 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\build.gradle.kts'.
+Included projects: [root project 'bluewave-mobile', project ':app']
+
+> Configure project :
+Evaluating root project 'bluewave-mobile' using build file 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\build.gradle.kts'.
+Resolved plugin [id: 'com.android.application', version: '9.2.1', apply: false]
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.compose', version: '2.1.20', apply: false]
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.serialization', version: '2.1.20', apply: false]
+Resolved plugin [id: 'com.google.devtools.ksp', version: '2.1.20-1.0.32', apply: false]
+Resolved plugin [id: 'org.jlleitschuh.gradle.ktlint', version: '12.1.1', apply: false]
+
+> Configure project :app
+Evaluating project ':app' using build file 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build.gradle.kts'.
+Resolved plugin [id: 'com.android.application', version: '9.2.1']
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.compose', version: '2.1.20']
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.serialization', version: '2.1.20']
+Resolved plugin [id: 'com.google.devtools.ksp', version: '2.1.20-1.0.32']
+WARNING: The option setting 'android.disallowKotlinSourceSets=false' is experimental.
+The current default is 'true'.
+Build 953502fb-50e5-4473-85e4-04acd2b55ede is started
+Using default execution profile
+Detected Android Gradle Plugin compose compiler configuration
+Detected Android Gradle Plugin compose compiler configuration
+Detected Android Gradle Plugin compose compiler configuration
+Detected Android Gradle Plugin compose compiler configuration
+All projects evaluated.
+Task path ':app:assembleDebug' matched project ':app'
+Task name matched 'assembleDebug'
+Selected primary task 'assembleDebug' from project :app
+Adding -Xuse-inline-scopes-numbers Kotlin compiler flag for task :app:compileDebugKotlin
+Tasks to be executed: [task ':app:preBuild', task ':app:preDebugBuild', task ':app:mergeDebugNativeDebugMetadata', task ':app:generateDebugBuildConfig', task ':app:generateDebugResources', task ':app:packageDebugResources', task ':app:processDebugNavigationResources', task ':app:parseDebugLocalResources', task ':app:generateDebugRFile', task ':app:kspDebugKotlin', task ':app:compileDebugKotlin', task ':app:javaPreCompileDebug', task ':app:compileDebugJavaWithJavac', task ':app:generateDebugAssets', task ':app:mergeDebugAssets', task ':app:compressDebugAssets', task ':app:generateDebugGlobalSynthetics', task ':app:l8DexDesugarLibDebug', task ':app:processDebugJavaRes', task ':app:mergeDebugJavaResource', task ':app:checkDebugDuplicateClasses', task ':app:desugarDebugFileDependencies', task ':app:mergeExtDexDebug', task ':app:mergeLibDexDebug', task ':app:checkDebugAarMetadata', task ':app:mapDebugSourceSetPaths', task ':app:compileDebugNavigationResources', task ':app:mergeDebugResources', task ':app:createDebugCompatibleScreenManifests', task ':app:extractDeepLinksDebug', task ':app:processDebugMainManifest', task ':app:processDebugManifest', task ':app:processDebugManifestForPackage', task ':app:processDebugResources', task ':app:dexBuilderDebug', task ':app:mergeProjectDexDebug', task ':app:mergeDebugJniLibFolders', task ':app:mergeDebugNativeLibs', task ':app:stripDebugDebugSymbols', task ':app:validateSigningDebug', task ':app:writeDebugAppMetadata', task ':app:writeDebugSigningConfigVersions', task ':app:packageDebug', task ':app:createDebugApkListingFileRedirect', task ':app:assembleDebug']
+Tasks that were excluded: []
+Resolve mutations for :app:preBuild (Thread[Execution worker Thread 2,5,main]) started.
+:app:preBuild (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :app:preBuild UP-TO-DATE
+Skipping task ':app:preBuild' as it has no actions.
+Resolve mutations for :app:preDebugBuild (Thread[Execution worker Thread 2,5,main]) started.
+:app:preDebugBuild (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :app:preDebugBuild UP-TO-DATE
+Skipping task ':app:preDebugBuild' as it has no actions.
+Resolve mutations for :app:mergeDebugNativeDebugMetadata (Thread[Execution worker Thread 2,5,main]) started.
+:app:mergeDebugNativeDebugMetadata (Thread[Execution worker Thread 14,5,main]) started.
+
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+Skipping task ':app:mergeDebugNativeDebugMetadata' as it has no source files and no previous output files.
+Resolve mutations for :app:generateDebugBuildConfig (Thread[Execution worker Thread 2,5,main]) started.
+:app:generateDebugBuildConfig (Thread[Execution worker Thread 14,5,main]) started.
+
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+Caching disabled for task ':app:generateDebugBuildConfig' because:
+  Build cache is disabled
+Skipping task ':app:generateDebugBuildConfig' as it is up-to-date.
+Resolve mutations for :app:generateDebugResources (Thread[Execution worker Thread 14,5,main]) started.
+:app:generateDebugResources (Thread[Execution worker Thread 14,5,main]) started.
+
+> Task :app:generateDebugResources UP-TO-DATE
+Caching disabled for task ':app:generateDebugResources' because:
+  Build cache is disabled
+Skipping task ':app:generateDebugResources' as it is up-to-date.
+Resolve mutations for :app:packageDebugResources (Thread[Execution worker Thread 14,5,main]) started.
+:app:packageDebugResources (Thread[Execution worker Thread 14,5,main]) started.
+
+> Task :app:packageDebugResources UP-TO-DATE
+Caching disabled for task ':app:packageDebugResources' because:
+  Build cache is disabled
+Skipping task ':app:packageDebugResources' as it is up-to-date.
+Resolve mutations for :app:processDebugNavigationResources (Thread[Execution worker Thread 14,5,main]) started.
+:app:processDebugNavigationResources (Thread[Execution worker Thread 14,5,main]) started.
+
+> Task :app:processDebugNavigationResources UP-TO-DATE
+Caching disabled for task ':app:processDebugNavigationResources' because:
+  Build cache is disabled
+Skipping task ':app:processDebugNavigationResources' as it is up-to-date.
+Resolve mutations for :app:parseDebugLocalResources (Thread[Execution worker Thread 13,5,main]) started.
+:app:parseDebugLocalResources (Thread[Execution worker Thread 14,5,main]) started.
+
+> Task :app:parseDebugLocalResources UP-TO-DATE
+Caching disabled for task ':app:parseDebugLocalResources' because:
+  Build cache is disabled
+Skipping task ':app:parseDebugLocalResources' as it is up-to-date.
+Resolve mutations for :app:generateDebugRFile (Thread[Execution worker Thread 13,5,main]) started.
+:app:generateDebugRFile (Thread[Execution worker Thread 14,5,main]) started.
+
+> Task :app:generateDebugRFile UP-TO-DATE
+Caching disabled for task ':app:generateDebugRFile' because:
+  Build cache is disabled
+Skipping task ':app:generateDebugRFile' as it is up-to-date.
+Resolve mutations for :app:kspDebugKotlin (Thread[Execution worker Thread 13,5,main]) started.
+:app:kspDebugKotlin (Thread[Execution worker Thread 14,5,main]) started.
+Resolve mutations for :app:javaPreCompileDebug (Thread[included builds,5,main]) started.
+:app:javaPreCompileDebug (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :app:javaPreCompileDebug UP-TO-DATE
+Caching disabled for task ':app:javaPreCompileDebug' because:
+  Build cache is disabled
+Skipping task ':app:javaPreCompileDebug' as it is up-to-date.
+Resolve mutations for :app:generateDebugAssets (Thread[Execution worker Thread 7,5,main]) started.
+:app:generateDebugAssets (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :app:generateDebugAssets UP-TO-DATE
+Skipping task ':app:generateDebugAssets' as it has no actions.
+Resolve mutations for :app:mergeDebugAssets (Thread[Execution worker Thread 7,5,main]) started.
+:app:mergeDebugAssets (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :app:mergeDebugAssets UP-TO-DATE
+Caching disabled for task ':app:mergeDebugAssets' because:
+  Build cache is disabled
+  Simple merging task
+Skipping task ':app:mergeDebugAssets' as it is up-to-date.
+Resolve mutations for :app:compressDebugAssets (Thread[Execution worker Thread 5,5,main]) started.
+:app:compressDebugAssets (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :app:compressDebugAssets UP-TO-DATE
+Caching disabled for task ':app:compressDebugAssets' because:
+  Build cache is disabled
+Skipping task ':app:compressDebugAssets' as it is up-to-date.
+Resolve mutations for :app:generateDebugGlobalSynthetics (Thread[Execution worker Thread 5,5,main]) started.
+:app:generateDebugGlobalSynthetics (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :app:generateDebugGlobalSynthetics UP-TO-DATE
+Caching disabled for task ':app:generateDebugGlobalSynthetics' because:
+  Build cache is disabled
+Skipping task ':app:generateDebugGlobalSynthetics' as it is up-to-date.
+Resolve mutations for :app:l8DexDesugarLibDebug (Thread[Execution worker Thread 5,5,main]) started.
+:app:l8DexDesugarLibDebug (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :app:l8DexDesugarLibDebug UP-TO-DATE
+Caching disabled for task ':app:l8DexDesugarLibDebug' because:
+  Build cache is disabled
+Skipping task ':app:l8DexDesugarLibDebug' as it is up-to-date.
+Resolve mutations for :app:checkDebugDuplicateClasses (Thread[Execution worker,5,main]) started.
+:app:checkDebugDuplicateClasses (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+Caching disabled for task ':app:checkDebugDuplicateClasses' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:checkDebugDuplicateClasses' as it is up-to-date.
+Resolve mutations for :app:desugarDebugFileDependencies (Thread[Execution worker Thread 7,5,main]) started.
+:app:desugarDebugFileDependencies (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+Caching disabled for task ':app:desugarDebugFileDependencies' because:
+  Build cache is disabled
+Skipping task ':app:desugarDebugFileDependencies' as it is up-to-date.
+Resolve mutations for :app:mergeExtDexDebug (Thread[Execution worker Thread 7,5,main]) started.
+:app:mergeExtDexDebug (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :app:mergeExtDexDebug UP-TO-DATE
+Caching disabled for task ':app:mergeExtDexDebug' because:
+  Build cache is disabled
+Skipping task ':app:mergeExtDexDebug' as it is up-to-date.
+Resolve mutations for :app:mergeLibDexDebug (Thread[Execution worker Thread 7,5,main]) started.
+:app:mergeLibDexDebug (Thread[Execution worker Thread 13,5,main]) started.
+
+> Task :app:mergeLibDexDebug UP-TO-DATE
+Caching disabled for task ':app:mergeLibDexDebug' because:
+  Build cache is disabled
+Skipping task ':app:mergeLibDexDebug' as it is up-to-date.
+Resolve mutations for :app:checkDebugAarMetadata (Thread[Execution worker Thread 7,5,main]) started.
+:app:checkDebugAarMetadata (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+Caching disabled for task ':app:checkDebugAarMetadata' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:checkDebugAarMetadata' as it is up-to-date.
+Resolve mutations for :app:mapDebugSourceSetPaths (Thread[Execution worker Thread 7,5,main]) started.
+:app:mapDebugSourceSetPaths (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+Caching disabled for task ':app:mapDebugSourceSetPaths' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:mapDebugSourceSetPaths' as it is up-to-date.
+Resolve mutations for :app:compileDebugNavigationResources (Thread[Execution worker Thread 9,5,main]) started.
+:app:compileDebugNavigationResources (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :app:compileDebugNavigationResources UP-TO-DATE
+Caching disabled for task ':app:compileDebugNavigationResources' because:
+  Build cache is disabled
+Skipping task ':app:compileDebugNavigationResources' as it is up-to-date.
+Resolve mutations for :app:mergeDebugResources (Thread[Execution worker Thread 9,5,main]) started.
+:app:mergeDebugResources (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :app:mergeDebugResources UP-TO-DATE
+Caching disabled for task ':app:mergeDebugResources' because:
+  Build cache is disabled
+Skipping task ':app:mergeDebugResources' as it is up-to-date.
+Resolve mutations for :app:createDebugCompatibleScreenManifests (Thread[Execution worker Thread 5,5,main]) started.
+:app:createDebugCompatibleScreenManifests (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+Caching disabled for task ':app:createDebugCompatibleScreenManifests' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:createDebugCompatibleScreenManifests' as it is up-to-date.
+Resolve mutations for :app:extractDeepLinksDebug (Thread[Execution worker Thread 5,5,main]) started.
+:app:extractDeepLinksDebug (Thread[Execution worker Thread 5,5,main]) started.
+
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+Caching disabled for task ':app:extractDeepLinksDebug' because:
+  Build cache is disabled
+Skipping task ':app:extractDeepLinksDebug' as it is up-to-date.
+Resolve mutations for :app:processDebugMainManifest (Thread[Execution worker Thread 5,5,main]) started.
+:app:processDebugMainManifest (Thread[Execution worker Thread 5,5,main]) started.
+
+> Task :app:processDebugMainManifest UP-TO-DATE
+Caching disabled for task ':app:processDebugMainManifest' because:
+  Build cache is disabled
+Skipping task ':app:processDebugMainManifest' as it is up-to-date.
+Resolve mutations for :app:processDebugManifest (Thread[Execution worker Thread 5,5,main]) started.
+:app:processDebugManifest (Thread[Execution worker Thread 13,5,main]) started.
+
+> Task :app:processDebugManifest UP-TO-DATE
+Caching disabled for task ':app:processDebugManifest' because:
+  Build cache is disabled
+Skipping task ':app:processDebugManifest' as it is up-to-date.
+Resolve mutations for :app:processDebugManifestForPackage (Thread[Execution worker Thread 5,5,main]) started.
+:app:processDebugManifestForPackage (Thread[Execution worker Thread 5,5,main]) started.
+
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+Custom actions are attached to task ':app:processDebugManifestForPackage'.
+Caching disabled for task ':app:processDebugManifestForPackage' because:
+  Build cache is disabled
+Skipping task ':app:processDebugManifestForPackage' as it is up-to-date.
+Resolve mutations for :app:processDebugResources (Thread[Execution worker Thread 13,5,main]) started.
+:app:processDebugResources (Thread[Execution worker Thread 5,5,main]) started.
+
+> Task :app:kspDebugKotlin
+Caching disabled for task ':app:kspDebugKotlin' because:
+  Build cache is disabled
+Task ':app:kspDebugKotlin' is not up-to-date because:
+  Value of input property 'kspConfig.logLevel' has changed for task ':app:kspDebugKotlin'
+The input changes require a full rebuild for incremental task ':app:kspDebugKotlin'.
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+i: [ksp] loaded provider(s): [androidx.room.RoomKspProcessor$Provider]
+
+> Task :app:processDebugResources UP-TO-DATE
+Caching disabled for task ':app:processDebugResources' because:
+  Build cache is disabled
+Skipping task ':app:processDebugResources' as it is up-to-date.
+Resolve mutations for :app:mergeDebugJniLibFolders (Thread[Execution worker Thread 6,5,main]) started.
+:app:mergeDebugJniLibFolders (Thread[Execution worker Thread 5,5,main]) started.
+
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+Caching disabled for task ':app:mergeDebugJniLibFolders' because:
+  Build cache is disabled
+  Simple merging task
+Skipping task ':app:mergeDebugJniLibFolders' as it is up-to-date.
+Resolve mutations for :app:mergeDebugNativeLibs (Thread[Execution worker Thread 6,5,main]) started.
+:app:mergeDebugNativeLibs (Thread[Execution worker Thread 5,5,main]) started.
+
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+Caching disabled for task ':app:mergeDebugNativeLibs' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:mergeDebugNativeLibs' as it is up-to-date.
+Resolve mutations for :app:stripDebugDebugSymbols (Thread[Execution worker Thread 5,5,main]) started.
+:app:stripDebugDebugSymbols (Thread[Execution worker Thread 5,5,main]) started.
+
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
+Caching disabled for task ':app:stripDebugDebugSymbols' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:stripDebugDebugSymbols' as it is up-to-date.
+Resolve mutations for :app:validateSigningDebug (Thread[Execution worker Thread 5,5,main]) started.
+:app:validateSigningDebug (Thread[Execution worker Thread 5,5,main]) started.
+
+> Task :app:validateSigningDebug UP-TO-DATE
+Caching disabled for task ':app:validateSigningDebug' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:validateSigningDebug' as it is up-to-date.
+Resolve mutations for :app:writeDebugAppMetadata (Thread[Execution worker Thread 7,5,main]) started.
+:app:writeDebugAppMetadata (Thread[Execution worker Thread 5,5,main]) started.
+
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+Caching disabled for task ':app:writeDebugAppMetadata' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:writeDebugAppMetadata' as it is up-to-date.
+Resolve mutations for :app:writeDebugSigningConfigVersions (Thread[Execution worker Thread 7,5,main]) started.
+:app:writeDebugSigningConfigVersions (Thread[Execution worker Thread 5,5,main]) started.
+
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+Caching disabled for task ':app:writeDebugSigningConfigVersions' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:writeDebugSigningConfigVersions' as it is up-to-date.
+Resolve mutations for :app:compileDebugKotlin (Thread[Execution worker Thread 5,5,main]) started.
+:app:compileDebugKotlin (Thread[Execution worker Thread 14,5,main]) started.
+
+> Task :app:compileDebugKotlin UP-TO-DATE
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+Custom actions are attached to task ':app:compileDebugKotlin'.
+Caching disabled for task ':app:compileDebugKotlin' because:
+  Build cache is disabled
+Skipping task ':app:compileDebugKotlin' as it is up-to-date.
+Resolve mutations for :app:compileDebugJavaWithJavac (Thread[Execution worker Thread 4,5,main]) started.
+:app:compileDebugJavaWithJavac (Thread[Execution worker Thread 14,5,main]) started.
+
+> Task :app:compileDebugJavaWithJavac UP-TO-DATE
+Custom actions are attached to task ':app:compileDebugJavaWithJavac'.
+Caching disabled for task ':app:compileDebugJavaWithJavac' because:
+  Build cache is disabled
+Skipping task ':app:compileDebugJavaWithJavac' as it is up-to-date.
+No compile result for :app:compileDebugJavaWithJavac
+Resolve mutations for :app:processDebugJavaRes (Thread[Execution worker Thread 4,5,main]) started.
+:app:processDebugJavaRes (Thread[Execution worker Thread 14,5,main]) started.
+
+> Task :app:processDebugJavaRes UP-TO-DATE
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\resources', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\resources', not found
+Caching disabled for task ':app:processDebugJavaRes' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:processDebugJavaRes' as it is up-to-date.
+Resolve mutations for :app:mergeDebugJavaResource (Thread[Execution worker Thread 14,5,main]) started.
+:app:mergeDebugJavaResource (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :app:mergeDebugJavaResource UP-TO-DATE
+Caching disabled for task ':app:mergeDebugJavaResource' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:mergeDebugJavaResource' as it is up-to-date.
+Resolve mutations for :app:dexBuilderDebug (Thread[Execution worker Thread 4,5,main]) started.
+:app:dexBuilderDebug (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :app:dexBuilderDebug UP-TO-DATE
+Caching disabled for task ':app:dexBuilderDebug' because:
+  Build cache is disabled
+Skipping task ':app:dexBuilderDebug' as it is up-to-date.
+Resolve mutations for :app:mergeProjectDexDebug (Thread[Execution worker Thread 2,5,main]) started.
+:app:mergeProjectDexDebug (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :app:mergeProjectDexDebug UP-TO-DATE
+Caching disabled for task ':app:mergeProjectDexDebug' because:
+  Build cache is disabled
+Skipping task ':app:mergeProjectDexDebug' as it is up-to-date.
+Resolve mutations for :app:packageDebug (Thread[Execution worker Thread 4,5,main]) started.
+:app:packageDebug (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :app:packageDebug UP-TO-DATE
+Custom actions are attached to task ':app:packageDebug'.
+Caching disabled for task ':app:packageDebug' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:packageDebug' as it is up-to-date.
+Resolve mutations for :app:createDebugApkListingFileRedirect (Thread[Execution worker Thread 4,5,main]) started.
+:app:createDebugApkListingFileRedirect (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :app:createDebugApkListingFileRedirect UP-TO-DATE
+Caching disabled for task ':app:createDebugApkListingFileRedirect' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:createDebugApkListingFileRedirect' as it is up-to-date.
+Resolve mutations for :app:assembleDebug (Thread[Execution worker Thread 4,5,main]) started.
+:app:assembleDebug (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :app:assembleDebug UP-TO-DATE
+Skipping task ':app:assembleDebug' as it has no actions.
+Build 953502fb-50e5-4473-85e4-04acd2b55ede is closed
+
+BUILD SUCCESSFUL in 31s
+40 actionable tasks: 1 executed, 39 up-to-date
+Watched directory hierarchies: [C:\Users\vgvkg\AndroidStudioProjects\MyApplication]
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.4.1/userguide/configuration_cache_enabling.html
