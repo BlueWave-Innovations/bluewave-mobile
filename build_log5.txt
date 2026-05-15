@@ -1,0 +1,857 @@
+Initialized native services in: C:\Users\vgvkg\.gradle\native
+Initialized jansi services in: C:\Users\vgvkg\.gradle\native
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.13/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Starting process 'Gradle build daemon'. Working directory: C:\Users\vgvkg\.gradle\daemon\8.13 Command: C:\Program Files (x86)\Android\openjdk\jdk-17.0.8.101-hotspot\bin\java.exe --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-opens=java.base/java.nio.charset=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.xml/javax.xml.namespace=ALL-UNNAMED -Xmx2048m -Dfile.encoding=UTF-8 -Duser.country=RU -Duser.language=ru -Duser.variant -cp C:\Users\vgvkg\.gradle\wrapper\dists\gradle-8.13-bin\5xuhj0ry160q40clulazy9h7d\gradle-8.13\lib\gradle-daemon-main-8.13.jar -javaagent:C:\Users\vgvkg\.gradle\wrapper\dists\gradle-8.13-bin\5xuhj0ry160q40clulazy9h7d\gradle-8.13\lib\agents\gradle-instrumentation-agent-8.13.jar org.gradle.launcher.daemon.bootstrap.GradleDaemon 8.13
+Successfully started process 'Gradle build daemon'
+An attempt to start the daemon took 1.749 secs.
+The client will now receive all logging from the daemon (pid: 24772). The daemon log file: C:\Users\vgvkg\.gradle\daemon\8.13\daemon-24772.out.log
+Daemon will be stopped at the end of the build 
+Using 16 worker leases.
+Received JVM installation metadata from 'C:\Program Files (x86)\Android\openjdk\jdk-17.0.8.101-hotspot': {JAVA_HOME=C:\Program Files (x86)\Android\openjdk\jdk-17.0.8.101-hotspot, JAVA_VERSION=17.0.8.1, JAVA_VENDOR=Microsoft, RUNTIME_NAME=OpenJDK Runtime Environment, RUNTIME_VERSION=17.0.8.1+1-LTS, VM_NAME=OpenJDK 64-Bit Server VM, VM_VERSION=17.0.8.1+1-LTS, VM_VENDOR=Microsoft, OS_ARCH=amd64}
+Watching the file system is configured to be enabled if available
+Now considering [C:\Users\vgvkg\AndroidStudioProjects\MyApplication] as hierarchies to watch
+File system watching is active
+Starting Build
+Settings evaluated using settings file 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\settings.gradle.kts'.
+Projects loaded. Root project using build file 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\build.gradle.kts'.
+Included projects: [root project 'bluewave-mobile', project ':app']
+
+> Configure project :
+Evaluating root project 'bluewave-mobile' using build file 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\build.gradle.kts'.
+Resolved plugin [id: 'com.android.application', version: '8.9.2', apply: false]
+Resolved plugin [id: 'org.jetbrains.kotlin.android', version: '2.1.10', apply: false]
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.compose', version: '2.1.10', apply: false]
+Resolved plugin [id: 'com.google.devtools.ksp', version: '2.1.10-1.0.31', apply: false]
+
+> Configure project :app
+Evaluating project ':app' using build file 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build.gradle.kts'.
+Resolved plugin [id: 'com.android.application', version: '8.9.2']
+Resolved plugin [id: 'org.jetbrains.kotlin.android', version: '2.1.10']
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.compose', version: '2.1.10']
+Resolved plugin [id: 'com.google.devtools.ksp', version: '2.1.10-1.0.31']
+Using default execution profile
+Using Kotlin Gradle Plugin gradle85 variant
+Detected Android Gradle Plugin compose compiler configuration
+Detected Android Gradle Plugin compose compiler configuration
+Detected Android Gradle Plugin compose compiler configuration
+Detected Android Gradle Plugin compose compiler configuration
+Detected Android Gradle Plugin compose compiler configuration
+All projects evaluated.
+Task name matched 'build'
+Selected primary task 'build' from project :
+Adding -Xuse-inline-scopes-numbers Kotlin compiler flag for task :app:compileDebugKotlin
+Tasks to be executed: [task ':app:preBuild', task ':app:preDebugBuild', task ':app:mergeDebugNativeDebugMetadata', task ':app:checkKotlinGradlePluginConfigurationErrors', task ':app:checkDebugAarMetadata', task ':app:generateDebugResValues', task ':app:mapDebugSourceSetPaths', task ':app:generateDebugResources', task ':app:mergeDebugResources', task ':app:packageDebugResources', task ':app:parseDebugLocalResources', task ':app:createDebugCompatibleScreenManifests', task ':app:extractDeepLinksDebug', task ':app:processDebugMainManifest', task ':app:processDebugManifest', task ':app:processDebugManifestForPackage', task ':app:processDebugResources', task ':app:kspDebugKotlin', task ':app:compileDebugKotlin', task ':app:javaPreCompileDebug', task ':app:compileDebugJavaWithJavac', task ':app:mergeDebugShaders', task ':app:compileDebugShaders', task ':app:generateDebugAssets', task ':app:mergeDebugAssets', task ':app:compressDebugAssets', task ':app:desugarDebugFileDependencies', task ':app:dexBuilderDebug', task ':app:mergeDebugGlobalSynthetics', task ':app:processDebugJavaRes', task ':app:mergeDebugJavaResource', task ':app:checkDebugDuplicateClasses', task ':app:mergeExtDexDebug', task ':app:mergeLibDexDebug', task ':app:mergeProjectDexDebug', task ':app:mergeDebugJniLibFolders', task ':app:mergeDebugNativeLibs', task ':app:stripDebugDebugSymbols', task ':app:validateSigningDebug', task ':app:writeDebugAppMetadata', task ':app:writeDebugSigningConfigVersions', task ':app:packageDebug', task ':app:createDebugApkListingFileRedirect', task ':app:assembleDebug', task ':app:preReleaseBuild', task ':app:mergeReleaseJniLibFolders', task ':app:mergeReleaseNativeLibs', task ':app:stripReleaseDebugSymbols', task ':app:extractReleaseNativeSymbolTables', task ':app:mergeReleaseNativeDebugMetadata', task ':app:checkReleaseDuplicateClasses', task ':app:buildKotlinToolingMetadata', task ':app:checkReleaseAarMetadata', task ':app:generateReleaseResValues', task ':app:mapReleaseSourceSetPaths', task ':app:generateReleaseResources', task ':app:mergeReleaseResources', task ':app:packageReleaseResources', task ':app:parseReleaseLocalResources', task ':app:createReleaseCompatibleScreenManifests', task ':app:extractDeepLinksRelease', task ':app:processReleaseMainManifest', task ':app:processReleaseManifest', task ':app:processReleaseManifestForPackage', task ':app:processReleaseResources', task ':app:kspReleaseKotlin', task ':app:compileReleaseKotlin', task ':app:javaPreCompileRelease', task ':app:compileReleaseJavaWithJavac', task ':app:dexBuilderRelease', task ':app:desugarReleaseFileDependencies', task ':app:mergeReleaseStartupProfile', task ':app:mergeExtDexRelease', task ':app:mergeDexRelease', task ':app:mergeReleaseArtProfile', task ':app:mergeReleaseGlobalSynthetics', task ':app:compileReleaseArtProfile', task ':app:mergeReleaseShaders', task ':app:compileReleaseShaders', task ':app:generateReleaseAssets', task ':app:mergeReleaseAssets', task ':app:compressReleaseAssets', task ':app:extractReleaseVersionControlInfo', task ':app:extractProguardFiles', task ':app:generateReleaseLintVitalReportModel', task ':app:lintVitalAnalyzeRelease', task ':app:lintVitalReportRelease', task ':app:lintVitalRelease', task ':app:processReleaseJavaRes', task ':app:mergeReleaseJavaResource', task ':app:optimizeReleaseResources', task ':app:collectReleaseDependencies', task ':app:sdkReleaseDependencyData', task ':app:writeReleaseAppMetadata', task ':app:writeReleaseSigningConfigVersions', task ':app:packageRelease', task ':app:createReleaseApkListingFileRedirect', task ':app:assembleRelease', task ':app:assemble', task ':app:bundleDebugClassesToCompileJar', task ':app:preDebugAndroidTestBuild', task ':app:generateDebugAndroidTestResValues', task ':app:generateDebugAndroidTestLintModel', task ':app:generateDebugLintReportModel', task ':app:preDebugUnitTestBuild', task ':app:generateDebugUnitTestLintModel', task ':app:lintAnalyzeDebug', task ':app:lintAnalyzeDebugAndroidTest', task ':app:lintAnalyzeDebugUnitTest', task ':app:lintReportDebug', task ':app:lintDebug', task ':app:lint', task ':app:bundleDebugClassesToRuntimeJar', task ':app:kspDebugUnitTestKotlin', task ':app:compileDebugUnitTestKotlin', task ':app:javaPreCompileDebugUnitTest', task ':app:compileDebugUnitTestJavaWithJavac', task ':app:processDebugUnitTestJavaRes', task ':app:testDebugUnitTest', task ':app:bundleReleaseClassesToRuntimeJar', task ':app:bundleReleaseClassesToCompileJar', task ':app:kspReleaseUnitTestKotlin', task ':app:compileReleaseUnitTestKotlin', task ':app:preReleaseUnitTestBuild', task ':app:javaPreCompileReleaseUnitTest', task ':app:compileReleaseUnitTestJavaWithJavac', task ':app:processReleaseUnitTestJavaRes', task ':app:testReleaseUnitTest', task ':app:test', task ':app:check', task ':app:build']
+Tasks that were excluded: []
+Resolve mutations for :app:preBuild (Thread[Execution worker Thread 3,5,main]) started.
+:app:preBuild (Thread[included builds,5,main]) started.
+
+> Task :app:preBuild UP-TO-DATE
+Skipping task ':app:preBuild' as it has no actions.
+Resolve mutations for :app:preDebugBuild (Thread[included builds,5,main]) started.
+:app:preDebugBuild (Thread[Execution worker Thread 8,5,main]) started.
+
+> Task :app:preDebugBuild UP-TO-DATE
+Skipping task ':app:preDebugBuild' as it has no actions.
+Resolve mutations for :app:mergeDebugNativeDebugMetadata (Thread[included builds,5,main]) started.
+:app:mergeDebugNativeDebugMetadata (Thread[Execution worker Thread 8,5,main]) started.
+
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+Skipping task ':app:mergeDebugNativeDebugMetadata' as it has no source files and no previous output files.
+Resolve mutations for :app:checkKotlinGradlePluginConfigurationErrors (Thread[included builds,5,main]) started.
+:app:checkKotlinGradlePluginConfigurationErrors (Thread[Execution worker Thread 8,5,main]) started.
+
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+Skipping task ':app:checkKotlinGradlePluginConfigurationErrors' as task onlyIf 'errorDiagnostics are present' is false.
+Resolve mutations for :app:checkDebugAarMetadata (Thread[included builds,5,main]) started.
+:app:checkDebugAarMetadata (Thread[included builds,5,main]) started.
+
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+Caching disabled for task ':app:checkDebugAarMetadata' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:checkDebugAarMetadata' as it is up-to-date.
+Resolve mutations for :app:generateDebugResValues (Thread[Execution worker Thread 7,5,main]) started.
+:app:generateDebugResValues (Thread[included builds,5,main]) started.
+
+> Task :app:generateDebugResValues UP-TO-DATE
+Caching disabled for task ':app:generateDebugResValues' because:
+  Build cache is disabled
+Skipping task ':app:generateDebugResValues' as it is up-to-date.
+Resolve mutations for :app:mapDebugSourceSetPaths (Thread[included builds,5,main]) started.
+:app:mapDebugSourceSetPaths (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+Caching disabled for task ':app:mapDebugSourceSetPaths' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:mapDebugSourceSetPaths' as it is up-to-date.
+Resolve mutations for :app:generateDebugResources (Thread[Execution worker Thread 2,5,main]) started.
+:app:generateDebugResources (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :app:generateDebugResources UP-TO-DATE
+Caching disabled for task ':app:generateDebugResources' because:
+  Build cache is disabled
+Skipping task ':app:generateDebugResources' as it is up-to-date.
+Resolve mutations for :app:mergeDebugResources (Thread[Execution worker Thread 7,5,main]) started.
+:app:mergeDebugResources (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :app:mergeDebugResources UP-TO-DATE
+Caching disabled for task ':app:mergeDebugResources' because:
+  Build cache is disabled
+Skipping task ':app:mergeDebugResources' as it is up-to-date.
+Resolve mutations for :app:packageDebugResources (Thread[Execution worker Thread 7,5,main]) started.
+:app:packageDebugResources (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :app:packageDebugResources UP-TO-DATE
+Caching disabled for task ':app:packageDebugResources' because:
+  Build cache is disabled
+Skipping task ':app:packageDebugResources' as it is up-to-date.
+Resolve mutations for :app:parseDebugLocalResources (Thread[Execution worker Thread 2,5,main]) started.
+:app:parseDebugLocalResources (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :app:parseDebugLocalResources UP-TO-DATE
+Caching disabled for task ':app:parseDebugLocalResources' because:
+  Build cache is disabled
+Skipping task ':app:parseDebugLocalResources' as it is up-to-date.
+Resolve mutations for :app:createDebugCompatibleScreenManifests (Thread[Execution worker Thread 15,5,main]) started.
+:app:createDebugCompatibleScreenManifests (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+Caching disabled for task ':app:createDebugCompatibleScreenManifests' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:createDebugCompatibleScreenManifests' as it is up-to-date.
+Resolve mutations for :app:extractDeepLinksDebug (Thread[Execution worker Thread 15,5,main]) started.
+:app:extractDeepLinksDebug (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+Caching disabled for task ':app:extractDeepLinksDebug' because:
+  Build cache is disabled
+Skipping task ':app:extractDeepLinksDebug' as it is up-to-date.
+Resolve mutations for :app:processDebugMainManifest (Thread[Execution worker Thread 15,5,main]) started.
+:app:processDebugMainManifest (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :app:processDebugMainManifest UP-TO-DATE
+Caching disabled for task ':app:processDebugMainManifest' because:
+  Build cache is disabled
+Skipping task ':app:processDebugMainManifest' as it is up-to-date.
+Resolve mutations for :app:processDebugManifest (Thread[Execution worker Thread 2,5,main]) started.
+:app:processDebugManifest (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :app:processDebugManifest UP-TO-DATE
+Caching disabled for task ':app:processDebugManifest' because:
+  Build cache is disabled
+Skipping task ':app:processDebugManifest' as it is up-to-date.
+Resolve mutations for :app:processDebugManifestForPackage (Thread[Execution worker Thread 2,5,main]) started.
+:app:processDebugManifestForPackage (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+Custom actions are attached to task ':app:processDebugManifestForPackage'.
+Caching disabled for task ':app:processDebugManifestForPackage' because:
+  Build cache is disabled
+Skipping task ':app:processDebugManifestForPackage' as it is up-to-date.
+Resolve mutations for :app:processDebugResources (Thread[Execution worker Thread 2,5,main]) started.
+:app:processDebugResources (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :app:processDebugResources UP-TO-DATE
+Caching disabled for task ':app:processDebugResources' because:
+  Build cache is disabled
+Skipping task ':app:processDebugResources' as it is up-to-date.
+Resolve mutations for :app:kspDebugKotlin (Thread[Execution worker Thread 5,5,main]) started.
+:app:kspDebugKotlin (Thread[Execution worker Thread 5,5,main]) started.
+Resolve mutations for :app:javaPreCompileDebug (Thread[Execution worker Thread 3,5,main]) started.
+:app:javaPreCompileDebug (Thread[Execution worker Thread 6,5,main]) started.
+
+> Task :app:javaPreCompileDebug UP-TO-DATE
+Caching disabled for task ':app:javaPreCompileDebug' because:
+  Build cache is disabled
+Skipping task ':app:javaPreCompileDebug' as it is up-to-date.
+Resolve mutations for :app:mergeDebugShaders (Thread[Execution worker Thread 3,5,main]) started.
+:app:mergeDebugShaders (Thread[Execution worker Thread 6,5,main]) started.
+
+> Task :app:mergeDebugShaders UP-TO-DATE
+Caching disabled for task ':app:mergeDebugShaders' because:
+  Build cache is disabled
+  Simple merging task
+Skipping task ':app:mergeDebugShaders' as it is up-to-date.
+Resolve mutations for :app:compileDebugShaders (Thread[Execution worker Thread 3,5,main]) started.
+:app:compileDebugShaders (Thread[Execution worker Thread 3,5,main]) started.
+
+> Task :app:compileDebugShaders NO-SOURCE
+Skipping task ':app:compileDebugShaders' as it has no source files and no previous output files.
+Resolve mutations for :app:generateDebugAssets (Thread[Execution worker Thread 3,5,main]) started.
+:app:generateDebugAssets (Thread[Execution worker Thread 6,5,main]) started.
+
+> Task :app:generateDebugAssets UP-TO-DATE
+Skipping task ':app:generateDebugAssets' as it has no actions.
+Resolve mutations for :app:mergeDebugAssets (Thread[Execution worker Thread 3,5,main]) started.
+:app:mergeDebugAssets (Thread[Execution worker Thread 3,5,main]) started.
+
+> Task :app:mergeDebugAssets UP-TO-DATE
+Caching disabled for task ':app:mergeDebugAssets' because:
+  Build cache is disabled
+  Simple merging task
+Skipping task ':app:mergeDebugAssets' as it is up-to-date.
+Resolve mutations for :app:compressDebugAssets (Thread[Execution worker Thread 6,5,main]) started.
+:app:compressDebugAssets (Thread[Execution worker Thread 6,5,main]) started.
+
+> Task :app:compressDebugAssets UP-TO-DATE
+Caching disabled for task ':app:compressDebugAssets' because:
+  Build cache is disabled
+Skipping task ':app:compressDebugAssets' as it is up-to-date.
+Resolve mutations for :app:desugarDebugFileDependencies (Thread[Execution worker Thread 10,5,main]) started.
+:app:desugarDebugFileDependencies (Thread[Execution worker Thread 10,5,main]) started.
+
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+Caching disabled for task ':app:desugarDebugFileDependencies' because:
+  Build cache is disabled
+Skipping task ':app:desugarDebugFileDependencies' as it is up-to-date.
+Resolve mutations for :app:checkDebugDuplicateClasses (Thread[Execution worker Thread 6,5,main]) started.
+:app:checkDebugDuplicateClasses (Thread[Execution worker Thread 6,5,main]) started.
+
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+Caching disabled for task ':app:checkDebugDuplicateClasses' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:checkDebugDuplicateClasses' as it is up-to-date.
+Resolve mutations for :app:mergeExtDexDebug (Thread[Execution worker Thread 10,5,main]) started.
+:app:mergeExtDexDebug (Thread[Execution worker Thread 10,5,main]) started.
+
+> Task :app:mergeExtDexDebug UP-TO-DATE
+Caching disabled for task ':app:mergeExtDexDebug' because:
+  Build cache is disabled
+Skipping task ':app:mergeExtDexDebug' as it is up-to-date.
+Resolve mutations for :app:mergeLibDexDebug (Thread[Execution worker Thread 7,5,main]) started.
+:app:mergeLibDexDebug (Thread[Execution worker Thread 10,5,main]) started.
+
+> Task :app:mergeLibDexDebug UP-TO-DATE
+Caching disabled for task ':app:mergeLibDexDebug' because:
+  Build cache is disabled
+Skipping task ':app:mergeLibDexDebug' as it is up-to-date.
+Resolve mutations for :app:mergeDebugJniLibFolders (Thread[Execution worker Thread 10,5,main]) started.
+:app:mergeDebugJniLibFolders (Thread[Execution worker Thread 10,5,main]) started.
+
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+Caching disabled for task ':app:mergeDebugJniLibFolders' because:
+  Build cache is disabled
+  Simple merging task
+Skipping task ':app:mergeDebugJniLibFolders' as it is up-to-date.
+Resolve mutations for :app:mergeDebugNativeLibs (Thread[Execution worker Thread 7,5,main]) started.
+:app:mergeDebugNativeLibs (Thread[Execution worker Thread 10,5,main]) started.
+
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+Caching disabled for task ':app:mergeDebugNativeLibs' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:mergeDebugNativeLibs' as it is up-to-date.
+Resolve mutations for :app:stripDebugDebugSymbols (Thread[Execution worker Thread 6,5,main]) started.
+:app:stripDebugDebugSymbols (Thread[Execution worker Thread 10,5,main]) started.
+
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
+Caching disabled for task ':app:stripDebugDebugSymbols' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:stripDebugDebugSymbols' as it is up-to-date.
+Resolve mutations for :app:validateSigningDebug (Thread[Execution worker Thread 6,5,main]) started.
+:app:validateSigningDebug (Thread[Execution worker Thread 10,5,main]) started.
+
+> Task :app:validateSigningDebug UP-TO-DATE
+Caching disabled for task ':app:validateSigningDebug' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:validateSigningDebug' as it is up-to-date.
+Resolve mutations for :app:writeDebugAppMetadata (Thread[Execution worker Thread 6,5,main]) started.
+:app:writeDebugAppMetadata (Thread[Execution worker Thread 10,5,main]) started.
+
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+Caching disabled for task ':app:writeDebugAppMetadata' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:writeDebugAppMetadata' as it is up-to-date.
+Resolve mutations for :app:writeDebugSigningConfigVersions (Thread[Execution worker Thread 6,5,main]) started.
+:app:writeDebugSigningConfigVersions (Thread[Execution worker Thread 10,5,main]) started.
+
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+Caching disabled for task ':app:writeDebugSigningConfigVersions' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:writeDebugSigningConfigVersions' as it is up-to-date.
+Resolve mutations for :app:preReleaseBuild (Thread[Execution worker Thread 10,5,main]) started.
+:app:preReleaseBuild (Thread[Execution worker Thread 15,5,main]) started.
+
+> Task :app:preReleaseBuild UP-TO-DATE
+Skipping task ':app:preReleaseBuild' as it has no actions.
+Resolve mutations for :app:mergeReleaseJniLibFolders (Thread[Execution worker Thread 10,5,main]) started.
+:app:mergeReleaseJniLibFolders (Thread[Execution worker Thread 15,5,main]) started.
+
+> Task :app:mergeReleaseJniLibFolders UP-TO-DATE
+Caching disabled for task ':app:mergeReleaseJniLibFolders' because:
+  Build cache is disabled
+  Simple merging task
+Skipping task ':app:mergeReleaseJniLibFolders' as it is up-to-date.
+Resolve mutations for :app:mergeReleaseNativeLibs (Thread[Execution worker Thread 10,5,main]) started.
+:app:mergeReleaseNativeLibs (Thread[Execution worker Thread 15,5,main]) started.
+
+> Task :app:kspDebugKotlin
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+Adding -Xuse-inline-scopes-numbers Kotlin compiler flag for task :app:compileDebugAndroidTestKotlin
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+Caching disabled for task ':app:kspDebugKotlin' because:
+  Build cache is disabled
+Task ':app:kspDebugKotlin' is not up-to-date because:
+  Input property 'sources' file C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\screens\DeviceListScreen.kt has changed.
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+Kotlin source files: C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\crypto\CryptoManager.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\bluetooth\BluetoothConnectionManager.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\local\AppDatabase.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\local\dao\DeviceDao.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\local\dao\MessageDao.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\local\entity\DeviceEntity.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\local\entity\MessageEntity.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\model\Device.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\model\Message.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\repository\DeviceRepository.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\repository\MessageRepository.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\MainActivity.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\service\BluetoothChatService.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\screens\ChatScreen.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\screens\DeviceListScreen.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\theme\Theme.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\viewmodel\ChatViewModel.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\viewmodel\DeviceListViewModel.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\util\ViewModelFactory.kt
+Java source files: 
+Script source files: 
+Script file extensions: 
+[KOTLIN] Kotlin compilation 'jdkHome' argument: null
+
+> Task :app:mergeReleaseNativeLibs UP-TO-DATE
+Caching disabled for task ':app:mergeReleaseNativeLibs' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:mergeReleaseNativeLibs' as it is up-to-date.
+Resolve mutations for :app:stripReleaseDebugSymbols (Thread[Execution worker Thread 15,5,main]) started.
+:app:stripReleaseDebugSymbols (Thread[Execution worker Thread 15,5,main]) started.
+
+> Task :app:stripReleaseDebugSymbols UP-TO-DATE
+Caching disabled for task ':app:stripReleaseDebugSymbols' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:stripReleaseDebugSymbols' as it is up-to-date.
+Resolve mutations for :app:extractReleaseNativeSymbolTables (Thread[Execution worker Thread 10,5,main]) started.
+:app:extractReleaseNativeSymbolTables (Thread[Execution worker Thread 15,5,main]) started.
+
+> Task :app:extractReleaseNativeSymbolTables UP-TO-DATE
+Caching disabled for task ':app:extractReleaseNativeSymbolTables' because:
+  Build cache is disabled
+Skipping task ':app:extractReleaseNativeSymbolTables' as it is up-to-date.
+Resolve mutations for :app:mergeReleaseNativeDebugMetadata (Thread[Execution worker Thread 10,5,main]) started.
+:app:mergeReleaseNativeDebugMetadata (Thread[Execution worker Thread 15,5,main]) started.
+
+> Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+Skipping task ':app:mergeReleaseNativeDebugMetadata' as it has no source files and no previous output files.
+Resolve mutations for :app:checkReleaseDuplicateClasses (Thread[Execution worker Thread 15,5,main]) started.
+:app:checkReleaseDuplicateClasses (Thread[Execution worker Thread 10,5,main]) started.
+
+> Task :app:checkReleaseDuplicateClasses UP-TO-DATE
+Caching disabled for task ':app:checkReleaseDuplicateClasses' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:checkReleaseDuplicateClasses' as it is up-to-date.
+Resolve mutations for :app:buildKotlinToolingMetadata (Thread[Execution worker Thread 15,5,main]) started.
+:app:buildKotlinToolingMetadata (Thread[Execution worker Thread 15,5,main]) started.
+
+> Task :app:buildKotlinToolingMetadata UP-TO-DATE
+Caching disabled for task ':app:buildKotlinToolingMetadata' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:buildKotlinToolingMetadata' as it is up-to-date.
+Resolve mutations for :app:checkReleaseAarMetadata (Thread[Execution worker Thread 2,5,main]) started.
+:app:checkReleaseAarMetadata (Thread[Execution worker Thread 15,5,main]) started.
+
+> Task :app:checkReleaseAarMetadata UP-TO-DATE
+Caching disabled for task ':app:checkReleaseAarMetadata' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:checkReleaseAarMetadata' as it is up-to-date.
+Resolve mutations for :app:generateReleaseResValues (Thread[Execution worker Thread 2,5,main]) started.
+:app:generateReleaseResValues (Thread[Execution worker Thread 15,5,main]) started.
+
+> Task :app:generateReleaseResValues UP-TO-DATE
+Caching disabled for task ':app:generateReleaseResValues' because:
+  Build cache is disabled
+Skipping task ':app:generateReleaseResValues' as it is up-to-date.
+Resolve mutations for :app:mapReleaseSourceSetPaths (Thread[Execution worker Thread 2,5,main]) started.
+:app:mapReleaseSourceSetPaths (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :app:mapReleaseSourceSetPaths UP-TO-DATE
+Caching disabled for task ':app:mapReleaseSourceSetPaths' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:mapReleaseSourceSetPaths' as it is up-to-date.
+Resolve mutations for :app:generateReleaseResources (Thread[Execution worker Thread 15,5,main]) started.
+:app:generateReleaseResources (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :app:generateReleaseResources UP-TO-DATE
+Caching disabled for task ':app:generateReleaseResources' because:
+  Build cache is disabled
+Skipping task ':app:generateReleaseResources' as it is up-to-date.
+Resolve mutations for :app:mergeReleaseResources (Thread[Execution worker Thread 15,5,main]) started.
+:app:mergeReleaseResources (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :app:mergeReleaseResources UP-TO-DATE
+Caching disabled for task ':app:mergeReleaseResources' because:
+  Build cache is disabled
+Skipping task ':app:mergeReleaseResources' as it is up-to-date.
+Resolve mutations for :app:packageReleaseResources (Thread[Execution worker Thread 2,5,main]) started.
+:app:packageReleaseResources (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :app:packageReleaseResources UP-TO-DATE
+Caching disabled for task ':app:packageReleaseResources' because:
+  Build cache is disabled
+Skipping task ':app:packageReleaseResources' as it is up-to-date.
+Resolve mutations for :app:parseReleaseLocalResources (Thread[Execution worker Thread 15,5,main]) started.
+:app:parseReleaseLocalResources (Thread[Execution worker Thread 15,5,main]) started.
+
+> Task :app:parseReleaseLocalResources UP-TO-DATE
+Caching disabled for task ':app:parseReleaseLocalResources' because:
+  Build cache is disabled
+Skipping task ':app:parseReleaseLocalResources' as it is up-to-date.
+Resolve mutations for :app:createReleaseCompatibleScreenManifests (Thread[Execution worker Thread 15,5,main]) started.
+:app:createReleaseCompatibleScreenManifests (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :app:createReleaseCompatibleScreenManifests UP-TO-DATE
+Caching disabled for task ':app:createReleaseCompatibleScreenManifests' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:createReleaseCompatibleScreenManifests' as it is up-to-date.
+Resolve mutations for :app:extractDeepLinksRelease (Thread[Execution worker Thread 15,5,main]) started.
+:app:extractDeepLinksRelease (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :app:extractDeepLinksRelease UP-TO-DATE
+Caching disabled for task ':app:extractDeepLinksRelease' because:
+  Build cache is disabled
+Skipping task ':app:extractDeepLinksRelease' as it is up-to-date.
+Resolve mutations for :app:processReleaseMainManifest (Thread[Execution worker Thread 2,5,main]) started.
+:app:processReleaseMainManifest (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :app:processReleaseMainManifest UP-TO-DATE
+Caching disabled for task ':app:processReleaseMainManifest' because:
+  Build cache is disabled
+Skipping task ':app:processReleaseMainManifest' as it is up-to-date.
+Resolve mutations for :app:processReleaseManifest (Thread[Execution worker Thread 2,5,main]) started.
+:app:processReleaseManifest (Thread[Execution worker Thread 15,5,main]) started.
+
+> Task :app:processReleaseManifest UP-TO-DATE
+Caching disabled for task ':app:processReleaseManifest' because:
+  Build cache is disabled
+Skipping task ':app:processReleaseManifest' as it is up-to-date.
+Resolve mutations for :app:processReleaseManifestForPackage (Thread[Execution worker Thread 15,5,main]) started.
+:app:processReleaseManifestForPackage (Thread[Execution worker Thread 15,5,main]) started.
+
+> Task :app:processReleaseManifestForPackage UP-TO-DATE
+Custom actions are attached to task ':app:processReleaseManifestForPackage'.
+Caching disabled for task ':app:processReleaseManifestForPackage' because:
+  Build cache is disabled
+Skipping task ':app:processReleaseManifestForPackage' as it is up-to-date.
+Resolve mutations for :app:processReleaseResources (Thread[Execution worker Thread 2,5,main]) started.
+:app:processReleaseResources (Thread[Execution worker Thread 15,5,main]) started.
+
+> Task :app:processReleaseResources UP-TO-DATE
+Caching disabled for task ':app:processReleaseResources' because:
+  Build cache is disabled
+Skipping task ':app:processReleaseResources' as it is up-to-date.
+Resolve mutations for :app:kspReleaseKotlin (Thread[Execution worker Thread 2,5,main]) started.
+:app:kspReleaseKotlin (Thread[Execution worker Thread 2,5,main]) started.
+Resolve mutations for :app:javaPreCompileRelease (Thread[Execution worker Thread 15,5,main]) started.
+:app:javaPreCompileRelease (Thread[Execution worker Thread 10,5,main]) started.
+
+> Task :app:javaPreCompileRelease UP-TO-DATE
+Caching disabled for task ':app:javaPreCompileRelease' because:
+  Build cache is disabled
+Skipping task ':app:javaPreCompileRelease' as it is up-to-date.
+Resolve mutations for :app:desugarReleaseFileDependencies (Thread[Execution worker Thread 15,5,main]) started.
+:app:desugarReleaseFileDependencies (Thread[Execution worker Thread 10,5,main]) started.
+
+> Task :app:desugarReleaseFileDependencies UP-TO-DATE
+Caching disabled for task ':app:desugarReleaseFileDependencies' because:
+  Build cache is disabled
+Skipping task ':app:desugarReleaseFileDependencies' as it is up-to-date.
+Resolve mutations for :app:mergeReleaseStartupProfile (Thread[Execution worker Thread 15,5,main]) started.
+:app:mergeReleaseStartupProfile (Thread[Execution worker Thread 10,5,main]) started.
+
+> Task :app:mergeReleaseStartupProfile UP-TO-DATE
+Caching disabled for task ':app:mergeReleaseStartupProfile' because:
+  Build cache is disabled
+  Simple merging task
+Skipping task ':app:mergeReleaseStartupProfile' as it is up-to-date.
+Resolve mutations for :app:mergeExtDexRelease (Thread[Execution worker Thread 15,5,main]) started.
+:app:mergeExtDexRelease (Thread[Execution worker Thread 10,5,main]) started.
+
+> Task :app:mergeExtDexRelease UP-TO-DATE
+Caching disabled for task ':app:mergeExtDexRelease' because:
+  Build cache is disabled
+Skipping task ':app:mergeExtDexRelease' as it is up-to-date.
+Resolve mutations for :app:mergeReleaseArtProfile (Thread[Execution worker Thread 12,5,main]) started.
+:app:mergeReleaseArtProfile (Thread[Execution worker Thread 10,5,main]) started.
+
+> Task :app:mergeReleaseArtProfile UP-TO-DATE
+Caching disabled for task ':app:mergeReleaseArtProfile' because:
+  Build cache is disabled
+  Simple merging task
+Skipping task ':app:mergeReleaseArtProfile' as it is up-to-date.
+Resolve mutations for :app:mergeReleaseShaders (Thread[Execution worker Thread 12,5,main]) started.
+:app:mergeReleaseShaders (Thread[Execution worker Thread 10,5,main]) started.
+
+> Task :app:mergeReleaseShaders UP-TO-DATE
+Caching disabled for task ':app:mergeReleaseShaders' because:
+  Build cache is disabled
+  Simple merging task
+Skipping task ':app:mergeReleaseShaders' as it is up-to-date.
+Resolve mutations for :app:compileReleaseShaders (Thread[Execution worker Thread 12,5,main]) started.
+:app:compileReleaseShaders (Thread[Execution worker Thread 10,5,main]) started.
+
+> Task :app:compileReleaseShaders NO-SOURCE
+Skipping task ':app:compileReleaseShaders' as it has no source files and no previous output files.
+Resolve mutations for :app:generateReleaseAssets (Thread[Execution worker Thread 12,5,main]) started.
+:app:generateReleaseAssets (Thread[Execution worker Thread 10,5,main]) started.
+
+> Task :app:generateReleaseAssets UP-TO-DATE
+Skipping task ':app:generateReleaseAssets' as it has no actions.
+Resolve mutations for :app:mergeReleaseAssets (Thread[Execution worker Thread 10,5,main]) started.
+:app:mergeReleaseAssets (Thread[Execution worker Thread 12,5,main]) started.
+
+> Task :app:mergeReleaseAssets UP-TO-DATE
+Caching disabled for task ':app:mergeReleaseAssets' because:
+  Build cache is disabled
+  Simple merging task
+Skipping task ':app:mergeReleaseAssets' as it is up-to-date.
+Resolve mutations for :app:compressReleaseAssets (Thread[Execution worker Thread 10,5,main]) started.
+:app:compressReleaseAssets (Thread[Execution worker Thread 12,5,main]) started.
+
+> Task :app:compressReleaseAssets UP-TO-DATE
+Caching disabled for task ':app:compressReleaseAssets' because:
+  Build cache is disabled
+Skipping task ':app:compressReleaseAssets' as it is up-to-date.
+Resolve mutations for :app:extractReleaseVersionControlInfo (Thread[Execution worker Thread 10,5,main]) started.
+:app:extractReleaseVersionControlInfo (Thread[Execution worker Thread 12,5,main]) started.
+
+> Task :app:extractReleaseVersionControlInfo UP-TO-DATE
+Caching disabled for task ':app:extractReleaseVersionControlInfo' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:extractReleaseVersionControlInfo' as it is up-to-date.
+Resolve mutations for :app:extractProguardFiles (Thread[Execution worker Thread 10,5,main]) started.
+:app:extractProguardFiles (Thread[Execution worker Thread 12,5,main]) started.
+
+> Task :app:extractProguardFiles UP-TO-DATE
+Caching disabled for task ':app:extractProguardFiles' because:
+  Build cache is disabled
+  Fast task
+Skipping task ':app:extractProguardFiles' as it is up-to-date.
+Resolve mutations for :app:optimizeReleaseResources (Thread[Execution worker Thread 12,5,main]) started.
+:app:optimizeReleaseResources (Thread[Execution worker Thread 12,5,main]) started.
+
+> Task :app:optimizeReleaseResources UP-TO-DATE
+Custom actions are attached to task ':app:optimizeReleaseResources'.
+Caching disabled for task ':app:optimizeReleaseResources' because:
+  Build cache is disabled
+Skipping task ':app:optimizeReleaseResources' as it is up-to-date.
+Resolve mutations for :app:collectReleaseDependencies (Thread[Execution worker Thread 10,5,main]) started.
+:app:collectReleaseDependencies (Thread[Execution worker Thread 12,5,main]) started.
+
+> Task :app:collectReleaseDependencies UP-TO-DATE
+Caching disabled for task ':app:collectReleaseDependencies' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:collectReleaseDependencies' as it is up-to-date.
+Resolve mutations for :app:sdkReleaseDependencyData (Thread[Execution worker Thread 10,5,main]) started.
+:app:sdkReleaseDependencyData (Thread[Execution worker Thread 12,5,main]) started.
+
+> Task :app:sdkReleaseDependencyData UP-TO-DATE
+Caching disabled for task ':app:sdkReleaseDependencyData' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:sdkReleaseDependencyData' as it is up-to-date.
+Resolve mutations for :app:writeReleaseAppMetadata (Thread[Execution worker Thread 10,5,main]) started.
+:app:writeReleaseAppMetadata (Thread[Execution worker Thread 12,5,main]) started.
+
+> Task :app:writeReleaseAppMetadata UP-TO-DATE
+Caching disabled for task ':app:writeReleaseAppMetadata' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:writeReleaseAppMetadata' as it is up-to-date.
+Resolve mutations for :app:writeReleaseSigningConfigVersions (Thread[Execution worker Thread 12,5,main]) started.
+:app:writeReleaseSigningConfigVersions (Thread[Execution worker Thread 12,5,main]) started.
+
+> Task :app:writeReleaseSigningConfigVersions UP-TO-DATE
+Caching disabled for task ':app:writeReleaseSigningConfigVersions' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:writeReleaseSigningConfigVersions' as it is up-to-date.
+Resolve mutations for :app:preDebugAndroidTestBuild (Thread[Execution worker Thread 12,5,main]) started.
+:app:preDebugAndroidTestBuild (Thread[Execution worker Thread 10,5,main]) started.
+
+> Task :app:preDebugAndroidTestBuild SKIPPED
+Skipping task ':app:preDebugAndroidTestBuild' as task onlyIf 'Task is enabled' is false.
+Resolve mutations for :app:generateDebugAndroidTestResValues (Thread[Execution worker Thread 12,5,main]) started.
+:app:generateDebugAndroidTestResValues (Thread[Execution worker Thread 12,5,main]) started.
+
+> Task :app:generateDebugAndroidTestResValues UP-TO-DATE
+Caching disabled for task ':app:generateDebugAndroidTestResValues' because:
+  Build cache is disabled
+Skipping task ':app:generateDebugAndroidTestResValues' as it is up-to-date.
+Resolve mutations for :app:preDebugUnitTestBuild (Thread[Execution worker Thread 12,5,main]) started.
+:app:preDebugUnitTestBuild (Thread[Execution worker Thread 12,5,main]) started.
+
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+Skipping task ':app:preDebugUnitTestBuild' as it has no actions.
+Resolve mutations for :app:javaPreCompileDebugUnitTest (Thread[Execution worker Thread 12,5,main]) started.
+:app:javaPreCompileDebugUnitTest (Thread[Execution worker Thread 12,5,main]) started.
+
+> Task :app:javaPreCompileDebugUnitTest UP-TO-DATE
+Caching disabled for task ':app:javaPreCompileDebugUnitTest' because:
+  Build cache is disabled
+Skipping task ':app:javaPreCompileDebugUnitTest' as it is up-to-date.
+Resolve mutations for :app:preReleaseUnitTestBuild (Thread[Execution worker Thread 12,5,main]) started.
+:app:preReleaseUnitTestBuild (Thread[Execution worker Thread 10,5,main]) started.
+
+> Task :app:preReleaseUnitTestBuild UP-TO-DATE
+Skipping task ':app:preReleaseUnitTestBuild' as it has no actions.
+Resolve mutations for :app:javaPreCompileReleaseUnitTest (Thread[Execution worker Thread 12,5,main]) started.
+:app:javaPreCompileReleaseUnitTest (Thread[Execution worker Thread 12,5,main]) started.
+
+> Task :app:javaPreCompileReleaseUnitTest UP-TO-DATE
+Caching disabled for task ':app:javaPreCompileReleaseUnitTest' because:
+  Build cache is disabled
+Skipping task ':app:javaPreCompileReleaseUnitTest' as it is up-to-date.
+
+> Task :app:kspDebugKotlin
+i: starting the daemon as: C:\Program Files (x86)\Android\openjdk\jdk-17.0.8.101-hotspot\bin\java -cp C:\Users\vgvkg\.gradle\caches\modules-2\files-2.1\org.jetbrains.kotlin\kotlin-compiler-embeddable\2.1.10\ee3e5c806617c52ce167bdf96933efef9593853e\kotlin-compiler-embeddable-2.1.10.jar;C:\Users\vgvkg\.gradle\caches\modules-2\files-2.1\org.jetbrains.kotlin\kotlin-stdlib\2.1.10\d3028429e7151d7a7c1a0d63a4f60eac86a87b91\kotlin-stdlib-2.1.10.jar;C:\Users\vgvkg\.gradle\caches\modules-2\files-2.1\org.jetbrains.kotlin\kotlin-script-runtime\2.1.10\70000e6ef453308e55d42ea4ace5b8c32325ce75\kotlin-script-runtime-2.1.10.jar;C:\Users\vgvkg\.gradle\caches\modules-2\files-2.1\org.jetbrains.kotlin\kotlin-reflect\1.6.10\1cbe9c92c12a94eea200d23c2bbaedaf3daf5132\kotlin-reflect-1.6.10.jar;C:\Users\vgvkg\.gradle\caches\modules-2\files-2.1\org.jetbrains.kotlin\kotlin-daemon-embeddable\2.1.10\58b88d47cdc057f09a8ea603ece5fd1993c7cb64\kotlin-daemon-embeddable-2.1.10.jar;C:\Users\vgvkg\.gradle\caches\modules-2\files-2.1\org.jetbrains.intellij.deps\trove4j\1.0.20200330\3afb14d5f9ceb459d724e907a21145e8ff394f02\trove4j-1.0.20200330.jar;C:\Users\vgvkg\.gradle\caches\modules-2\files-2.1\org.jetbrains.kotlinx\kotlinx-coroutines-core-jvm\1.6.4\2c997cd1c0ef33f3e751d3831929aeff1390cb30\kotlinx-coroutines-core-jvm-1.6.4.jar;C:\Users\vgvkg\.gradle\caches\modules-2\files-2.1\org.jetbrains\annotations\13.0\919f0dfe192fb4e063e7dacadee7f8bb9a2672a9\annotations-13.0.jar -Djava.awt.headless=true -Djava.rmi.server.hostname=127.0.0.1 -Xmx2048m -XX:ReservedCodeCacheSize=320m -Dkotlin.environment.keepalive -ea -XX:+UseCodeCacheFlushing -XX:+UseParallelGC -Dkotlin.daemon.initiator.marker.file=C:\Users\vgvkg\AppData\Local\Temp\kotlin-compiler-in-bluewavemobile-8169435749912412111.alive --add-exports java.base/sun.nio.ch=ALL-UNNAMED org.jetbrains.kotlin.daemon.KotlinCompileDaemon --daemon-runFilesPath C:\Users\vgvkg\AppData\Local\kotlin\daemon --daemon-autoshutdownIdleSeconds=7200 --daemon-compilerClasspath C:\Users\vgvkg\.gradle\caches\modules-2\files-2.1\org.jetbrains.kotlin\kotlin-compiler-embeddable\2.1.10\ee3e5c806617c52ce167bdf96933efef9593853e\kotlin-compiler-embeddable-2.1.10.jar;C:\Users\vgvkg\.gradle\caches\modules-2\files-2.1\org.jetbrains.kotlin\kotlin-stdlib\2.1.10\d3028429e7151d7a7c1a0d63a4f60eac86a87b91\kotlin-stdlib-2.1.10.jar;C:\Users\vgvkg\.gradle\caches\modules-2\files-2.1\org.jetbrains.kotlin\kotlin-script-runtime\2.1.10\70000e6ef453308e55d42ea4ace5b8c32325ce75\kotlin-script-runtime-2.1.10.jar;C:\Users\vgvkg\.gradle\caches\modules-2\files-2.1\org.jetbrains.kotlin\kotlin-reflect\1.6.10\1cbe9c92c12a94eea200d23c2bbaedaf3daf5132\kotlin-reflect-1.6.10.jar;C:\Users\vgvkg\.gradle\caches\modules-2\files-2.1\org.jetbrains.kotlin\kotlin-daemon-embeddable\2.1.10\58b88d47cdc057f09a8ea603ece5fd1993c7cb64\kotlin-daemon-embeddable-2.1.10.jar;C:\Users\vgvkg\.gradle\caches\modules-2\files-2.1\org.jetbrains.intellij.deps\trove4j\1.0.20200330\3afb14d5f9ceb459d724e907a21145e8ff394f02\trove4j-1.0.20200330.jar;C:\Users\vgvkg\.gradle\caches\modules-2\files-2.1\org.jetbrains.kotlinx\kotlinx-coroutines-core-jvm\1.6.4\2c997cd1c0ef33f3e751d3831929aeff1390cb30\kotlinx-coroutines-core-jvm-1.6.4.jar;C:\Users\vgvkg\.gradle\caches\modules-2\files-2.1\org.jetbrains\annotations\13.0\919f0dfe192fb4e063e7dacadee7f8bb9a2672a9\annotations-13.0.jar
+i: #1 retrying connecting to the daemon 
+i: [ksp] loaded provider(s): [androidx.room.RoomKspProcessor$Provider]
+Finished executing kotlin compiler using DAEMON strategy
+
+> Task :app:kspReleaseKotlin
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+Caching disabled for task ':app:kspReleaseKotlin' because:
+  Build cache is disabled
+Task ':app:kspReleaseKotlin' is not up-to-date because:
+  Input property 'sources' file C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\screens\DeviceListScreen.kt has changed.
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+Kotlin source files: C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\crypto\CryptoManager.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\bluetooth\BluetoothConnectionManager.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\local\AppDatabase.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\local\dao\DeviceDao.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\local\dao\MessageDao.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\local\entity\DeviceEntity.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\local\entity\MessageEntity.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\model\Device.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\model\Message.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\repository\DeviceRepository.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\repository\MessageRepository.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\MainActivity.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\service\BluetoothChatService.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\screens\ChatScreen.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\screens\DeviceListScreen.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\theme\Theme.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\viewmodel\ChatViewModel.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\viewmodel\DeviceListViewModel.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\util\ViewModelFactory.kt
+Java source files: 
+Script source files: 
+Script file extensions: 
+[KOTLIN] Kotlin compilation 'jdkHome' argument: null
+i: [ksp] loaded provider(s): [androidx.room.RoomKspProcessor$Provider]
+Finished executing kotlin compiler using DAEMON strategy
+Resolve mutations for :app:compileDebugKotlin (Thread[Execution worker Thread 5,5,main]) started.
+:app:compileDebugKotlin (Thread[Execution worker Thread 2,5,main]) started.
+Resolve mutations for :app:compileReleaseKotlin (Thread[Execution worker Thread 5,5,main]) started.
+:app:compileReleaseKotlin (Thread[Execution worker,5,main]) started.
+
+> Task :app:compileDebugKotlin
+Caching disabled for task ':app:compileDebugKotlin' because:
+  Build cache is disabled
+Task ':app:compileDebugKotlin' is not up-to-date because:
+  Task has failed previously.
+The input changes require a full rebuild for incremental task ':app:compileDebugKotlin'.
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\debug\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\debug\java', not found
+Kotlin source files: C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\debug\kotlin\com\example\bluewave_mobile\data\local\AppDatabase_Impl.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\debug\kotlin\com\example\bluewave_mobile\data\local\dao\DeviceDao_Impl.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\debug\kotlin\com\example\bluewave_mobile\data\local\dao\MessageDao_Impl.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\crypto\CryptoManager.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\bluetooth\BluetoothConnectionManager.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\local\AppDatabase.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\local\dao\DeviceDao.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\local\dao\MessageDao.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\local\entity\DeviceEntity.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\local\entity\MessageEntity.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\model\Device.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\model\Message.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\repository\DeviceRepository.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\repository\MessageRepository.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\MainActivity.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\service\BluetoothChatService.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\screens\ChatScreen.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\screens\DeviceListScreen.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\theme\Theme.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\viewmodel\ChatViewModel.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\viewmodel\DeviceListViewModel.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\util\ViewModelFactory.kt
+Java source files: 
+Script source files: 
+Script file extensions: 
+Using Kotlin/JVM incremental compilation
+[KOTLIN] Kotlin compilation 'jdkHome' argument: null
+Options for KOTLIN DAEMON: IncrementalCompilationOptions(super=CompilationOptions(compilerMode=INCREMENTAL_COMPILER, targetPlatform=JVM, reportCategories=[0, 3], reportSeverity=2, requestedCompilationResults=[0], kotlinScriptExtensions=[]), areFileChangesKnown=false, modifiedFiles=null, deletedFiles=null, classpathChanges=NotAvailableForNonIncrementalRun, workingDir=C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\kotlin\compileDebugKotlin\cacheable, multiModuleICSettings=MultiModuleICSettings(buildHistoryFile=C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\kotlin\compileDebugKotlin\local-state\build-history.bin, useModuleDetection=true), usePreciseJavaTracking=true, icFeatures=IncrementalCompilationFeatures(withAbiSnapshot=false, preciseCompilationResultsBackup=true, keepIncrementalCompilationCachesInMemory=true, enableUnsafeIncrementalCompilationForMultiplatform=false), outputFiles=[C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\tmp\kotlin-classes\debug, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\kotlin\compileDebugKotlin\cacheable, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\kotlin\compileDebugKotlin\local-state])
+e: file:///C:/Users/vgvkg/AndroidStudioProjects/MyApplication/app/src/main/java/com/example/bluewave_mobile/ui/screens/DeviceListScreen.kt:90:36 Unresolved reference 'BluetoothSearching'.
+e: file:///C:/Users/vgvkg/AndroidStudioProjects/MyApplication/app/src/main/java/com/example/bluewave_mobile/ui/screens/DeviceListScreen.kt:157:32 Unresolved reference 'Bluetooth'.
+e: file:///C:/Users/vgvkg/AndroidStudioProjects/MyApplication/app/src/main/java/com/example/bluewave_mobile/ui/screens/DeviceListScreen.kt:171:1 This annotation is not repeatable.
+e: file:///C:/Users/vgvkg/AndroidStudioProjects/MyApplication/app/src/main/java/com/example/bluewave_mobile/ui/screens/DeviceListScreen.kt:184:32 Unresolved reference 'Bluetooth'.
+Finished executing kotlin compiler using DAEMON strategy
+
+> Task :app:compileDebugKotlin FAILED
+
+> Task :app:compileReleaseKotlin FAILED
+Caching disabled for task ':app:compileReleaseKotlin' because:
+  Build cache is disabled
+Task ':app:compileReleaseKotlin' is not up-to-date because:
+  Task has failed previously.
+The input changes require a full rebuild for incremental task ':app:compileReleaseKotlin'.
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\kotlin', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\release\java', not found
+file or directory 'C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\release\java', not found
+Kotlin source files: C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\release\kotlin\com\example\bluewave_mobile\data\local\AppDatabase_Impl.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\release\kotlin\com\example\bluewave_mobile\data\local\dao\DeviceDao_Impl.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\generated\ksp\release\kotlin\com\example\bluewave_mobile\data\local\dao\MessageDao_Impl.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\crypto\CryptoManager.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\bluetooth\BluetoothConnectionManager.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\local\AppDatabase.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\local\dao\DeviceDao.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\local\dao\MessageDao.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\local\entity\DeviceEntity.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\local\entity\MessageEntity.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\model\Device.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\model\Message.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\repository\DeviceRepository.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\data\repository\MessageRepository.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\MainActivity.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\service\BluetoothChatService.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\screens\ChatScreen.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\screens\DeviceListScreen.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\theme\Theme.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\viewmodel\ChatViewModel.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\ui\viewmodel\DeviceListViewModel.kt, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\src\main\java\com\example\bluewave_mobile\util\ViewModelFactory.kt
+Java source files: 
+Script source files: 
+Script file extensions: 
+Using Kotlin/JVM incremental compilation
+[KOTLIN] Kotlin compilation 'jdkHome' argument: null
+Options for KOTLIN DAEMON: IncrementalCompilationOptions(super=CompilationOptions(compilerMode=INCREMENTAL_COMPILER, targetPlatform=JVM, reportCategories=[0, 3], reportSeverity=2, requestedCompilationResults=[0], kotlinScriptExtensions=[]), areFileChangesKnown=false, modifiedFiles=null, deletedFiles=null, classpathChanges=NotAvailableForNonIncrementalRun, workingDir=C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\kotlin\compileReleaseKotlin\cacheable, multiModuleICSettings=MultiModuleICSettings(buildHistoryFile=C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\kotlin\compileReleaseKotlin\local-state\build-history.bin, useModuleDetection=true), usePreciseJavaTracking=true, icFeatures=IncrementalCompilationFeatures(withAbiSnapshot=false, preciseCompilationResultsBackup=true, keepIncrementalCompilationCachesInMemory=true, enableUnsafeIncrementalCompilationForMultiplatform=false), outputFiles=[C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\tmp\kotlin-classes\release, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\kotlin\compileReleaseKotlin\cacheable, C:\Users\vgvkg\AndroidStudioProjects\MyApplication\app\build\kotlin\compileReleaseKotlin\local-state])
+e: file:///C:/Users/vgvkg/AndroidStudioProjects/MyApplication/app/src/main/java/com/example/bluewave_mobile/ui/screens/DeviceListScreen.kt:90:36 Unresolved reference 'BluetoothSearching'.
+e: file:///C:/Users/vgvkg/AndroidStudioProjects/MyApplication/app/src/main/java/com/example/bluewave_mobile/ui/screens/DeviceListScreen.kt:157:32 Unresolved reference 'Bluetooth'.
+e: file:///C:/Users/vgvkg/AndroidStudioProjects/MyApplication/app/src/main/java/com/example/bluewave_mobile/ui/screens/DeviceListScreen.kt:171:1 This annotation is not repeatable.
+e: file:///C:/Users/vgvkg/AndroidStudioProjects/MyApplication/app/src/main/java/com/example/bluewave_mobile/ui/screens/DeviceListScreen.kt:184:32 Unresolved reference 'Bluetooth'.
+Finished executing kotlin compiler using DAEMON strategy
+
+[Incubating] Problems report is available at: file:///C:/Users/vgvkg/AndroidStudioProjects/MyApplication/build/reports/problems/problems-report.html
+
+FAILURE: Build completed with 2 failures.
+
+1: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':app:compileReleaseKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.13/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 33s
+68 actionable tasks: 4 executed, 64 up-to-date
+Watched directory hierarchies: [C:\Users\vgvkg\AndroidStudioProjects\MyApplication]
