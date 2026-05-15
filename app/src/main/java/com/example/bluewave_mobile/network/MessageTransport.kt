@@ -1,0 +1,118 @@
+package com.example.bluewave_mobile.network
+
+import kotlinx.coroutines.flow.Flow
+
+/**
+ * Per-frame payload received from a remote peer.
+ *
+ * The [payload] is the raw bytes after [FrameAccumulator] has stripped
+ * the length prefix — the data layer is responsible for any further
+ * interpretation (UTF-8 decoding, encryption-at-rest, etc.).
+ */
+data class IncomingPeerMessage(
+    val macAddress: String,
+    val deviceName: String,
+    val payload: ByteArray,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is IncomingPeerMessage) return false
+        if (macAddress != other.macAddress) return false
+        if (deviceName != other.deviceName) return false
+        if (!payload.contentEquals(other.payload)) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = macAddress.hashCode()
+        result = 31 * result + deviceName.hashCode()
+        result = 31 * result + payload.contentHashCode()
+        return result
+    }
+}
+
+/**
+ * Abstraction over the radio transport that delivers messages between
+ * peers.
+ *
+ * Keeping the transport behind an interface lets the data layer
+ * (`MessageRepositoryImpl`) stay unaware of `android.bluetooth` and
+ * makes the JVM unit tests trivially injectable — the real
+ * implementation is [BluetoothSessionManager], a fake one is used in
+ * tests.
+ */
+interface MessageTransport {
+
+    /**
+     * Cold stream of payloads as they arrive from any connected peer.
+     * Subscribers are expected to be lifecycle-scoped (typically
+     * `BlueWaveApplication.applicationScope`) so the transport can
+     * stay alive across activity recreations.
+     */
+    val incoming: Flow<IncomingPeerMessage>
+
+    /**
+     * Cold stream of MAC addresses for which a fresh RFCOMM session
+     * has just been attached. The repository subscribes to this flow
+     * to fire its E2EE handshake (push the local libsignal key
+     * bundle) the moment the link is up — clients of this interface
+     * never observe the underlying socket lifecycle directly.
+     */
+    val sessionAttached: Flow<String>
+
+    /**
+     * Cold stream of MAC addresses whose RFCOMM session has just
+     * been evicted — peer killed the app, BT toggled off, liveness
+     * watchdog tripped, or write returned an error. Subscribers
+     * (notably the application-scope wiring that resets libsignal
+     * state) use this to drop per-peer ratchet bookkeeping so the
+     * next attach can re-handshake from scratch.
+     *
+     * Sessions that were superseded by a fresh attach for the
+     * *same* MAC do not emit on this flow — only true detaches,
+     * not in-place replacements.
+     */
+    val sessionDetached: Flow<String>
+
+    /**
+     * Live snapshot of every MAC address that currently owns a hot
+     * RFCOMM session. Re-emitted on every attach / detach so the UI
+     * can render an "Online via Bluetooth" badge without polling.
+     * The set is uppercased so callers can match it against
+     * normalised peer ids.
+     */
+    val connectedPeers: Flow<Set<String>>
+
+    /**
+     * Initiates an outgoing connection to [macAddress] if no live
+     * session exists for that peer yet. Idempotent: calling it on a
+     * peer that is already connected is a no-op.
+     */
+    suspend fun connect(macAddress: String)
+
+    /**
+     * Synchronous, non-suspending check that returns `true` when an
+     * RFCOMM session is currently attached for [macAddress]. Backed
+     * by the same in-memory map [connect] / [disconnect] mutate, so
+     * the answer is consistent with the very next [send] / [connect]
+     * call. Used by [com.example.bluewave_mobile.data.MessageRepository.sendMessage]
+     * to decide whether to fire a just-in-time outbound connect
+     * before writing the user's bytes.
+     */
+    fun isConnected(macAddress: String): Boolean
+
+    /**
+     * Sends [payload] to the peer identified by [macAddress]. Returns
+     * `true` when the bytes were handed to the underlying socket,
+     * `false` when no live session exists for that peer or the write
+     * itself failed (the transport will tear the session down in that
+     * case).
+     */
+    suspend fun send(macAddress: String, payload: ByteArray): Boolean
+
+    /**
+     * Tears down the session for [macAddress] (if any) and releases
+     * its resources. Safe to call for an unknown peer.
+     */
+    fun disconnect(macAddress: String)
+}

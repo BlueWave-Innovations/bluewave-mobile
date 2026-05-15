@@ -1,0 +1,241 @@
+<resources>
+    <string name="app_name">BlueWave</string>
+
+    <!-- Device list screen -->
+    <string name="device_list_title">BlueWave</string>
+    <string name="device_list_rescan_cd">Повторить поиск устройств поблизости</string>
+    <string name="device_list_create_group_cd">Создать новую группу</string>
+    <string name="device_list_qr_cd">Поделиться моим QR-кодом</string>
+    <string name="device_list_empty_title">Устройств не найдено</string>
+    <string name="device_list_empty_message">Подойдите ближе к сопряжённому телефону или нажмите кнопку ниже, чтобы начать новый поиск.</string>
+    <string name="device_list_scan_again">Искать снова</string>
+    <string name="device_list_bluetooth_off_title">Bluetooth выключен</string>
+    <string name="device_list_bluetooth_off_message">Включите Bluetooth в системных настройках и вернитесь в BlueWave, чтобы найти устройства поблизости.</string>
+    <string name="device_list_try_again">Повторить</string>
+
+    <!-- Permissions -->
+    <string name="permission_title">Нужно разрешение на Bluetooth</string>
+    <string name="permission_message">BlueWave нужен доступ к Bluetooth, чтобы находить устройства поблизости и обмениваться сообщениями по локальному радиоканалу.</string>
+    <string name="permission_grant">Разрешить</string>
+    <string name="permission_combined_cd">Нужно разрешение на Bluetooth. Разрешите доступ, чтобы находить устройства поблизости и обмениваться сообщениями.</string>
+    <string name="permission_message_permanently_denied">Доступ к Bluetooth выключен в системе. Откройте настройки BlueWave и включите «Устройства поблизости», чтобы видеть телефоны рядом.</string>
+    <string name="permission_open_settings">Открыть настройки приложения</string>
+
+    <!-- Make-discoverable banner -->
+    <string name="discoverable_banner_title">Вас не видят другие телефоны</string>
+    <string name="discoverable_banner_message">Сделайте телефон видимым на 30 минут — соседи увидят вас при первом сканировании.</string>
+    <string name="discoverable_banner_cta">Сделать видимым</string>
+    <string name="discoverable_banner_dismiss">Скрыть</string>
+    <string name="peer_profile_title">Профиль</string>
+    <string name="peer_profile_default_name">Неизвестный пользователь</string>
+    <string name="peer_profile_no_bio">Нет описания</string>
+
+    <!-- Chat screen -->
+    <string name="chat_title">Чат</string>
+    <string name="chat_with_cd">Чат с %1$s</string>
+    <string name="chat_input_placeholder">Сообщение</string>
+    <string name="chat_input_cd">Поле ввода сообщения</string>
+    <string name="chat_send_cd">Отправить сообщение</string>
+    <string name="chat_jump_to_bottom_cd">Перейти к последнему сообщению</string>
+    <string name="chat_empty_title">Сообщений пока нет</string>
+    <string name="chat_empty_message">Начните разговор — отправьте сообщение ниже.</string>
+    <string name="chat_history_error_title">Не удалось загрузить историю</string>
+    <string name="chat_connection_lost">Соединение потеряно</string>
+    <string name="chat_connection_restored">Соединение восстановлено</string>
+    <string name="chat_corrupted_label">Проверка подлинности не пройдена</string>
+    <string name="chat_corrupted_message">Сообщение было изменено при передаче и не может быть отображено.</string>
+    <string name="chat_security_encrypted_cd">Сквозное шифрование</string>
+    <string name="chat_security_failed_cd">Ошибка аутентификации</string>
+    <string name="chat_no_selection_title">Чат не выбран</string>
+    <string name="chat_no_selection_message">Выберите устройство слева, чтобы начать переписку.</string>
+    <string name="chat_message_sent_at_cd">Отправлено в %1$s: %2$s</string>
+    <string name="chat_message_received_at_cd">Получено в %1$s: %2$s</string>
+    <string name="chat_message_sent_corrupted_cd">Отправлено в %1$s, сообщение повреждено</string>
+    <string name="chat_message_received_corrupted_cd">Получено в %1$s, сообщение повреждено</string>
+
+    <!-- Device list screen — extra states -->
+    <string name="device_list_error_title">Ошибка поиска</string>
+    <string name="device_list_retry">Повторить</string>
+
+    <!-- Device list — секционированный список контактов -->
+    <string name="contacts_section_chats">Чаты</string>
+    <string name="contacts_section_can_chat">Можно написать</string>
+    <string name="contacts_section_install_suggest">Без приложения</string>
+    <string name="contacts_chat_empty_preview">Сообщений ещё нет</string>
+    <string name="contacts_install_suggest_action">Отправить приложение по Bluetooth</string>
+    <string name="contacts_install_suggest_subtitle">BlueWave не обнаружен — поделитесь приложением</string>
+    <string name="contacts_chat_unread_badge_cd">Непрочитанных сообщений: %1$d</string>
+    <string name="contacts_online_label">В сети</string>
+    <string name="contacts_paired_label">Сопряжено</string>
+    <string name="contacts_install_suggested">Открыта передача по Bluetooth. Подтвердите на другом устройстве.</string>
+    <string name="contacts_install_failed">На устройстве не нашлось приложения для передачи по Bluetooth.</string>
+    <string name="action_suggest_install">Отправить BlueWave по Bluetooth</string>
+
+    <!-- Индикаторы шифрования -->
+    <string name="chat_security_pending_cd">Идёт установка защищённого сеанса</string>
+    <string name="chat_security_pending_label">Защита…</string>
+    <string name="chat_security_handshake_failed">Не удалось установить защищённый сеанс — отправка приостановлена.</string>
+
+    <!-- Нижняя навигация -->
+    <string name="nav_chats">Чаты</string>
+    <string name="nav_settings">Настройки</string>
+    <string name="nav_profile">Профиль</string>
+
+    <!-- Общие действия -->
+    <string name="action_back">Назад</string>
+    <string name="action_close">Закрыть</string>
+    <string name="action_save">Сохранить</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="action_delete">Удалить</string>
+    <string name="action_rename">Переименовать</string>
+    <string name="action_create">Создать</string>
+    <string name="action_done">Готово</string>
+
+    <!-- Экран настроек -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_placeholder">Настройки появятся здесь.</string>
+    <string name="settings_section_appearance">Оформление</string>
+    <string name="settings_section_connectivity">Подключение</string>
+    <string name="settings_section_organization">Организация</string>
+    <string name="settings_theme">Тема</string>
+    <string name="settings_theme_system">Как в системе</string>
+    <string name="settings_theme_light">Светлая</string>
+    <string name="settings_theme_dark">Тёмная</string>
+    <string name="settings_language">Язык</string>
+    <string name="settings_language_system">Как в системе</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_russian">Русский</string>
+    <string name="settings_bt_visibility">Видимость по Bluetooth</string>
+    <string name="settings_bt_visibility_off">Выключена</string>
+    <string name="settings_bt_visibility_5min">На 5 минут</string>
+    <string name="settings_bt_visibility_30min">На 30 минут</string>
+    <string name="settings_bt_visibility_120min">На 2 часа</string>
+    <string name="settings_bt_visibility_summary">Позволяет другим устройствам поблизости находить ваш телефон по Bluetooth.</string>
+    <string name="settings_open_folders">Папки чатов</string>
+    <string name="settings_open_folders_summary">Группируйте контакты по папкам «Работа», «Семья» или своим.</string>
+
+    <!-- Экран профиля -->
+    <string name="profile_title">Профиль</string>
+    <string name="profile_placeholder">Здесь появится редактор профиля.</string>
+    <string name="profile_display_name">Имя</string>
+    <string name="profile_display_name_placeholder">Ваше имя</string>
+    <string name="profile_handle">@тег</string>
+    <string name="profile_handle_placeholder">@ваш_тег</string>
+    <string name="profile_bio">О себе</string>
+    <string name="profile_bio_placeholder">Расскажите немного о себе</string>
+    <string name="profile_avatar_action">Изменить аватар</string>
+    <string name="profile_share_qr">Поделиться QR</string>
+    <string name="profile_default_name">Мой профиль</string>
+
+    <!-- Папки -->
+    <string name="folders_title">Папки</string>
+    <string name="folders_placeholder">Здесь можно управлять встроенными и своими папками.</string>
+    <string name="folders_builtin_all">Все чаты</string>
+    <string name="folders_builtin_nearby">Рядом</string>
+    <string name="folders_builtin_no_app">Без приложения</string>
+    <string name="folders_builtin_work">Работа</string>
+    <string name="folders_builtin_family">Семья</string>
+    <string name="folders_add">Новая папка</string>
+    <string name="folders_create_dialog_title">Новая папка</string>
+    <string name="folders_rename_dialog_title">Переименовать папку</string>
+    <string name="folders_delete_dialog_title">Удалить папку?</string>
+    <string name="folders_delete_dialog_message">Метка будет снята со всех контактов. Сообщения останутся.</string>
+    <string name="folders_member_picker_title">Выберите контакты</string>
+    <string name="folders_chip_all">Все</string>
+    <string name="folders_chip_no_app">Без приложения</string>
+    <string name="folders_assign_action">Добавить в папку</string>
+    <string name="folders_empty_section">В этой папке пока нет контактов.</string>
+    <string name="folders_unassign_action">Убрать из папки</string>
+    <string name="folders_member_count">Контактов: %1$d</string>
+    <string name="folders_name_placeholder">Название папки</string>
+
+    <!-- Группы -->
+    <string name="create_group_title">Новая группа</string>
+    <string name="create_group_placeholder">Выберите участников и название, чтобы начать.</string>
+    <string name="create_group_name_placeholder">Название группы</string>
+    <string name="create_group_members_label">Участники (выбрано: %1$d)</string>
+    <string name="create_group_create">Создать</string>
+    <string name="group_chat_title">Групповой чат</string>
+    <string name="group_chat_placeholder">Содержимое группового чата появится здесь.</string>
+    <string name="group_chat_member_count">Участников: %1$d</string>
+    <string name="group_chat_status_online">В сети через Bluetooth</string>
+    <string name="group_chat_status_offline">Не в сети</string>
+    <string name="group_chat_message_received_at_cd">Получено от %1$s в %2$s: %3$s</string>
+    <string name="contacts_groups_section">Группы</string>
+    <string name="action_create_group">Новая группа</string>
+    <string name="action_share_qr">Поделиться QR</string>
+    <string name="action_search">Поиск</string>
+
+    <!-- QR -->
+    <string name="qr_share_title">Поделиться контактом</string>
+    <string name="qr_share_placeholder">QR-код и сканер появятся здесь.</string>
+    <string name="qr_share_explainer">Покажите этот код другу, чтобы он добавил вас как контакт.</string>
+    <string name="qr_share_no_profile">Чтобы поделиться QR, укажите имя на вкладке «Профиль».</string>
+    <string name="qr_share_share_button">Поделиться</string>
+    <string name="qr_share_copy_link">Скопировать ссылку</string>
+    <string name="qr_share_copied">Ссылка скопирована</string>
+    <string name="qr_share_scan_action">Сканировать QR</string>
+    <string name="qr_share_scan_title">Сканирование QR</string>
+    <string name="qr_share_camera_required">Для сканирования нужен доступ к камере.</string>
+    <string name="qr_share_camera_grant">Разрешить камеру</string>
+    <string name="qr_share_invalid">Это не QR-код контакта BlueWave.</string>
+
+    <!-- Редизайн чата -->
+    <string name="chat_date_today">Сегодня</string>
+    <string name="chat_date_yesterday">Вчера</string>
+
+    <!-- Поиск -->
+    <string name="search_placeholder">Поиск по имени или сообщениям</string>
+    <string name="search_clear">Очистить поиск</string>
+    <string name="search_empty_title">Ничего не найдено</string>
+    <string name="search_empty_message">Попробуйте другое имя, тег контакта или слово из недавнего сообщения.</string>
+
+    <!-- Modern UI redesign — extra labels -->
+    <string name="settings_profile_card_status">Виден по Bluetooth</string>
+    <string name="settings_profile_card_status_offline">Скрыт по Bluetooth</string>
+    <string name="settings_section_appearance_caps">Внешний вид</string>
+    <string name="settings_section_system_caps">Система</string>
+    <string name="settings_theme_short">Темы</string>
+    <string name="settings_language_short">Язык</string>
+    <string name="settings_bt_visibility_short">Видимость Bluetooth</string>
+    <string name="settings_bt_visibility_short_summary">Разрешить находящимся рядом пользователям находить ваш профиль и отправлять сообщения без подключения к Интернету.</string>
+    <string name="settings_export_logs">Экспорт отладочных логов</string>
+    <string name="settings_export_logs_success">Логи сохранены в Downloads/BlueWave</string>
+    <string name="settings_export_logs_failed">Не удалось экспортировать логи</string>
+    <string name="settings_theme_picker_title">Выберите тему</string>
+    <string name="settings_language_picker_title">Выберите язык</string>
+    <string name="settings_qr_share">Показать QR-код</string>
+    <string name="chats_tab_all">Все чаты</string>
+    <string name="chats_tab_messenger">Мессенджер</string>
+    <string name="chats_tab_work">Работа</string>
+    <string name="chats_filter_nearby">Рядом</string>
+    <string name="chats_filter_family">Семья</string>
+    <string name="chat_status_online_bt">В сети через Bluetooth</string>
+    <string name="chat_today">Сегодня</string>
+    <string name="chat_typing">печатает…</string>
+    <string name="chat_menu_cd">Настройки чата</string>
+    <string name="chat_delete_history">Удалить чат</string>
+    <string name="chat_input_placeholder_bt">Сообщение через Bluetooth…</string>
+    <string name="chat_attachment_cd">Прикрепить файл</string>
+    <string name="profile_section_about">О себе</string>
+    <string name="profile_action_edit_name">Изменить имя</string>
+    <string name="profile_action_edit_handle">Изменить тег</string>
+    <string name="profile_action_privacy">Настройки приватности</string>
+    <string name="profile_action_share_qr">Поделиться QR-кодом</string>
+    <string name="profile_edit_name_title">Изменить имя</string>
+    <string name="profile_edit_handle_title">Изменить @тег</string>
+    <string name="profile_edit_bio_title">Изменить описание</string>
+    <string name="profile_default_bio">Расскажите немного о себе.</string>
+    <string name="common_cancel">Отмена</string>
+    <string name="common_save">Сохранить</string>
+    <string name="common_done">Готово</string>
+    <string name="common_back">Назад</string>
+
+    <!-- Notification channels & foreground service -->
+    <string name="notification_channel_service">Bluetooth-сервис</string>
+    <string name="notification_channel_service_desc">Поддерживает Bluetooth-соединения в фоне</string>
+    <string name="notification_channel_messages">Новые сообщения</string>
+    <string name="notification_channel_messages_desc">Уведомления о входящих сообщениях</string>
+    <string name="notification_service_title">BlueWave</string>
+    <string name="notification_service_text">Bluetooth-мессенджер активен</string>
+</resources>

@@ -1,0 +1,1546 @@
+2026-05-15 07:43:27.563 I/BlueWaveLogger Logger initialised. File: /data/user/0/com.example.bluewave_mobile/files/logs/bluewave.log
+2026-05-15 07:43:27.651 E/BluetoothSessionManager BLUETOOTH_CONNECT permission missing for listen()
+java.lang.SecurityException: Need android.permission.BLUETOOTH_CONNECT permission for android.content.AttributionSource@f9061d08: getAddress
+	at android.os.Parcel.createExceptionOrNull(Parcel.java:3089)
+	at android.os.Parcel.createException(Parcel.java:3073)
+	at android.os.Parcel.readException(Parcel.java:3056)
+	at android.os.Parcel.readException(Parcel.java:2998)
+	at android.bluetooth.IBluetoothManager$Stub$Proxy.getAddress(IBluetoothManager.java:662)
+	at android.bluetooth.BluetoothAdapter.getAddress(BluetoothAdapter.java:1646)
+	at android.bluetooth.BluetoothSocket.<init>(BluetoothSocket.java:250)
+	at android.bluetooth.BluetoothSocket.<init>(BluetoothSocket.java:203)
+	at android.bluetooth.BluetoothServerSocket.<init>(BluetoothServerSocket.java:160)
+	at android.bluetooth.BluetoothAdapter.createNewRfcommSocketAndRecord(BluetoothAdapter.java:3519)
+	at android.bluetooth.BluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(BluetoothAdapter.java:3469)
+	at com.example.bluewave_mobile.network.BluetoothSessionManager.acceptLoop(BluetoothSessionManager.kt:161)
+	at com.example.bluewave_mobile.network.BluetoothSessionManager.access$acceptLoop(BluetoothSessionManager.kt:61)
+	at com.example.bluewave_mobile.network.BluetoothSessionManager$start$1$1.invokeSuspend(BluetoothSessionManager.kt:100)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:820)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+Caused by: android.os.RemoteException: Remote stack trace:
+	at com.android.server.bluetooth.BluetoothManagerService.checkPermissionForDataDelivery(BluetoothManagerService.java:3815)
+	at com.android.server.bluetooth.BluetoothManagerService.checkConnectPermissionForDataDelivery(BluetoothManagerService.java:3833)
+	at com.android.server.bluetooth.BluetoothManagerService.getAddress(BluetoothManagerService.java:2319)
+	at android.bluetooth.IBluetoothManager$Stub.onTransact(IBluetoothManager.java:356)
+	at android.os.Binder.execTransactInternal(Binder.java:1339)
+
+
+2026-05-15 07:43:27.702 D/Lifecycle onCreate: MainActivity
+2026-05-15 07:43:27.704 D/MainActivity onCreate
+2026-05-15 07:43:27.769 D/Lifecycle onStart: MainActivity
+2026-05-15 07:43:27.777 D/Lifecycle onResume: MainActivity
+2026-05-15 07:43:28.019 D/EnsureBluetoothEnabled ON_RESUME probe
+2026-05-15 07:43:28.160 W/BlueWaveApplication bondedDevices denied by permissions; skipping bonded auto-connect
+java.lang.SecurityException: Need android.permission.BLUETOOTH_CONNECT permission for android.content.AttributionSource@ee8652a3: AdapterService getBondedDevices
+	at com.android.bluetooth.Utils.checkPermissionForDataDelivery(Utils.java:619)
+	at com.android.bluetooth.Utils.checkConnectPermissionForDataDelivery(Utils.java:651)
+	at com.android.bluetooth.btservice.AdapterService$AdapterServiceBinder.getBondedDevices(AdapterService.java:2625)
+	at com.android.bluetooth.btservice.AdapterService$AdapterServiceBinder.getBondedDevices(AdapterService.java:2616)
+	at android.bluetooth.IBluetooth$Stub.onTransact(IBluetooth.java:1106)
+	at android.os.Binder.execTransactInternal(Binder.java:1344)
+	at android.os.Binder.execTransact(Binder.java:1275)
+
+2026-05-15 07:43:28.281 D/Navigation Screen: DeviceList
+2026-05-15 07:43:28.376 I/DeviceListViewModel Init
+2026-05-15 07:43:28.603 D/Room SQL: SELECT COUNT(*) FROM chat_folder WHERE builtInKey IN (?,?) | args: [WORK, FAMILY]
+2026-05-15 07:43:28.604 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:43:28.604 D/Room SQL: INSERT OR REPLACE INTO `chat_folder` (`id`,`name`,`builtInKey`,`sortOrder`,`createdAt`) VALUES (?,?,?,?,?) | args: [builtin:WORK, , WORK, 0, 1778820207782]
+2026-05-15 07:43:28.605 D/Room SQL: INSERT OR REPLACE INTO `chat_folder` (`id`,`name`,`builtInKey`,`sortOrder`,`createdAt`) VALUES (?,?,?,?,?) | args: [builtin:FAMILY, , FAMILY, 1, 1778820207782]
+2026-05-15 07:43:28.605 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:43:28.606 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:43:28.606 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:43:28.607 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:43:28.607 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:43:28.608 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:43:28.646 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:43:28.646 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(0, 0) | args: []
+2026-05-15 07:43:28.647 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_INSERT` AFTER INSERT ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:43:28.647 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_UPDATE` AFTER UPDATE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:43:28.648 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_DELETE` AFTER DELETE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:43:28.648 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:43:28.649 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:43:28.649 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:43:28.662 D/Navigation Route: com.example.bluewave_mobile.ui.navigation.DeviceListRoute
+2026-05-15 07:43:29.654 E/BluetoothSessionManager BLUETOOTH_CONNECT permission missing for listen()
+java.lang.SecurityException: Need android.permission.BLUETOOTH_CONNECT permission for android.content.AttributionSource@f9061d08: getAddress
+	at android.os.Parcel.createExceptionOrNull(Parcel.java:3089)
+	at android.os.Parcel.createException(Parcel.java:3073)
+	at android.os.Parcel.readException(Parcel.java:3056)
+	at android.os.Parcel.readException(Parcel.java:2998)
+	at android.bluetooth.IBluetoothManager$Stub$Proxy.getAddress(IBluetoothManager.java:662)
+	at android.bluetooth.BluetoothAdapter.getAddress(BluetoothAdapter.java:1646)
+	at android.bluetooth.BluetoothSocket.<init>(BluetoothSocket.java:250)
+	at android.bluetooth.BluetoothSocket.<init>(BluetoothSocket.java:203)
+	at android.bluetooth.BluetoothServerSocket.<init>(BluetoothServerSocket.java:160)
+	at android.bluetooth.BluetoothAdapter.createNewRfcommSocketAndRecord(BluetoothAdapter.java:3519)
+	at android.bluetooth.BluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(BluetoothAdapter.java:3469)
+	at com.example.bluewave_mobile.network.BluetoothSessionManager.acceptLoop(BluetoothSessionManager.kt:161)
+	at com.example.bluewave_mobile.network.BluetoothSessionManager.access$acceptLoop(BluetoothSessionManager.kt:61)
+	at com.example.bluewave_mobile.network.BluetoothSessionManager$acceptLoop$1.invokeSuspend(Unknown Source:14)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:820)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+Caused by: android.os.RemoteException: Remote stack trace:
+	at com.android.server.bluetooth.BluetoothManagerService.checkPermissionForDataDelivery(BluetoothManagerService.java:3815)
+	at com.android.server.bluetooth.BluetoothManagerService.checkConnectPermissionForDataDelivery(BluetoothManagerService.java:3833)
+	at com.android.server.bluetooth.BluetoothManagerService.getAddress(BluetoothManagerService.java:2319)
+	at android.bluetooth.IBluetoothManager$Stub.onTransact(IBluetoothManager.java:356)
+	at android.os.Binder.execTransactInternal(Binder.java:1339)
+
+
+2026-05-15 07:43:30.036 D/Lifecycle onPause: MainActivity
+2026-05-15 07:43:31.450 D/Lifecycle onResume: MainActivity
+2026-05-15 07:43:31.452 D/EnsureBluetoothEnabled ON_RESUME probe
+2026-05-15 07:43:31.581 D/DeviceListViewModel Intent: PermissionsGranted
+2026-05-15 07:43:31.582 I/DeviceListViewModel PermissionsGranted
+2026-05-15 07:43:31.582 D/DeviceListViewModel Intent: StartScan
+2026-05-15 07:43:31.582 I/DeviceListViewModel StartScan
+2026-05-15 07:43:31.639 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:43:31.640 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_INSERT` | args: []
+2026-05-15 07:43:31.641 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_UPDATE` | args: []
+2026-05-15 07:43:31.641 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_DELETE` | args: []
+2026-05-15 07:43:31.641 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(1, 0) | args: []
+2026-05-15 07:43:31.641 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:43:31.641 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_INSERT` AFTER INSERT ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:43:31.642 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_UPDATE` AFTER UPDATE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:43:31.642 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_DELETE` AFTER DELETE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:43:31.642 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(4, 0) | args: []
+2026-05-15 07:43:31.642 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_chat_group_INSERT` AFTER INSERT ON `chat_group` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 4 AND invalidated = 0; END | args: []
+2026-05-15 07:43:31.642 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_chat_group_UPDATE` AFTER UPDATE ON `chat_group` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 4 AND invalidated = 0; END | args: []
+2026-05-15 07:43:31.642 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_chat_group_DELETE` AFTER DELETE ON `chat_group` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 4 AND invalidated = 0; END | args: []
+2026-05-15 07:43:31.643 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(5, 0) | args: []
+2026-05-15 07:43:31.643 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_group_member_INSERT` AFTER INSERT ON `group_member` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 5 AND invalidated = 0; END | args: []
+2026-05-15 07:43:31.643 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_group_member_UPDATE` AFTER UPDATE ON `group_member` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 5 AND invalidated = 0; END | args: []
+2026-05-15 07:43:31.643 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_group_member_DELETE` AFTER DELETE ON `group_member` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 5 AND invalidated = 0; END | args: []
+2026-05-15 07:43:31.643 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:43:31.643 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:43:31.644 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(0, 0) | args: []
+2026-05-15 07:43:31.644 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_INSERT` AFTER INSERT ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:43:31.644 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_UPDATE` AFTER UPDATE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:43:31.645 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_DELETE` AFTER DELETE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:43:31.645 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:43:31.645 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:43:31.645 D/Room SQL: 
+        SELECT macAddress AS macAddress, COUNT(*) AS unreadCount
+        FROM messages
+        WHERE isOutgoing = 0 AND isRead = 0
+        GROUP BY macAddress
+         | args: []
+2026-05-15 07:43:31.674 D/Room SQL: SELECT * FROM chat_group ORDER BY createdAt DESC | args: []
+2026-05-15 07:43:31.674 D/Room SQL: SELECT * FROM group_member ORDER BY joinedAt ASC | args: []
+2026-05-15 07:43:31.677 D/Room SQL: SELECT * FROM peer_profile | args: []
+2026-05-15 07:43:31.678 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:43:31.798 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:43:35.323 I/SettingsViewModel setBluetoothVisibility: MIN_30
+2026-05-15 07:43:35.350 D/Lifecycle onPause: MainActivity
+2026-05-15 07:43:36.463 D/Lifecycle onResume: MainActivity
+2026-05-15 07:43:36.464 D/EnsureBluetoothEnabled ON_RESUME probe
+2026-05-15 07:43:40.074 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:43:40.075 D/Room SQL: INSERT OR REPLACE INTO `peer_profile` (`macAddress`,`displayName`,`handle`,`bio`,`avatarUri`,`updatedAt`) VALUES (?,?,?,?,?,?) | args: [C0:1C:6A:A7:DC:72, , , , , 1778820220073]
+2026-05-15 07:43:40.075 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:43:40.076 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:43:40.076 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:43:40.077 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:43:40.078 D/Room SQL: UPDATE room_table_modification_log SET invalidated = 0 WHERE invalidated = 1 | args: []
+2026-05-15 07:43:40.078 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:43:40.078 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:43:40.080 D/Room SQL: SELECT * FROM peer_profile | args: []
+2026-05-15 07:43:40.170 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:43:40.170 D/Room SQL: INSERT OR REPLACE INTO `peer_profile` (`macAddress`,`displayName`,`handle`,`bio`,`avatarUri`,`updatedAt`) VALUES (?,?,?,?,?,?) | args: [C0:1C:6A:A7:DC:72, , , , , 1778820220169]
+2026-05-15 07:43:40.171 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:43:40.171 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:43:40.172 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:43:40.172 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:43:40.173 D/Room SQL: UPDATE room_table_modification_log SET invalidated = 0 WHERE invalidated = 1 | args: []
+2026-05-15 07:43:40.173 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:43:40.173 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:43:40.175 D/Room SQL: SELECT * FROM peer_profile | args: []
+2026-05-15 07:43:40.901 W/BluetoothSessionManager connect() failed for C2:AB:11:34:5F:33: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:43:40.903 W/BluetoothSessionManager connect() failed for BE:59:4A:00:D0:9B: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:43:42.065 D/DeviceListViewModel Intent: StartScan
+2026-05-15 07:43:42.066 I/DeviceListViewModel StartScan
+2026-05-15 07:43:42.114 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:43:42.115 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:43:42.115 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_INSERT` | args: []
+2026-05-15 07:43:42.116 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_UPDATE` | args: []
+2026-05-15 07:43:42.117 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:43:42.117 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_DELETE` | args: []
+2026-05-15 07:43:42.118 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_group_member_INSERT` | args: []
+2026-05-15 07:43:42.118 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_group_member_UPDATE` | args: []
+2026-05-15 07:43:42.118 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_group_member_DELETE` | args: []
+2026-05-15 07:43:42.119 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:43:42.119 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:43:42.120 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(5, 0) | args: []
+2026-05-15 07:43:42.120 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_group_member_INSERT` AFTER INSERT ON `group_member` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 5 AND invalidated = 0; END | args: []
+2026-05-15 07:43:42.120 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_group_member_UPDATE` AFTER UPDATE ON `group_member` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 5 AND invalidated = 0; END | args: []
+2026-05-15 07:43:42.120 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_group_member_DELETE` AFTER DELETE ON `group_member` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 5 AND invalidated = 0; END | args: []
+2026-05-15 07:43:42.121 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:43:42.121 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:43:42.121 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(0, 0) | args: []
+2026-05-15 07:43:42.122 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_INSERT` AFTER INSERT ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:43:42.122 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_UPDATE` AFTER UPDATE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:43:42.122 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_DELETE` AFTER DELETE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:43:42.122 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:43:42.123 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:43:42.123 D/Room SQL: 
+        SELECT macAddress AS macAddress, COUNT(*) AS unreadCount
+        FROM messages
+        WHERE isOutgoing = 0 AND isRead = 0
+        GROUP BY macAddress
+         | args: []
+2026-05-15 07:43:42.124 D/Room SQL: SELECT * FROM group_member ORDER BY joinedAt ASC | args: []
+2026-05-15 07:43:42.126 D/Room SQL: SELECT * FROM peer_profile | args: []
+2026-05-15 07:43:42.127 D/Room SQL: SELECT * FROM chat_group ORDER BY createdAt DESC | args: []
+2026-05-15 07:43:42.128 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:43:42.630 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:43:51.940 D/DeviceListViewModel Intent: StartScan
+2026-05-15 07:43:51.941 I/DeviceListViewModel StartScan
+2026-05-15 07:43:52.001 D/Room SQL: 
+        SELECT macAddress AS macAddress, COUNT(*) AS unreadCount
+        FROM messages
+        WHERE isOutgoing = 0 AND isRead = 0
+        GROUP BY macAddress
+         | args: []
+2026-05-15 07:43:52.002 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:43:52.003 D/Room SQL: SELECT * FROM chat_group ORDER BY createdAt DESC | args: []
+2026-05-15 07:43:52.003 D/Room SQL: SELECT * FROM group_member ORDER BY joinedAt ASC | args: []
+2026-05-15 07:43:52.004 D/Room SQL: SELECT * FROM peer_profile | args: []
+2026-05-15 07:43:53.312 D/DeviceListViewModel Intent: StartScan
+2026-05-15 07:43:53.313 I/DeviceListViewModel StartScan
+2026-05-15 07:43:53.365 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:43:53.366 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:43:53.367 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_INSERT` | args: []
+2026-05-15 07:43:53.367 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_UPDATE` | args: []
+2026-05-15 07:43:53.367 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_DELETE` | args: []
+2026-05-15 07:43:53.368 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:43:53.368 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:43:53.368 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(0, 0) | args: []
+2026-05-15 07:43:53.369 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_INSERT` AFTER INSERT ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:43:53.369 D/Room SQL: 
+        SELECT macAddress AS macAddress, COUNT(*) AS unreadCount
+        FROM messages
+        WHERE isOutgoing = 0 AND isRead = 0
+        GROUP BY macAddress
+         | args: []
+2026-05-15 07:43:53.369 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_UPDATE` AFTER UPDATE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:43:53.369 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_DELETE` AFTER DELETE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:43:53.370 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:43:53.370 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:43:53.371 D/Room SQL: SELECT * FROM chat_group ORDER BY createdAt DESC | args: []
+2026-05-15 07:43:53.372 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:43:53.373 D/Room SQL: SELECT * FROM peer_profile | args: []
+2026-05-15 07:43:53.375 D/Room SQL: SELECT * FROM group_member ORDER BY joinedAt ASC | args: []
+2026-05-15 07:43:54.942 D/BluetoothSessionManager Server socket closed: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:43:57.643 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:44:02.045 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:44:02.048 D/Room SQL: INSERT OR REPLACE INTO `messages` (`id`,`macAddress`,`encryptedPayload`,`iv`,`timestamp`,`isOutgoing`,`senderName`,`isRead`,`deliveryStatus`,`messageUuid`,`attachmentPath`,`attachmentName`,`attachmentMimeType`,`attachmentSize`,`transferStatus`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?,?,?,?,?,?) | args: [0, C0:1C:6A:A7:DC:72, [B@49a6b57, [B@ebe6644, 1778820242042, 0, Pixel 9 Pro, 0, 0, 24fa2d39-42c0-4ca7-af1e-f2c77707239f, , , , 0, 0]
+2026-05-15 07:44:02.050 D/Room SQL: SELECT changes() | args: []
+2026-05-15 07:44:02.052 D/Room SQL: SELECT last_insert_rowid() | args: []
+2026-05-15 07:44:02.054 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:44:02.055 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:44:02.056 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:44:02.057 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:44:02.058 D/Room SQL: UPDATE room_table_modification_log SET invalidated = 0 WHERE invalidated = 1 | args: []
+2026-05-15 07:44:02.060 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:44:02.061 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:44:02.065 D/Room SQL: 
+        SELECT macAddress AS macAddress, COUNT(*) AS unreadCount
+        FROM messages
+        WHERE isOutgoing = 0 AND isRead = 0
+        GROUP BY macAddress
+         | args: []
+2026-05-15 07:44:02.066 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:44:06.527 W/BluetoothSessionManager connect() failed for A1:26:82:26:18:52: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:44:07.121 W/BluetoothSessionManager connect() failed for C0:1C:6A:A7:DC:72: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:44:07.665 D/DeviceListViewModel Intent: DeviceSelected(macAddress=C0:1C:6A:A7:DC:72)
+2026-05-15 07:44:07.665 I/DeviceListViewModel DeviceSelected: C0:1C:6A:A7:DC:72
+2026-05-15 07:44:07.667 I/Navigation Navigate to chat: C0:1C:6A:A7:DC:72
+2026-05-15 07:44:07.689 D/Navigation Screen: DeviceList
+2026-05-15 07:44:07.698 D/Navigation Screen: DeviceList
+2026-05-15 07:44:07.713 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:44:07.714 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_INSERT` | args: []
+2026-05-15 07:44:07.714 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_UPDATE` | args: []
+2026-05-15 07:44:07.714 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_DELETE` | args: []
+2026-05-15 07:44:07.714 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_peer_profile_INSERT` | args: []
+2026-05-15 07:44:07.714 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_peer_profile_UPDATE` | args: []
+2026-05-15 07:44:07.714 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_peer_profile_DELETE` | args: []
+2026-05-15 07:44:07.714 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_chat_group_INSERT` | args: []
+2026-05-15 07:44:07.715 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_chat_group_UPDATE` | args: []
+2026-05-15 07:44:07.715 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_chat_group_DELETE` | args: []
+2026-05-15 07:44:07.715 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_group_member_INSERT` | args: []
+2026-05-15 07:44:07.715 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_group_member_UPDATE` | args: []
+2026-05-15 07:44:07.715 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_group_member_DELETE` | args: []
+2026-05-15 07:44:07.715 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:44:07.715 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:44:07.716 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:44:07.716 D/Room SQL: UPDATE messages SET isRead = 1 WHERE macAddress = ? AND isOutgoing = 0 AND isRead = 0 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:44:07.716 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:44:07.716 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:44:07.716 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:44:07.716 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:44:07.716 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:44:07.717 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:44:07.717 D/Navigation Route: com.example.bluewave_mobile.ui.navigation.ChatRoute/{deviceMac}
+2026-05-15 07:44:07.724 D/Navigation Screen: DeviceList
+2026-05-15 07:44:07.728 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:44:07.736 I/ChatViewModel Init for C0:1C:6A:A7:DC:72
+2026-05-15 07:44:07.869 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:44:07.870 D/Room SQL: UPDATE messages SET isRead = 1 WHERE macAddress = ? AND isOutgoing = 0 AND isRead = 0 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:44:07.870 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:44:07.870 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:44:07.870 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:44:07.871 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:44:07.871 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:44:07.871 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:44:07.871 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:44:07.872 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:44:07.872 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(0, 0) | args: []
+2026-05-15 07:44:07.872 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:44:07.872 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_INSERT` AFTER INSERT ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:44:07.872 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_UPDATE` AFTER UPDATE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:44:07.873 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_DELETE` AFTER DELETE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:44:07.873 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:44:07.874 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:44:07.874 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(1, 0) | args: []
+2026-05-15 07:44:07.874 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_INSERT` AFTER INSERT ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:44:07.874 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:44:07.901 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_UPDATE` AFTER UPDATE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:44:07.902 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_DELETE` AFTER DELETE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:44:07.903 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:44:07.903 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:44:07.947 D/Room SQL: SELECT * FROM peer_profile WHERE macAddress = ? LIMIT 1 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:44:08.433 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:44:08.474 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:44:10.148 D/BluetoothSessionManager Server socket closed: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:44:11.041 D/ChatViewModel Intent: SendMessage(plaintext=салам)
+2026-05-15 07:44:11.042 D/ChatViewModel Sending message to C0:1C:6A:A7:DC:72
+2026-05-15 07:44:11.117 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:44:11.117 D/Room SQL: INSERT OR REPLACE INTO `messages` (`id`,`macAddress`,`encryptedPayload`,`iv`,`timestamp`,`isOutgoing`,`senderName`,`isRead`,`deliveryStatus`,`messageUuid`,`attachmentPath`,`attachmentName`,`attachmentMimeType`,`attachmentSize`,`transferStatus`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?,?,?,?,?,?) | args: [0, C0:1C:6A:A7:DC:72, [B@e525870, [B@6a1f7e9, 1778820251064, 1, Me, 1, 0, e876de1f-955e-4d14-856f-893f60e0cef9, , , , 0, 0]
+2026-05-15 07:44:11.117 D/Room SQL: SELECT changes() | args: []
+2026-05-15 07:44:11.117 D/Room SQL: SELECT last_insert_rowid() | args: []
+2026-05-15 07:44:11.118 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:44:11.118 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:44:11.118 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:44:11.121 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:44:11.122 D/Room SQL: UPDATE room_table_modification_log SET invalidated = 0 WHERE invalidated = 1 | args: []
+2026-05-15 07:44:11.122 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:44:11.122 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:44:11.155 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:44:11.155 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:44:11.156 I/ChatViewModel Message sent to C0:1C:6A:A7:DC:72
+2026-05-15 07:44:11.343 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:44:11.346 D/Room SQL: UPDATE messages SET deliveryStatus = ? WHERE messageUuid = ? | args: [1, e876de1f-955e-4d14-856f-893f60e0cef9]
+2026-05-15 07:44:11.347 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:44:11.350 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:44:11.351 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:44:11.353 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:44:11.354 D/Room SQL: UPDATE room_table_modification_log SET invalidated = 0 WHERE invalidated = 1 | args: []
+2026-05-15 07:44:11.357 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:44:11.359 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:44:11.360 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:44:11.360 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:44:12.659 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:44:12.686 W/BluetoothSessionManager connect() failed for BE:59:4A:00:D0:9B: bt socket connect failed
+2026-05-15 07:44:12.688 W/BluetoothSessionManager connect() failed for 00:76:24:59:17:B8: bt socket connect failed
+2026-05-15 07:44:12.689 W/BluetoothSessionManager connect() failed for 78:20:2E:03:71:40: bt socket connect failed
+2026-05-15 07:44:12.690 W/BluetoothSessionManager connect() failed for 74:16:69:88:68:DD: bt socket connect failed
+2026-05-15 07:44:12.690 W/BluetoothSessionManager connect() failed for 08:52:4E:00:93:27: bt socket connect failed
+2026-05-15 07:44:15.796 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:44:15.797 D/Room SQL: INSERT OR REPLACE INTO `messages` (`id`,`macAddress`,`encryptedPayload`,`iv`,`timestamp`,`isOutgoing`,`senderName`,`isRead`,`deliveryStatus`,`messageUuid`,`attachmentPath`,`attachmentName`,`attachmentMimeType`,`attachmentSize`,`transferStatus`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?,?,?,?,?,?) | args: [0, C0:1C:6A:A7:DC:72, [B@7cf1efb, [B@fc2db18, 1778820255793, 0, , 0, 0, 19480e15-5938-4aaf-9a30-1a291e5bc7a0, /data/user/0/com.example.bluewave_mobile/files/media/inbound/19480e15-5938-4aaf-9a30-1a291e5bc7a0_Screenshot_20260515-065204.jpg, Screenshot_20260515-065204.jpg, image/jpeg, 32897, 2]
+2026-05-15 07:44:15.798 D/Room SQL: SELECT changes() | args: []
+2026-05-15 07:44:15.799 D/Room SQL: SELECT last_insert_rowid() | args: []
+2026-05-15 07:44:15.799 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:44:15.800 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:44:15.801 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:44:15.802 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:44:15.803 D/Room SQL: UPDATE room_table_modification_log SET invalidated = 0 WHERE invalidated = 1 | args: []
+2026-05-15 07:44:15.804 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:44:15.805 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:44:15.807 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:44:15.808 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:44:26.321 D/BluetoothSessionManager Server socket closed: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:44:27.689 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:44:27.716 W/BluetoothSessionManager connect() failed for C2:AB:11:34:5F:33: bt socket connect failed
+2026-05-15 07:44:27.718 W/BluetoothSessionManager connect() failed for AE:42:D5:0C:FC:7E: bt socket connect failed
+2026-05-15 07:44:27.722 W/BluetoothSessionManager connect() failed for 00:76:24:59:17:B8: bt socket connect failed
+2026-05-15 07:44:27.723 W/BluetoothSessionManager connect() failed for 78:20:2E:03:71:40: bt socket connect failed
+2026-05-15 07:44:27.724 W/BluetoothSessionManager connect() failed for 08:52:4E:00:93:27: bt socket connect failed
+2026-05-15 07:44:27.725 W/BluetoothSessionManager connect() failed for 74:16:69:88:68:DD: bt socket connect failed
+2026-05-15 07:44:27.725 W/BluetoothSessionManager connect() failed for BE:59:4A:00:D0:9B: bt socket connect failed
+2026-05-15 07:44:28.339 W/BluetoothSessionManager Failed to open RFCOMM server socket: Error: -1; retrying
+2026-05-15 07:44:30.350 W/BluetoothSessionManager Failed to open RFCOMM server socket: Error: -1; retrying
+2026-05-15 07:44:32.158 W/BluetoothSessionManager connect() failed for 00:76:24:59:17:B8: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:44:32.604 D/ConnectedThread Read loop terminated: bt socket closed, read return: -1
+2026-05-15 07:44:33.592 W/ConnectedThread Write failed: Broken pipe
+2026-05-15 07:44:33.595 D/BluetoothSession Heartbeat write failed for C0:1C:6A:A7:DC:72; tearing down session
+2026-05-15 07:44:36.974 D/ConnectedThread Read loop terminated: bt socket closed, read return: -1
+2026-05-15 07:44:36.993 W/ConnectedThread Write failed: Broken pipe
+2026-05-15 07:44:42.722 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:44:42.740 W/BluetoothSessionManager connect() failed for A1:26:82:26:18:52: bt socket connect failed
+2026-05-15 07:44:42.745 W/BluetoothSessionManager connect() failed for C0:1C:6A:A7:DC:72: bt socket connect failed
+2026-05-15 07:44:42.749 W/BluetoothSessionManager connect() failed for C2:AB:11:34:5F:33: bt socket connect failed
+2026-05-15 07:44:42.752 W/BluetoothSessionManager connect() failed for AE:42:D5:0C:FC:7E: bt socket connect failed
+2026-05-15 07:44:42.753 W/BluetoothSessionManager connect() failed for 08:52:4E:00:93:27: bt socket connect failed
+2026-05-15 07:44:42.758 W/BluetoothSessionManager connect() failed for 00:76:24:59:17:B8: bt socket connect failed
+2026-05-15 07:44:42.759 W/BluetoothSessionManager connect() failed for 74:16:69:88:68:DD: bt socket connect failed
+2026-05-15 07:44:42.761 W/BluetoothSessionManager connect() failed for BE:59:4A:00:D0:9B: bt socket connect failed
+2026-05-15 07:44:42.763 W/BluetoothSessionManager connect() failed for 78:20:2E:03:71:40: bt socket connect failed
+2026-05-15 07:44:54.571 D/BluetoothSessionManager Server socket closed: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:44:57.749 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:44:57.773 W/BluetoothSessionManager connect() failed for 08:52:4E:00:93:27: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:44:57.774 W/BluetoothSessionManager connect() failed for A1:26:82:26:18:52: bt socket connect failed
+2026-05-15 07:44:57.780 W/BluetoothSessionManager connect() failed for C0:1C:6A:A7:DC:72: bt socket connect failed
+2026-05-15 07:44:57.784 W/BluetoothSessionManager connect() failed for C2:AB:11:34:5F:33: bt socket connect failed
+2026-05-15 07:44:57.785 W/BluetoothSessionManager connect() failed for 00:76:24:59:17:B8: bt socket connect failed
+2026-05-15 07:44:57.786 W/BluetoothSessionManager connect() failed for BE:59:4A:00:D0:9B: bt socket connect failed
+2026-05-15 07:44:57.787 W/BluetoothSessionManager connect() failed for 08:52:4E:00:93:27: bt socket connect failed
+2026-05-15 07:44:57.790 W/BluetoothSessionManager connect() failed for 74:16:69:88:68:DD: bt socket connect failed
+2026-05-15 07:44:57.793 W/BluetoothSessionManager connect() failed for 78:20:2E:03:71:40: bt socket connect failed
+2026-05-15 07:45:06.450 D/BluetoothSessionManager Server socket closed: Connection failure, wrong signal size: 0
+2026-05-15 07:45:07.467 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:07.498 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:07.516 D/Navigation Route: com.example.bluewave_mobile.ui.navigation.DeviceListRoute
+2026-05-15 07:45:07.523 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:07.525 D/Navigation Screen: DeviceList
+2026-05-15 07:45:08.054 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:08.055 D/Navigation Screen: DeviceList
+2026-05-15 07:45:08.061 D/Navigation Route: com.example.bluewave_mobile.ui.navigation.SettingsRoute
+2026-05-15 07:45:08.071 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:08.073 D/Navigation Screen: DeviceList
+2026-05-15 07:45:09.314 I/SettingsViewModel setBluetoothVisibility: OFF
+2026-05-15 07:45:10.053 I/SettingsViewModel setBluetoothVisibility: MIN_30
+2026-05-15 07:45:10.082 D/Lifecycle onPause: MainActivity
+2026-05-15 07:45:11.280 D/Lifecycle onResume: MainActivity
+2026-05-15 07:45:11.281 D/EnsureBluetoothEnabled ON_RESUME probe
+2026-05-15 07:45:12.443 D/Navigation Route: com.example.bluewave_mobile.ui.navigation.DeviceListRoute
+2026-05-15 07:45:12.456 D/Navigation Screen: DeviceList
+2026-05-15 07:45:12.776 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:12.776 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_peer_profile_INSERT` | args: []
+2026-05-15 07:45:12.777 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_peer_profile_UPDATE` | args: []
+2026-05-15 07:45:12.777 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_peer_profile_DELETE` | args: []
+2026-05-15 07:45:12.778 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:12.778 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:12.782 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:45:12.791 W/BluetoothSessionManager connect() failed for C2:AB:11:34:5F:33: bt socket connect failed
+2026-05-15 07:45:12.792 W/BluetoothSessionManager connect() failed for AE:42:D5:0C:FC:7E: bt socket connect failed
+2026-05-15 07:45:12.795 W/BluetoothSessionManager connect() failed for A1:26:82:26:18:52: bt socket connect failed
+2026-05-15 07:45:12.799 W/BluetoothSessionManager connect() failed for C0:1C:6A:A7:DC:72: bt socket connect failed
+2026-05-15 07:45:12.802 W/BluetoothSessionManager connect() failed for 08:52:4E:00:93:27: bt socket connect failed
+2026-05-15 07:45:12.803 W/BluetoothSessionManager connect() failed for 00:76:24:59:17:B8: bt socket connect failed
+2026-05-15 07:45:12.804 W/BluetoothSessionManager connect() failed for BE:59:4A:00:D0:9B: bt socket connect failed
+2026-05-15 07:45:12.806 W/BluetoothSessionManager connect() failed for 78:20:2E:03:71:40: bt socket connect failed
+2026-05-15 07:45:12.807 W/BluetoothSessionManager connect() failed for 74:16:69:88:68:DD: bt socket connect failed
+2026-05-15 07:45:13.170 D/Navigation Screen: DeviceList
+2026-05-15 07:45:13.197 D/Navigation Screen: DeviceList
+2026-05-15 07:45:14.719 D/DeviceListViewModel Intent: DeviceSelected(macAddress=C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:14.720 I/DeviceListViewModel DeviceSelected: C0:1C:6A:A7:DC:72
+2026-05-15 07:45:14.722 I/Navigation Navigate to chat: C0:1C:6A:A7:DC:72
+2026-05-15 07:45:14.733 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:14.734 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_INSERT` | args: []
+2026-05-15 07:45:14.734 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_UPDATE` | args: []
+2026-05-15 07:45:14.735 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_DELETE` | args: []
+2026-05-15 07:45:14.735 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:14.735 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:14.738 D/Navigation Screen: DeviceList
+2026-05-15 07:45:14.747 D/Navigation Screen: DeviceList
+2026-05-15 07:45:14.758 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:14.758 D/Room SQL: UPDATE messages SET isRead = 1 WHERE macAddress = ? AND isOutgoing = 0 AND isRead = 0 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:14.759 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:14.759 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:14.759 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:14.759 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:45:14.759 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:14.759 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:14.760 D/Navigation Route: com.example.bluewave_mobile.ui.navigation.ChatRoute/{deviceMac}
+2026-05-15 07:45:14.765 D/Navigation Screen: DeviceList
+2026-05-15 07:45:14.767 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:14.770 I/ChatViewModel Init for C0:1C:6A:A7:DC:72
+2026-05-15 07:45:14.856 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:14.856 D/Room SQL: UPDATE messages SET isRead = 1 WHERE macAddress = ? AND isOutgoing = 0 AND isRead = 0 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:14.856 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:14.857 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:14.857 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:14.857 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:45:14.858 W/BluetoothSessionManager connect() failed for C0:1C:6A:A7:DC:72: bt socket connect failed
+2026-05-15 07:45:14.858 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:14.858 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:14.859 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:14.859 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:14.859 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(0, 0) | args: []
+2026-05-15 07:45:14.859 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_INSERT` AFTER INSERT ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:14.860 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_UPDATE` AFTER UPDATE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:14.860 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_DELETE` AFTER DELETE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:14.863 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(1, 0) | args: []
+2026-05-15 07:45:14.863 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_INSERT` AFTER INSERT ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:14.864 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_UPDATE` AFTER UPDATE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:14.864 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_DELETE` AFTER DELETE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:14.864 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:14.864 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:14.864 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:14.865 D/Room SQL: SELECT * FROM peer_profile WHERE macAddress = ? LIMIT 1 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:15.484 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:15.517 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:21.767 D/BluetoothSessionManager Server socket closed: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:27.042 I/BlueWaveLogger Logger initialised. File: /data/user/0/com.example.bluewave_mobile/files/logs/bluewave.log
+2026-05-15 07:45:27.116 D/Lifecycle onCreate: MainActivity
+2026-05-15 07:45:27.117 D/MainActivity onCreate
+2026-05-15 07:45:27.166 D/Lifecycle onStart: MainActivity
+2026-05-15 07:45:27.169 D/Lifecycle onResume: MainActivity
+2026-05-15 07:45:27.333 D/EnsureBluetoothEnabled ON_RESUME probe
+2026-05-15 07:45:27.478 D/Navigation Screen: DeviceList
+2026-05-15 07:45:27.512 I/DeviceListViewModel Init
+2026-05-15 07:45:27.763 D/Room SQL: SELECT COUNT(*) FROM chat_folder WHERE builtInKey IN (?,?) | args: [WORK, FAMILY]
+2026-05-15 07:45:27.773 D/DeviceListViewModel Intent: PermissionsGranted
+2026-05-15 07:45:27.773 I/DeviceListViewModel PermissionsGranted
+2026-05-15 07:45:27.774 D/DeviceListViewModel Intent: StartScan
+2026-05-15 07:45:27.774 I/DeviceListViewModel StartScan
+2026-05-15 07:45:27.856 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:27.856 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(0, 0) | args: []
+2026-05-15 07:45:27.857 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_INSERT` AFTER INSERT ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:27.857 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_UPDATE` AFTER UPDATE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:27.858 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_DELETE` AFTER DELETE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:27.858 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:27.858 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:27.859 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:45:27.865 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:45:27.865 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:27.867 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_INSERT` | args: []
+2026-05-15 07:45:27.867 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_UPDATE` | args: []
+2026-05-15 07:45:27.867 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_DELETE` | args: []
+2026-05-15 07:45:27.868 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:27.868 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(1, 0) | args: []
+2026-05-15 07:45:27.869 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_INSERT` AFTER INSERT ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:27.869 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_UPDATE` AFTER UPDATE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:27.869 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_DELETE` AFTER DELETE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:27.870 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(4, 0) | args: []
+2026-05-15 07:45:27.870 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_chat_group_INSERT` AFTER INSERT ON `chat_group` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 4 AND invalidated = 0; END | args: []
+2026-05-15 07:45:27.871 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_chat_group_UPDATE` AFTER UPDATE ON `chat_group` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 4 AND invalidated = 0; END | args: []
+2026-05-15 07:45:27.871 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_chat_group_DELETE` AFTER DELETE ON `chat_group` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 4 AND invalidated = 0; END | args: []
+2026-05-15 07:45:27.871 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(5, 0) | args: []
+2026-05-15 07:45:27.872 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_group_member_INSERT` AFTER INSERT ON `group_member` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 5 AND invalidated = 0; END | args: []
+2026-05-15 07:45:27.872 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_group_member_UPDATE` AFTER UPDATE ON `group_member` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 5 AND invalidated = 0; END | args: []
+2026-05-15 07:45:27.872 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_group_member_DELETE` AFTER DELETE ON `group_member` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 5 AND invalidated = 0; END | args: []
+2026-05-15 07:45:27.873 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:27.873 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:27.874 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(0, 0) | args: []
+2026-05-15 07:45:27.874 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_INSERT` AFTER INSERT ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:27.875 D/Room SQL: 
+        SELECT macAddress AS macAddress, COUNT(*) AS unreadCount
+        FROM messages
+        WHERE isOutgoing = 0 AND isRead = 0
+        GROUP BY macAddress
+         | args: []
+2026-05-15 07:45:27.876 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_UPDATE` AFTER UPDATE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:27.879 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_DELETE` AFTER DELETE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:27.880 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:27.880 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:27.882 D/Navigation Route: com.example.bluewave_mobile.ui.navigation.DeviceListRoute
+2026-05-15 07:45:27.917 W/BluetoothSessionManager connect() failed for 78:20:2E:03:71:40: bt socket connect failed
+2026-05-15 07:45:27.924 W/BluetoothSessionManager connect() failed for AE:42:D5:0C:FC:7E: bt socket connect failed
+2026-05-15 07:45:27.963 D/Room SQL: SELECT * FROM group_member ORDER BY joinedAt ASC | args: []
+2026-05-15 07:45:27.964 D/Room SQL: SELECT * FROM chat_group ORDER BY createdAt DESC | args: []
+2026-05-15 07:45:27.966 D/Room SQL: SELECT * FROM peer_profile | args: []
+2026-05-15 07:45:27.968 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:45:27.972 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:45:29.246 D/DeviceListViewModel Intent: DeviceSelected(macAddress=C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:29.246 I/DeviceListViewModel DeviceSelected: C0:1C:6A:A7:DC:72
+2026-05-15 07:45:29.247 I/Navigation Navigate to chat: C0:1C:6A:A7:DC:72
+2026-05-15 07:45:29.266 D/Navigation Screen: DeviceList
+2026-05-15 07:45:29.274 D/Navigation Screen: DeviceList
+2026-05-15 07:45:29.289 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:29.289 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_INSERT` | args: []
+2026-05-15 07:45:29.289 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_UPDATE` | args: []
+2026-05-15 07:45:29.289 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_DELETE` | args: []
+2026-05-15 07:45:29.290 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_peer_profile_INSERT` | args: []
+2026-05-15 07:45:29.290 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_peer_profile_UPDATE` | args: []
+2026-05-15 07:45:29.290 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_peer_profile_DELETE` | args: []
+2026-05-15 07:45:29.290 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_chat_group_INSERT` | args: []
+2026-05-15 07:45:29.290 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_chat_group_UPDATE` | args: []
+2026-05-15 07:45:29.290 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_chat_group_DELETE` | args: []
+2026-05-15 07:45:29.291 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_group_member_INSERT` | args: []
+2026-05-15 07:45:29.291 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_group_member_UPDATE` | args: []
+2026-05-15 07:45:29.291 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_group_member_DELETE` | args: []
+2026-05-15 07:45:29.291 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:29.291 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:29.291 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:29.291 D/Room SQL: UPDATE messages SET isRead = 1 WHERE macAddress = ? AND isOutgoing = 0 AND isRead = 0 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:29.291 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:29.292 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:29.292 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:29.292 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:45:29.292 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:29.292 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:29.293 D/Navigation Route: com.example.bluewave_mobile.ui.navigation.ChatRoute/{deviceMac}
+2026-05-15 07:45:29.300 D/Navigation Screen: DeviceList
+2026-05-15 07:45:29.304 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:29.312 I/ChatViewModel Init for C0:1C:6A:A7:DC:72
+2026-05-15 07:45:29.436 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:29.437 D/Room SQL: UPDATE messages SET isRead = 1 WHERE macAddress = ? AND isOutgoing = 0 AND isRead = 0 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:29.437 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:29.437 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:29.438 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:29.438 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:45:29.438 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:29.439 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:29.439 W/BluetoothSessionManager connect() failed for C0:1C:6A:A7:DC:72: bt socket connect failed
+2026-05-15 07:45:29.439 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:29.440 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:29.440 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(0, 0) | args: []
+2026-05-15 07:45:29.440 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_INSERT` AFTER INSERT ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:29.440 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_UPDATE` AFTER UPDATE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:29.441 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_DELETE` AFTER DELETE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:29.441 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:29.441 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:29.441 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:29.442 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(1, 0) | args: []
+2026-05-15 07:45:29.442 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_INSERT` AFTER INSERT ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:29.442 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_UPDATE` AFTER UPDATE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:29.443 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_DELETE` AFTER DELETE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:29.443 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:29.443 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:29.447 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:29.448 D/Room SQL: SELECT * FROM peer_profile WHERE macAddress = ? LIMIT 1 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:30.015 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:30.049 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:31.115 D/BluetoothSessionManager Server socket closed: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.121 I/BlueWaveLogger Logger initialised. File: /data/user/0/com.example.bluewave_mobile/files/logs/bluewave.log
+2026-05-15 07:45:35.212 D/Lifecycle onCreate: MainActivity
+2026-05-15 07:45:35.213 D/MainActivity onCreate
+2026-05-15 07:45:35.272 D/Lifecycle onStart: MainActivity
+2026-05-15 07:45:35.275 D/Lifecycle onResume: MainActivity
+2026-05-15 07:45:35.378 W/BluetoothSessionManager connect() failed for C2:AB:11:34:5F:33: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.384 W/BluetoothSessionManager connect() failed for 08:52:4E:00:93:27: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.387 W/BluetoothSessionManager connect() failed for BE:59:4A:00:D0:9B: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.389 W/BluetoothSessionManager connect() failed for C0:1C:6A:A7:DC:72: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.390 W/BluetoothSessionManager connect() failed for 00:76:24:59:17:B8: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.391 W/BluetoothSessionManager connect() failed for A1:26:82:26:18:52: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.393 W/BluetoothSessionManager connect() failed for AE:42:D5:0C:FC:7E: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.394 W/BluetoothSessionManager connect() failed for 74:16:69:88:68:DD: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.402 W/BluetoothSessionManager connect() failed for 78:20:2E:03:71:40: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.502 D/EnsureBluetoothEnabled ON_RESUME probe
+2026-05-15 07:45:35.656 W/BluetoothSessionManager connect() failed for A1:26:82:26:18:52: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.657 D/Navigation Screen: DeviceList
+2026-05-15 07:45:35.658 W/BluetoothSessionManager connect() failed for 08:52:4E:00:93:27: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.658 W/BluetoothSessionManager connect() failed for C2:AB:11:34:5F:33: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.660 W/BluetoothSessionManager connect() failed for C0:1C:6A:A7:DC:72: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.661 W/BluetoothSessionManager connect() failed for AE:42:D5:0C:FC:7E: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.663 W/BluetoothSessionManager connect() failed for BE:59:4A:00:D0:9B: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.664 W/BluetoothSessionManager connect() failed for 74:16:69:88:68:DD: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.665 W/BluetoothSessionManager connect() failed for 00:76:24:59:17:B8: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.665 W/BluetoothSessionManager connect() failed for 78:20:2E:03:71:40: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.667 I/DeviceListViewModel Init
+2026-05-15 07:45:35.921 D/Room SQL: SELECT COUNT(*) FROM chat_folder WHERE builtInKey IN (?,?) | args: [WORK, FAMILY]
+2026-05-15 07:45:35.922 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:35.923 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(0, 0) | args: []
+2026-05-15 07:45:35.923 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_INSERT` AFTER INSERT ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:35.923 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_UPDATE` AFTER UPDATE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:35.924 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_DELETE` AFTER DELETE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:35.924 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:35.925 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:35.936 D/DeviceListViewModel Intent: PermissionsGranted
+2026-05-15 07:45:35.936 I/DeviceListViewModel PermissionsGranted
+2026-05-15 07:45:35.937 D/DeviceListViewModel Intent: StartScan
+2026-05-15 07:45:35.938 I/DeviceListViewModel StartScan
+2026-05-15 07:45:35.946 W/BluetoothSessionManager connect() failed for A1:26:82:26:18:52: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.947 W/BluetoothSessionManager connect() failed for C2:AB:11:34:5F:33: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.949 W/BluetoothSessionManager connect() failed for 08:52:4E:00:93:27: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.951 W/BluetoothSessionManager connect() failed for AE:42:D5:0C:FC:7E: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.952 W/BluetoothSessionManager connect() failed for C0:1C:6A:A7:DC:72: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.954 W/BluetoothSessionManager connect() failed for 74:16:69:88:68:DD: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.957 W/BluetoothSessionManager connect() failed for BE:59:4A:00:D0:9B: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.958 W/BluetoothSessionManager connect() failed for 00:76:24:59:17:B8: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.959 W/BluetoothSessionManager connect() failed for 78:20:2E:03:71:40: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:35.995 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:45:36.018 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:45:36.021 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:45:36.022 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:36.022 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:36.022 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_INSERT` | args: []
+2026-05-15 07:45:36.023 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_UPDATE` | args: []
+2026-05-15 07:45:36.024 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_DELETE` | args: []
+2026-05-15 07:45:36.024 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:36.024 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(1, 0) | args: []
+2026-05-15 07:45:36.025 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_INSERT` AFTER INSERT ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:36.025 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_UPDATE` AFTER UPDATE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:36.026 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_DELETE` AFTER DELETE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:36.026 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(4, 0) | args: []
+2026-05-15 07:45:36.026 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_chat_group_INSERT` AFTER INSERT ON `chat_group` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 4 AND invalidated = 0; END | args: []
+2026-05-15 07:45:36.027 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_chat_group_UPDATE` AFTER UPDATE ON `chat_group` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 4 AND invalidated = 0; END | args: []
+2026-05-15 07:45:36.027 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_chat_group_DELETE` AFTER DELETE ON `chat_group` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 4 AND invalidated = 0; END | args: []
+2026-05-15 07:45:36.028 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:36.028 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:36.029 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(5, 0) | args: []
+2026-05-15 07:45:36.029 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_group_member_INSERT` AFTER INSERT ON `group_member` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 5 AND invalidated = 0; END | args: []
+2026-05-15 07:45:36.031 D/Room SQL: 
+        SELECT macAddress AS macAddress, COUNT(*) AS unreadCount
+        FROM messages
+        WHERE isOutgoing = 0 AND isRead = 0
+        GROUP BY macAddress
+         | args: []
+2026-05-15 07:45:36.032 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_group_member_UPDATE` AFTER UPDATE ON `group_member` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 5 AND invalidated = 0; END | args: []
+2026-05-15 07:45:36.032 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_group_member_DELETE` AFTER DELETE ON `group_member` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 5 AND invalidated = 0; END | args: []
+2026-05-15 07:45:36.033 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:36.033 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:36.034 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(0, 0) | args: []
+2026-05-15 07:45:36.035 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_INSERT` AFTER INSERT ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:36.035 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_UPDATE` AFTER UPDATE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:36.035 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_DELETE` AFTER DELETE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:36.036 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:36.036 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:36.041 D/Navigation Route: com.example.bluewave_mobile.ui.navigation.DeviceListRoute
+2026-05-15 07:45:36.047 W/BluetoothSessionManager connect() failed for A1:26:82:26:18:52: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:36.056 W/BluetoothSessionManager connect() failed for AE:42:D5:0C:FC:7E: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:36.058 W/BluetoothSessionManager connect() failed for C2:AB:11:34:5F:33: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:36.060 W/BluetoothSessionManager connect() failed for BE:59:4A:00:D0:9B: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:36.062 W/BluetoothSessionManager connect() failed for 00:76:24:59:17:B8: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:36.063 W/BluetoothSessionManager connect() failed for C0:1C:6A:A7:DC:72: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:36.064 W/BluetoothSessionManager connect() failed for 74:16:69:88:68:DD: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:36.066 W/BluetoothSessionManager connect() failed for 08:52:4E:00:93:27: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:36.068 W/BluetoothSessionManager connect() failed for 78:20:2E:03:71:40: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:36.079 D/Room SQL: SELECT * FROM chat_group ORDER BY createdAt DESC | args: []
+2026-05-15 07:45:36.079 D/Room SQL: SELECT * FROM peer_profile | args: []
+2026-05-15 07:45:36.080 D/Room SQL: SELECT * FROM group_member ORDER BY joinedAt ASC | args: []
+2026-05-15 07:45:36.081 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:45:36.082 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:45:36.489 D/BluetoothSessionManager Server socket closed: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:37.089 D/DeviceListViewModel Intent: DeviceSelected(macAddress=C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:37.089 I/DeviceListViewModel DeviceSelected: C0:1C:6A:A7:DC:72
+2026-05-15 07:45:37.090 I/Navigation Navigate to chat: C0:1C:6A:A7:DC:72
+2026-05-15 07:45:37.108 D/Navigation Screen: DeviceList
+2026-05-15 07:45:37.117 D/Navigation Screen: DeviceList
+2026-05-15 07:45:37.131 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:37.132 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_INSERT` | args: []
+2026-05-15 07:45:37.132 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_UPDATE` | args: []
+2026-05-15 07:45:37.132 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_DELETE` | args: []
+2026-05-15 07:45:37.132 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_peer_profile_INSERT` | args: []
+2026-05-15 07:45:37.133 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_peer_profile_UPDATE` | args: []
+2026-05-15 07:45:37.133 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_peer_profile_DELETE` | args: []
+2026-05-15 07:45:37.133 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_chat_group_INSERT` | args: []
+2026-05-15 07:45:37.133 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_chat_group_UPDATE` | args: []
+2026-05-15 07:45:37.133 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_chat_group_DELETE` | args: []
+2026-05-15 07:45:37.133 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_group_member_INSERT` | args: []
+2026-05-15 07:45:37.133 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_group_member_UPDATE` | args: []
+2026-05-15 07:45:37.134 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_group_member_DELETE` | args: []
+2026-05-15 07:45:37.134 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:37.134 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:37.134 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:37.134 D/Room SQL: UPDATE messages SET isRead = 1 WHERE macAddress = ? AND isOutgoing = 0 AND isRead = 0 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:37.135 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:37.135 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:37.135 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:37.135 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:45:37.135 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:37.135 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:37.136 D/Navigation Route: com.example.bluewave_mobile.ui.navigation.ChatRoute/{deviceMac}
+2026-05-15 07:45:37.143 D/Navigation Screen: DeviceList
+2026-05-15 07:45:37.148 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:37.156 I/ChatViewModel Init for C0:1C:6A:A7:DC:72
+2026-05-15 07:45:37.273 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:37.273 D/Room SQL: UPDATE messages SET isRead = 1 WHERE macAddress = ? AND isOutgoing = 0 AND isRead = 0 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:37.274 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:37.274 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:37.274 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:37.274 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:45:37.275 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:37.275 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:37.275 W/BluetoothSessionManager connect() failed for C0:1C:6A:A7:DC:72: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:37.276 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:37.276 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(0, 0) | args: []
+2026-05-15 07:45:37.276 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_INSERT` AFTER INSERT ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:37.276 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:37.276 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_UPDATE` AFTER UPDATE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:37.277 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_DELETE` AFTER DELETE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:37.277 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:37.277 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:37.277 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:37.277 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:37.277 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(1, 0) | args: []
+2026-05-15 07:45:37.277 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_INSERT` AFTER INSERT ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:37.278 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_UPDATE` AFTER UPDATE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:37.278 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_DELETE` AFTER DELETE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:37.278 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:37.278 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:37.284 D/Room SQL: SELECT * FROM peer_profile WHERE macAddress = ? LIMIT 1 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:37.856 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:37.891 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:39.386 I/BlueWaveLogger Logger initialised. File: /data/user/0/com.example.bluewave_mobile/files/logs/bluewave.log
+2026-05-15 07:45:39.478 D/Lifecycle onCreate: MainActivity
+2026-05-15 07:45:39.479 D/MainActivity onCreate
+2026-05-15 07:45:39.533 D/Lifecycle onStart: MainActivity
+2026-05-15 07:45:39.538 D/Lifecycle onResume: MainActivity
+2026-05-15 07:45:39.643 W/BluetoothSessionManager connect() failed for AE:42:D5:0C:FC:7E: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:39.646 W/BluetoothSessionManager connect() failed for C2:AB:11:34:5F:33: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:39.647 W/BluetoothSessionManager connect() failed for A1:26:82:26:18:52: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:39.651 W/BluetoothSessionManager connect() failed for BE:59:4A:00:D0:9B: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:39.652 W/BluetoothSessionManager connect() failed for 74:16:69:88:68:DD: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:39.653 W/BluetoothSessionManager connect() failed for C0:1C:6A:A7:DC:72: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:39.655 W/BluetoothSessionManager connect() failed for 00:76:24:59:17:B8: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:39.658 W/BluetoothSessionManager connect() failed for 08:52:4E:00:93:27: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:39.659 W/BluetoothSessionManager connect() failed for 78:20:2E:03:71:40: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:39.765 D/EnsureBluetoothEnabled ON_RESUME probe
+2026-05-15 07:45:39.908 D/Navigation Screen: DeviceList
+2026-05-15 07:45:39.913 I/DeviceListViewModel Init
+2026-05-15 07:45:39.922 W/BluetoothSessionManager connect() failed for C2:AB:11:34:5F:33: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:39.924 W/BluetoothSessionManager connect() failed for A1:26:82:26:18:52: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:39.926 W/BluetoothSessionManager connect() failed for AE:42:D5:0C:FC:7E: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:39.927 W/BluetoothSessionManager connect() failed for 08:52:4E:00:93:27: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:39.931 W/BluetoothSessionManager connect() failed for C0:1C:6A:A7:DC:72: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:39.932 W/BluetoothSessionManager connect() failed for BE:59:4A:00:D0:9B: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:39.933 W/BluetoothSessionManager connect() failed for 74:16:69:88:68:DD: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:39.933 W/BluetoothSessionManager connect() failed for 00:76:24:59:17:B8: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:39.934 W/BluetoothSessionManager connect() failed for 78:20:2E:03:71:40: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:40.150 D/Room SQL: SELECT COUNT(*) FROM chat_folder WHERE builtInKey IN (?,?) | args: [WORK, FAMILY]
+2026-05-15 07:45:40.151 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:40.151 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(0, 0) | args: []
+2026-05-15 07:45:40.151 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_INSERT` AFTER INSERT ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:40.152 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_UPDATE` AFTER UPDATE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:40.152 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_DELETE` AFTER DELETE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:40.152 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:40.153 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:40.164 D/DeviceListViewModel Intent: PermissionsGranted
+2026-05-15 07:45:40.164 I/DeviceListViewModel PermissionsGranted
+2026-05-15 07:45:40.165 D/DeviceListViewModel Intent: StartScan
+2026-05-15 07:45:40.166 I/DeviceListViewModel StartScan
+2026-05-15 07:45:40.168 W/BluetoothSessionManager connect() failed for C2:AB:11:34:5F:33: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:40.170 W/BluetoothSessionManager connect() failed for A1:26:82:26:18:52: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:40.171 W/BluetoothSessionManager connect() failed for C0:1C:6A:A7:DC:72: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:40.173 W/BluetoothSessionManager connect() failed for BE:59:4A:00:D0:9B: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:40.173 W/BluetoothSessionManager connect() failed for AE:42:D5:0C:FC:7E: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:40.176 W/BluetoothSessionManager connect() failed for 08:52:4E:00:93:27: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:40.178 W/BluetoothSessionManager connect() failed for 74:16:69:88:68:DD: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:40.182 W/BluetoothSessionManager connect() failed for 00:76:24:59:17:B8: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:40.184 W/BluetoothSessionManager connect() failed for 78:20:2E:03:71:40: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:40.245 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:45:40.245 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:45:40.248 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:45:40.248 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:40.249 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_INSERT` | args: []
+2026-05-15 07:45:40.249 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_UPDATE` | args: []
+2026-05-15 07:45:40.250 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:40.251 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_DELETE` | args: []
+2026-05-15 07:45:40.252 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(1, 0) | args: []
+2026-05-15 07:45:40.252 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_INSERT` AFTER INSERT ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:40.253 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_UPDATE` AFTER UPDATE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:40.253 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_DELETE` AFTER DELETE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:40.253 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(4, 0) | args: []
+2026-05-15 07:45:40.254 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_chat_group_INSERT` AFTER INSERT ON `chat_group` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 4 AND invalidated = 0; END | args: []
+2026-05-15 07:45:40.254 D/Room SQL: 
+        SELECT macAddress AS macAddress, COUNT(*) AS unreadCount
+        FROM messages
+        WHERE isOutgoing = 0 AND isRead = 0
+        GROUP BY macAddress
+         | args: []
+2026-05-15 07:45:40.254 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_chat_group_UPDATE` AFTER UPDATE ON `chat_group` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 4 AND invalidated = 0; END | args: []
+2026-05-15 07:45:40.255 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_chat_group_DELETE` AFTER DELETE ON `chat_group` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 4 AND invalidated = 0; END | args: []
+2026-05-15 07:45:40.256 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:40.257 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:40.258 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(0, 0) | args: []
+2026-05-15 07:45:40.260 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_INSERT` AFTER INSERT ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:40.261 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_UPDATE` AFTER UPDATE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:40.261 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_DELETE` AFTER DELETE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:40.262 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(5, 0) | args: []
+2026-05-15 07:45:40.262 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_group_member_INSERT` AFTER INSERT ON `group_member` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 5 AND invalidated = 0; END | args: []
+2026-05-15 07:45:40.263 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_group_member_UPDATE` AFTER UPDATE ON `group_member` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 5 AND invalidated = 0; END | args: []
+2026-05-15 07:45:40.263 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_group_member_DELETE` AFTER DELETE ON `group_member` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 5 AND invalidated = 0; END | args: []
+2026-05-15 07:45:40.264 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:40.264 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:40.269 D/Navigation Route: com.example.bluewave_mobile.ui.navigation.DeviceListRoute
+2026-05-15 07:45:40.279 W/BluetoothSessionManager connect() failed for A1:26:82:26:18:52: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:40.284 W/BluetoothSessionManager connect() failed for C2:AB:11:34:5F:33: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:40.287 W/BluetoothSessionManager connect() failed for 08:52:4E:00:93:27: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:40.288 W/BluetoothSessionManager connect() failed for AE:42:D5:0C:FC:7E: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:40.294 W/BluetoothSessionManager connect() failed for 00:76:24:59:17:B8: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:40.294 W/BluetoothSessionManager connect() failed for C0:1C:6A:A7:DC:72: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:40.295 W/BluetoothSessionManager connect() failed for BE:59:4A:00:D0:9B: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:40.296 W/BluetoothSessionManager connect() failed for 74:16:69:88:68:DD: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:40.298 W/BluetoothSessionManager connect() failed for 78:20:2E:03:71:40: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:40.304 D/Room SQL: SELECT * FROM group_member ORDER BY joinedAt ASC | args: []
+2026-05-15 07:45:40.305 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:45:40.307 D/Room SQL: SELECT * FROM peer_profile | args: []
+2026-05-15 07:45:40.308 D/Room SQL: SELECT * FROM chat_group ORDER BY createdAt DESC | args: []
+2026-05-15 07:45:40.310 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:45:41.549 D/DeviceListViewModel Intent: DeviceSelected(macAddress=C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:41.549 I/DeviceListViewModel DeviceSelected: C0:1C:6A:A7:DC:72
+2026-05-15 07:45:41.550 I/Navigation Navigate to chat: C0:1C:6A:A7:DC:72
+2026-05-15 07:45:41.568 D/Navigation Screen: DeviceList
+2026-05-15 07:45:41.576 D/Navigation Screen: DeviceList
+2026-05-15 07:45:41.591 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:41.591 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_INSERT` | args: []
+2026-05-15 07:45:41.591 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_UPDATE` | args: []
+2026-05-15 07:45:41.592 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_DELETE` | args: []
+2026-05-15 07:45:41.592 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_peer_profile_INSERT` | args: []
+2026-05-15 07:45:41.592 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_peer_profile_UPDATE` | args: []
+2026-05-15 07:45:41.592 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_peer_profile_DELETE` | args: []
+2026-05-15 07:45:41.592 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_chat_group_INSERT` | args: []
+2026-05-15 07:45:41.592 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_chat_group_UPDATE` | args: []
+2026-05-15 07:45:41.592 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_chat_group_DELETE` | args: []
+2026-05-15 07:45:41.593 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_group_member_INSERT` | args: []
+2026-05-15 07:45:41.593 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_group_member_UPDATE` | args: []
+2026-05-15 07:45:41.593 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_group_member_DELETE` | args: []
+2026-05-15 07:45:41.593 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:41.593 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:41.593 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:41.593 D/Room SQL: UPDATE messages SET isRead = 1 WHERE macAddress = ? AND isOutgoing = 0 AND isRead = 0 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:41.594 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:41.594 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:41.594 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:41.594 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:45:41.594 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:41.594 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:41.595 D/Navigation Route: com.example.bluewave_mobile.ui.navigation.ChatRoute/{deviceMac}
+2026-05-15 07:45:41.602 D/Navigation Screen: DeviceList
+2026-05-15 07:45:41.606 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:41.614 I/ChatViewModel Init for C0:1C:6A:A7:DC:72
+2026-05-15 07:45:41.738 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:41.738 D/Room SQL: UPDATE messages SET isRead = 1 WHERE macAddress = ? AND isOutgoing = 0 AND isRead = 0 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:41.739 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:41.739 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:41.739 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:41.739 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:45:41.740 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:41.740 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:41.740 W/BluetoothSessionManager connect() failed for C0:1C:6A:A7:DC:72: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:41.740 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:41.741 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(0, 0) | args: []
+2026-05-15 07:45:41.741 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_INSERT` AFTER INSERT ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:41.741 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_UPDATE` AFTER UPDATE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:41.741 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:41.742 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_DELETE` AFTER DELETE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:41.742 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:41.742 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:41.742 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:41.742 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:41.742 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(1, 0) | args: []
+2026-05-15 07:45:41.743 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_INSERT` AFTER INSERT ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:41.743 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_UPDATE` AFTER UPDATE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:41.743 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_DELETE` AFTER DELETE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:41.743 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:41.743 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:41.748 D/Room SQL: SELECT * FROM peer_profile WHERE macAddress = ? LIMIT 1 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:42.315 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:42.349 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:44.318 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:44.350 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:44.370 D/Navigation Route: com.example.bluewave_mobile.ui.navigation.DeviceListRoute
+2026-05-15 07:45:44.377 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:44.379 D/Navigation Screen: DeviceList
+2026-05-15 07:45:45.083 D/Navigation Screen: DeviceList
+2026-05-15 07:45:45.126 D/Navigation Screen: DeviceList
+2026-05-15 07:45:45.197 D/BluetoothSessionManager Server socket closed: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:45.330 D/DeviceListViewModel Intent: StartScan
+2026-05-15 07:45:45.331 I/DeviceListViewModel StartScan
+2026-05-15 07:45:45.396 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:45.398 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_INSERT` | args: []
+2026-05-15 07:45:45.398 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_UPDATE` | args: []
+2026-05-15 07:45:45.399 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_DELETE` | args: []
+2026-05-15 07:45:45.399 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(4, 0) | args: []
+2026-05-15 07:45:45.400 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_chat_group_INSERT` AFTER INSERT ON `chat_group` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 4 AND invalidated = 0; END | args: []
+2026-05-15 07:45:45.400 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_chat_group_UPDATE` AFTER UPDATE ON `chat_group` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 4 AND invalidated = 0; END | args: []
+2026-05-15 07:45:45.401 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_chat_group_DELETE` AFTER DELETE ON `chat_group` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 4 AND invalidated = 0; END | args: []
+2026-05-15 07:45:45.401 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(5, 0) | args: []
+2026-05-15 07:45:45.402 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_group_member_INSERT` AFTER INSERT ON `group_member` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 5 AND invalidated = 0; END | args: []
+2026-05-15 07:45:45.402 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_group_member_UPDATE` AFTER UPDATE ON `group_member` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 5 AND invalidated = 0; END | args: []
+2026-05-15 07:45:45.402 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_group_member_DELETE` AFTER DELETE ON `group_member` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 5 AND invalidated = 0; END | args: []
+2026-05-15 07:45:45.403 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:45.403 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:45.404 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:45.404 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(0, 0) | args: []
+2026-05-15 07:45:45.404 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_INSERT` AFTER INSERT ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:45.405 D/Room SQL: 
+        SELECT macAddress AS macAddress, COUNT(*) AS unreadCount
+        FROM messages
+        WHERE isOutgoing = 0 AND isRead = 0
+        GROUP BY macAddress
+         | args: []
+2026-05-15 07:45:45.406 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_UPDATE` AFTER UPDATE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:45.406 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_DELETE` AFTER DELETE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:45.406 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:45.406 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:45.407 D/Room SQL: SELECT * FROM chat_group ORDER BY createdAt DESC | args: []
+2026-05-15 07:45:45.408 D/Room SQL: SELECT * FROM group_member ORDER BY joinedAt ASC | args: []
+2026-05-15 07:45:45.411 D/Room SQL: SELECT * FROM peer_profile | args: []
+2026-05-15 07:45:45.412 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:45:45.953 D/DeviceListViewModel Intent: DeviceSelected(macAddress=C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:45.954 I/DeviceListViewModel DeviceSelected: C0:1C:6A:A7:DC:72
+2026-05-15 07:45:45.955 I/Navigation Navigate to chat: C0:1C:6A:A7:DC:72
+2026-05-15 07:45:45.970 D/Navigation Screen: DeviceList
+2026-05-15 07:45:45.979 D/Navigation Screen: DeviceList
+2026-05-15 07:45:45.993 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:45.994 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_INSERT` | args: []
+2026-05-15 07:45:45.994 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_UPDATE` | args: []
+2026-05-15 07:45:45.994 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_DELETE` | args: []
+2026-05-15 07:45:45.994 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_peer_profile_INSERT` | args: []
+2026-05-15 07:45:45.995 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_peer_profile_UPDATE` | args: []
+2026-05-15 07:45:45.995 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_peer_profile_DELETE` | args: []
+2026-05-15 07:45:45.995 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_chat_group_INSERT` | args: []
+2026-05-15 07:45:45.995 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_chat_group_UPDATE` | args: []
+2026-05-15 07:45:45.995 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_chat_group_DELETE` | args: []
+2026-05-15 07:45:45.995 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_group_member_INSERT` | args: []
+2026-05-15 07:45:45.995 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_group_member_UPDATE` | args: []
+2026-05-15 07:45:45.995 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_group_member_DELETE` | args: []
+2026-05-15 07:45:45.996 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:45.996 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:45.996 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:45.996 D/Room SQL: UPDATE messages SET isRead = 1 WHERE macAddress = ? AND isOutgoing = 0 AND isRead = 0 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:45.996 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:45.996 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:45.996 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:45.997 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:45:45.997 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:45.997 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:45.997 D/Navigation Route: com.example.bluewave_mobile.ui.navigation.ChatRoute/{deviceMac}
+2026-05-15 07:45:46.003 D/Navigation Screen: DeviceList
+2026-05-15 07:45:46.006 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:46.010 I/ChatViewModel Init for C0:1C:6A:A7:DC:72
+2026-05-15 07:45:46.119 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:46.120 D/Room SQL: UPDATE messages SET isRead = 1 WHERE macAddress = ? AND isOutgoing = 0 AND isRead = 0 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:46.120 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:46.120 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:46.120 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:46.120 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:45:46.121 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:46.121 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:46.121 W/BluetoothSessionManager connect() failed for C0:1C:6A:A7:DC:72: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:46.121 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:46.122 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:46.122 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(0, 0) | args: []
+2026-05-15 07:45:46.122 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:45:46.122 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_INSERT` AFTER INSERT ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:46.122 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_UPDATE` AFTER UPDATE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:46.122 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_DELETE` AFTER DELETE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:45:46.122 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:46.123 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:46.123 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(1, 0) | args: []
+2026-05-15 07:45:46.123 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_INSERT` AFTER INSERT ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:46.124 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_UPDATE` AFTER UPDATE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:46.124 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_DELETE` AFTER DELETE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:45:46.124 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:45:46.124 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:45:46.125 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:46.130 D/Room SQL: SELECT * FROM peer_profile WHERE macAddress = ? LIMIT 1 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:45:46.721 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:46.756 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:48.287 D/BluetoothSessionManager Server socket closed: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:52.049 D/BluetoothSessionManager Server socket closed: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:45:54.419 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:45:57.306 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:57.334 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:57.352 D/Navigation Route: com.example.bluewave_mobile.ui.navigation.DeviceListRoute
+2026-05-15 07:45:57.358 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:45:57.360 D/Navigation Screen: DeviceList
+2026-05-15 07:45:58.073 D/Navigation Screen: DeviceList
+2026-05-15 07:45:58.115 D/Navigation Screen: DeviceList
+2026-05-15 07:46:06.561 D/BluetoothSessionManager Server socket closed: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:09.430 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:46:09.430 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_peer_profile_INSERT` | args: []
+2026-05-15 07:46:09.431 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_peer_profile_UPDATE` | args: []
+2026-05-15 07:46:09.431 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_peer_profile_DELETE` | args: []
+2026-05-15 07:46:09.431 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:46:09.432 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:46:09.433 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:46:09.527 W/BluetoothSessionManager connect() failed for A1:26:82:26:18:52: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:11.191 D/BluetoothSessionManager Server socket closed: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:11.193 W/BluetoothSessionManager connect() failed for C2:AB:11:34:5F:33: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:11.194 W/BluetoothSessionManager connect() failed for C0:1C:6A:A7:DC:72: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:11.195 W/BluetoothSessionManager connect() failed for AE:42:D5:0C:FC:7E: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:11.195 W/BluetoothSessionManager connect() failed for A1:26:82:26:18:52: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:11.196 W/BluetoothSessionManager connect() failed for AE:42:D5:0C:FC:7E: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:11.197 W/BluetoothSessionManager connect() failed for 08:52:4E:00:93:27: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:11.197 W/BluetoothSessionManager connect() failed for C0:1C:6A:A7:DC:72: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:11.198 W/BluetoothSessionManager connect() failed for 74:16:69:88:68:DD: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:11.198 W/BluetoothSessionManager connect() failed for 00:76:24:59:17:B8: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:11.199 W/BluetoothSessionManager connect() failed for 08:52:4E:00:93:27: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:11.200 W/BluetoothSessionManager connect() failed for 78:20:2E:03:71:40: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:11.200 W/BluetoothSessionManager connect() failed for 00:76:24:59:17:B8: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:11.201 W/BluetoothSessionManager connect() failed for C2:AB:11:34:5F:33: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:11.201 W/BluetoothSessionManager connect() failed for BE:59:4A:00:D0:9B: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:11.202 W/BluetoothSessionManager connect() failed for 78:20:2E:03:71:40: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:11.202 W/BluetoothSessionManager connect() failed for 74:16:69:88:68:DD: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:11.203 W/BluetoothSessionManager connect() failed for BE:59:4A:00:D0:9B: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:13.547 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:46:21.253 W/BluetoothSessionManager connect() failed for A1:26:82:26:18:52: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:23.030 D/Navigation Screen: DeviceList
+2026-05-15 07:46:23.041 D/Navigation Route: com.example.bluewave_mobile.ui.navigation.SettingsRoute
+2026-05-15 07:46:23.053 D/Navigation Screen: DeviceList
+2026-05-15 07:46:23.796 I/SettingsViewModel setBluetoothVisibility: OFF
+2026-05-15 07:46:24.062 I/SettingsViewModel setBluetoothVisibility: MIN_30
+2026-05-15 07:46:24.092 D/Lifecycle onPause: MainActivity
+2026-05-15 07:46:24.450 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:46:24.780 D/Lifecycle onResume: MainActivity
+2026-05-15 07:46:24.782 D/EnsureBluetoothEnabled ON_RESUME probe
+2026-05-15 07:46:25.933 D/Navigation Route: com.example.bluewave_mobile.ui.navigation.DeviceListRoute
+2026-05-15 07:46:25.944 D/Navigation Screen: DeviceList
+2026-05-15 07:46:26.670 D/Navigation Screen: DeviceList
+2026-05-15 07:46:26.700 D/Navigation Screen: DeviceList
+2026-05-15 07:46:27.120 D/DeviceListViewModel Intent: DeviceSelected(macAddress=C0:1C:6A:A7:DC:72)
+2026-05-15 07:46:27.121 I/DeviceListViewModel DeviceSelected: C0:1C:6A:A7:DC:72
+2026-05-15 07:46:27.123 I/Navigation Navigate to chat: C0:1C:6A:A7:DC:72
+2026-05-15 07:46:27.140 D/Navigation Screen: DeviceList
+2026-05-15 07:46:27.152 D/Navigation Screen: DeviceList
+2026-05-15 07:46:27.165 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:46:27.165 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_INSERT` | args: []
+2026-05-15 07:46:27.165 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_UPDATE` | args: []
+2026-05-15 07:46:27.166 D/Room SQL: DROP TRIGGER IF EXISTS `room_table_modification_trigger_messages_DELETE` | args: []
+2026-05-15 07:46:27.166 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:46:27.166 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:46:27.166 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:46:27.166 D/Room SQL: UPDATE messages SET isRead = 1 WHERE macAddress = ? AND isOutgoing = 0 AND isRead = 0 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:46:27.166 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:46:27.166 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:46:27.166 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:46:27.167 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:46:27.167 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:46:27.167 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:46:27.167 D/Navigation Route: com.example.bluewave_mobile.ui.navigation.ChatRoute/{deviceMac}
+2026-05-15 07:46:27.173 D/Navigation Screen: DeviceList
+2026-05-15 07:46:27.175 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:46:27.178 I/ChatViewModel Init for C0:1C:6A:A7:DC:72
+2026-05-15 07:46:27.269 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:46:27.270 D/Room SQL: UPDATE messages SET isRead = 1 WHERE macAddress = ? AND isOutgoing = 0 AND isRead = 0 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:46:27.270 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:46:27.270 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:46:27.270 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:46:27.271 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:46:27.271 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:46:27.271 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:46:27.272 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:46:27.272 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(0, 0) | args: []
+2026-05-15 07:46:27.273 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_INSERT` AFTER INSERT ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:46:27.273 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:46:27.273 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_UPDATE` AFTER UPDATE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:46:27.273 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_DELETE` AFTER DELETE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:46:27.273 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(1, 0) | args: []
+2026-05-15 07:46:27.274 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_INSERT` AFTER INSERT ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:46:27.274 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_UPDATE` AFTER UPDATE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:46:27.274 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_DELETE` AFTER DELETE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:46:27.274 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:46:27.274 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:46:27.274 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:46:27.277 D/Room SQL: SELECT * FROM peer_profile WHERE macAddress = ? LIMIT 1 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:46:27.535 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:46:27.536 D/Room SQL: INSERT OR REPLACE INTO `peer_profile` (`macAddress`,`displayName`,`handle`,`bio`,`avatarUri`,`updatedAt`) VALUES (?,?,?,?,?,?) | args: [C0:1C:6A:A7:DC:72, , , , , 1778820387534]
+2026-05-15 07:46:27.536 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:46:27.536 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:46:27.537 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:46:27.537 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:46:27.538 D/Room SQL: UPDATE room_table_modification_log SET invalidated = 0 WHERE invalidated = 1 | args: []
+2026-05-15 07:46:27.539 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:46:27.539 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:46:27.542 D/Room SQL: SELECT * FROM peer_profile WHERE macAddress = ? LIMIT 1 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:46:27.626 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:46:27.626 D/Room SQL: INSERT OR REPLACE INTO `peer_profile` (`macAddress`,`displayName`,`handle`,`bio`,`avatarUri`,`updatedAt`) VALUES (?,?,?,?,?,?) | args: [C0:1C:6A:A7:DC:72, , , , , 1778820387620]
+2026-05-15 07:46:27.627 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:46:27.627 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:46:27.628 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:46:27.629 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:46:27.634 D/Room SQL: UPDATE room_table_modification_log SET invalidated = 0 WHERE invalidated = 1 | args: []
+2026-05-15 07:46:27.635 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:46:27.635 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:46:27.637 D/Room SQL: SELECT * FROM peer_profile WHERE macAddress = ? LIMIT 1 | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:46:27.886 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:46:27.918 D/Navigation Screen: Chat(C0:1C:6A:A7:DC:72)
+2026-05-15 07:46:28.954 W/BluetoothSessionManager connect() failed for C2:AB:11:34:5F:33: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:29.255 D/ConnectedThread Read loop terminated: bt socket closed, read return: -1
+2026-05-15 07:46:39.475 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:46:41.845 W/BluetoothSessionManager connect() failed for AE:42:D5:0C:FC:7E: read failed, socket might closed or timeout, read ret: -1
+2026-05-15 07:46:45.326 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:46:45.327 D/Room SQL: INSERT OR REPLACE INTO `messages` (`id`,`macAddress`,`encryptedPayload`,`iv`,`timestamp`,`isOutgoing`,`senderName`,`isRead`,`deliveryStatus`,`messageUuid`,`attachmentPath`,`attachmentName`,`attachmentMimeType`,`attachmentSize`,`transferStatus`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?,?,?,?,?,?) | args: [0, C0:1C:6A:A7:DC:72, [B@2b49d97, [B@8b54b84, 1778820405326, 0, , 0, 0, c77a40d2-c68a-41ce-bd43-a8bd73e9d02b, /data/user/0/com.example.bluewave_mobile/files/media/inbound/c77a40d2-c68a-41ce-bd43-a8bd73e9d02b_Screenshot_20260514-180329.jpg, Screenshot_20260514-180329.jpg, image/jpeg, 89430, 2]
+2026-05-15 07:46:45.328 D/Room SQL: SELECT changes() | args: []
+2026-05-15 07:46:45.330 D/Room SQL: SELECT last_insert_rowid() | args: []
+2026-05-15 07:46:45.331 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:46:45.331 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:46:45.333 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:46:45.334 D/Room SQL: SELECT * FROM room_table_modification_log WHERE invalidated = 1 | args: []
+2026-05-15 07:46:45.335 D/Room SQL: UPDATE room_table_modification_log SET invalidated = 0 WHERE invalidated = 1 | args: []
+2026-05-15 07:46:45.335 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:46:45.336 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:46:45.337 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:46:45.338 D/Room SQL: SELECT * FROM messages WHERE macAddress = ? ORDER BY timestamp ASC | args: [C0:1C:6A:A7:DC:72]
+2026-05-15 07:46:50.847 I/BlueWaveLogger Logger initialised. File: /data/user/0/com.example.bluewave_mobile/files/logs/bluewave.log
+2026-05-15 07:46:50.932 D/Lifecycle onCreate: MainActivity
+2026-05-15 07:46:50.933 D/MainActivity onCreate
+2026-05-15 07:46:50.969 D/Lifecycle onStart: MainActivity
+2026-05-15 07:46:50.977 D/Lifecycle onResume: MainActivity
+2026-05-15 07:46:51.225 D/EnsureBluetoothEnabled ON_RESUME probe
+2026-05-15 07:46:51.366 D/Navigation Screen: DeviceList
+2026-05-15 07:46:51.371 I/DeviceListViewModel Init
+2026-05-15 07:46:51.644 D/Room SQL: SELECT COUNT(*) FROM chat_folder WHERE builtInKey IN (?,?) | args: [WORK, FAMILY]
+2026-05-15 07:46:51.645 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:46:51.646 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(0, 0) | args: []
+2026-05-15 07:46:51.646 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_INSERT` AFTER INSERT ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:46:51.647 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_UPDATE` AFTER UPDATE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:46:51.647 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_messages_DELETE` AFTER DELETE ON `messages` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 0 AND invalidated = 0; END | args: []
+2026-05-15 07:46:51.647 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:46:51.647 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:46:51.657 D/DeviceListViewModel Intent: PermissionsGranted
+2026-05-15 07:46:51.658 I/DeviceListViewModel PermissionsGranted
+2026-05-15 07:46:51.659 D/DeviceListViewModel Intent: StartScan
+2026-05-15 07:46:51.659 I/DeviceListViewModel StartScan
+2026-05-15 07:46:51.678 W/BluetoothSessionManager connect() failed for 78:20:2E:03:71:40: bt socket connect failed
+2026-05-15 07:46:51.679 W/BluetoothSessionManager connect() failed for 00:76:24:59:17:B8: bt socket connect failed
+2026-05-15 07:46:51.720 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:46:51.743 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:46:51.747 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:46:51.747 D/Room SQL: BEGIN IMMEDIATE TRANSACTION | args: []
+2026-05-15 07:46:51.748 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(1, 0) | args: []
+2026-05-15 07:46:51.750 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_INSERT` AFTER INSERT ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:46:51.750 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_UPDATE` AFTER UPDATE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:46:51.751 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_peer_profile_DELETE` AFTER DELETE ON `peer_profile` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 1 AND invalidated = 0; END | args: []
+2026-05-15 07:46:51.751 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(4, 0) | args: []
+2026-05-15 07:46:51.751 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_chat_group_INSERT` AFTER INSERT ON `chat_group` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 4 AND invalidated = 0; END | args: []
+2026-05-15 07:46:51.752 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_chat_group_UPDATE` AFTER UPDATE ON `chat_group` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 4 AND invalidated = 0; END | args: []
+2026-05-15 07:46:51.752 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_chat_group_DELETE` AFTER DELETE ON `chat_group` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 4 AND invalidated = 0; END | args: []
+2026-05-15 07:46:51.753 D/Room SQL: INSERT OR IGNORE INTO room_table_modification_log VALUES(5, 0) | args: []
+2026-05-15 07:46:51.753 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_group_member_INSERT` AFTER INSERT ON `group_member` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 5 AND invalidated = 0; END | args: []
+2026-05-15 07:46:51.753 D/Room SQL: 
+        SELECT macAddress AS macAddress, COUNT(*) AS unreadCount
+        FROM messages
+        WHERE isOutgoing = 0 AND isRead = 0
+        GROUP BY macAddress
+         | args: []
+2026-05-15 07:46:51.754 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_group_member_UPDATE` AFTER UPDATE ON `group_member` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 5 AND invalidated = 0; END | args: []
+2026-05-15 07:46:51.754 D/Room SQL: CREATE TEMP TRIGGER IF NOT EXISTS `room_table_modification_trigger_group_member_DELETE` AFTER DELETE ON `group_member` BEGIN UPDATE room_table_modification_log SET invalidated = 1 WHERE table_id = 5 AND invalidated = 0; END | args: []
+2026-05-15 07:46:51.757 D/Room SQL: TRANSACTION SUCCESSFUL | args: []
+2026-05-15 07:46:51.757 D/Room SQL: END TRANSACTION | args: []
+2026-05-15 07:46:51.763 D/Navigation Route: com.example.bluewave_mobile.ui.navigation.DeviceListRoute
+2026-05-15 07:46:51.786 W/BluetoothSessionManager connect() failed for C0:1C:6A:A7:DC:72: bt socket connect failed
+2026-05-15 07:46:51.789 W/BluetoothSessionManager connect() failed for AE:42:D5:0C:FC:7E: bt socket connect failed
+2026-05-15 07:46:51.790 W/BluetoothSessionManager connect() failed for A1:26:82:26:18:52: bt socket connect failed
+2026-05-15 07:46:51.793 W/BluetoothSessionManager connect() failed for 08:52:4E:00:93:27: bt socket connect failed
+2026-05-15 07:46:51.794 W/BluetoothSessionManager connect() failed for 00:76:24:59:17:B8: bt socket connect failed
+2026-05-15 07:46:51.795 W/BluetoothSessionManager connect() failed for 78:20:2E:03:71:40: bt socket connect failed
+2026-05-15 07:46:51.797 W/BluetoothSessionManager connect() failed for C2:AB:11:34:5F:33: bt socket connect failed
+2026-05-15 07:46:51.798 W/BluetoothSessionManager connect() failed for BE:59:4A:00:D0:9B: bt socket connect failed
+2026-05-15 07:46:51.799 W/BluetoothSessionManager connect() failed for 74:16:69:88:68:DD: bt socket connect failed
+2026-05-15 07:46:51.806 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:46:51.807 D/Room SQL: SELECT * FROM group_member ORDER BY joinedAt ASC | args: []
+2026-05-15 07:46:51.807 D/Room SQL: SELECT * FROM peer_profile | args: []
+2026-05-15 07:46:51.808 D/Room SQL: SELECT * FROM chat_group ORDER BY createdAt DESC | args: []
+2026-05-15 07:46:51.810 D/Room SQL: 
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+         | args: []
+2026-05-15 07:46:53.473 D/Navigation Screen: DeviceList
+2026-05-15 07:46:53.477 D/Navigation Route: com.example.bluewave_mobile.ui.navigation.SettingsRoute
+2026-05-15 07:46:53.487 D/Navigation Screen: DeviceList
+2026-05-15 07:46:54.350 I/Settings User requested log export
