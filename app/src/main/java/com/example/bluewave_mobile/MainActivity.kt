@@ -1,7 +1,7 @@
 package com.example.bluewave_mobile
 
-import android.app.Activity
 import android.bluetooth.BluetoothAdapter
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,7 +9,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -41,78 +40,56 @@ import com.example.bluewave_mobile.ui.components.TwoPaneLayout
 import com.example.bluewave_mobile.ui.navigation.MainScaffold
 import com.example.bluewave_mobile.ui.screens.ChatScreen
 import com.example.bluewave_mobile.ui.screens.DeviceListScreen
+import com.example.bluewave_mobile.ui.screens.GroupChatScreen
 import com.example.bluewave_mobile.ui.theme.BlueWaveTheme
+import com.example.bluewave_mobile.utils.BlueWaveLogger
+import com.example.bluewave_mobile.utils.LocaleHelper
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        val prefs = (newBase.applicationContext as BlueWaveApplication)
+            .container.userPreferencesRepository
+        val appLanguage = try {
+            runBlocking { prefs.appLanguage.first() }
+        } catch (_: Exception) {
+            AppLanguage.SYSTEM
+        }
+        super.attachBaseContext(LocaleHelper.wrapContext(newBase, appLanguage))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        BlueWaveLogger.d("MainActivity", "onCreate")
         enableEdgeToEdge()
 
-        // Apply the persisted language preference *before* the first
-        // composition runs so every `stringResource()` lookup reads
-        // from the right `values-*` bundle. We block on the first
-        // emission of the preferences flow because the call is local
-        // file I/O — typically <1ms — and skipping it here would
-        // cause a one-frame flash of the system locale.
         val prefs = (applicationContext as BlueWaveApplication).container.userPreferencesRepository
-        applyPersistedLanguage(prefs)
 
         setContent {
-            // Re-read theme + language reactively so the user can
-            // change either from the Settings screen and have the
-            // effect propagate without an app restart.
             val themeMode by prefs.themeMode.collectAsStateWithLifecycle(initialValue = ThemeMode.SYSTEM)
             val appLanguage by prefs.appLanguage.collectAsStateWithLifecycle(initialValue = AppLanguage.SYSTEM)
             val context = LocalContext.current
 
-            // BlueWave is fundamentally a Bluetooth messenger — if
-            // the user's adapter is off, the entire app degrades to
-            // a local message-history viewer. We prompt the system
-            // ACTION_REQUEST_ENABLE dialog as soon as the user
-            // returns to the foreground with the adapter off, then
-            // again on every subsequent ON_RESUME (e.g. user toggled
-            // BT off in quick settings while inside the app). We
-            // never auto-loop on the dialog dismissal: the user gets
-            // to deny it for the current session, and the next
-            // ON_RESUME edge will re-ask.
-            //
-            // Note: launching the system intent does NOT require
-            // BLUETOOTH_CONNECT runtime permission on API 33+ —
-            // the launcher is a SystemUI activity, so we don't have
-            // to chain it behind PermissionGateView.
             EnsureBluetoothEnabled()
-            OneTimeBluetoothVisibilityPrompt(prefs)
 
-            // Drive the per-app locale picker. The activity is a
-            // `ComponentActivity`, not an `AppCompatActivity`, so
-            // `AppCompatDelegate.setApplicationLocales` does NOT
-            // auto-recreate the window for us — we have to call
-            // [Activity.recreate] ourselves so every
-            // `stringResource()` re-resolves against the new
-            // `values-*` bundle.
-            //
-            // The guard compares against
-            // [AppCompatDelegate.getApplicationLocales] (not against
-            // a remembered Compose state) because Compose state is
-            // wiped on every recreate. If we keyed off remembered
-            // state, the first DataStore replay after a recreate
-            // would re-trigger `recreate()` and the activity would
-            // get stuck in an infinite recreation loop — that's the
-            // "приложение лагает / нужно переустанавливать"
-            // regression we saw on the live phone. Querying the
-            // delegate is the source of truth across recreates: it
-            // is already up to date by the time we run because
-            // `applyPersistedLanguage` ran synchronously in
-            // `onCreate` before `setContent`.
+            // When the user picks a different language we restart the
+            // task cleanly instead of recreating the activity.
+            // `LocaleHelper.wrapContext` in `attachBaseContext` will
+            // pick the new value up on the fresh start.
             LaunchedEffect(appLanguage) {
-                val desired = appLanguage.toLocaleList()
-                if (AppCompatDelegate.getApplicationLocales() == desired) return@LaunchedEffect
-                AppCompatDelegate.setApplicationLocales(desired)
-                (context as? Activity)?.recreate()
+                val currentLocale = context.resources.configuration.locales.get(0)
+                val desiredLocale = when (appLanguage) {
+                    AppLanguage.ENGLISH -> java.util.Locale.forLanguageTag("en")
+                    AppLanguage.RUSSIAN -> java.util.Locale.forLanguageTag("ru")
+                    AppLanguage.SYSTEM -> java.util.Locale.getDefault()
+                }
+                if (currentLocale.language == desiredLocale.language) return@LaunchedEffect
+                val intent = Intent(context, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                context.startActivity(intent)
             }
 
             BlueWaveTheme(themeMode = themeMode) {
@@ -126,21 +103,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    /**
-     * Read the persisted [AppLanguage] once, on the main thread,
-     * and feed it into [AppCompatDelegate.setApplicationLocales].
-     *
-     * `runBlocking` is intentional: Compose has not started yet,
-     * the read is on the cached DataStore disk-thread (kept warm
-     * by the property delegate at process start), and skipping
-     * this synchronous prime would cause the wrong-locale flash
-     * mentioned above.
-     */
-    private fun applyPersistedLanguage(prefs: UserPreferencesRepository) {
-        val initial = runBlocking { prefs.appLanguage.first() }
-        AppCompatDelegate.setApplicationLocales(initial.toLocaleList())
     }
 }
 
@@ -161,22 +123,41 @@ fun AdaptiveAppRoot() {
         val info = AdaptiveWindowInfo(widthDp = maxWidth, heightDp = maxHeight)
         if (info.isExpandedWidth) {
             var selectedMac: String? by rememberSaveable { mutableStateOf<String?>(null) }
+            var selectedGroupId: String? by rememberSaveable { mutableStateOf<String?>(null) }
             TwoPaneLayout(
                 primary = {
                     DeviceListScreen(
-                        onDeviceClick = { mac -> selectedMac = mac },
+                        onDeviceClick = { mac ->
+                            selectedMac = mac
+                            selectedGroupId = null
+                        },
+                        onGroupClick = { groupId ->
+                            selectedGroupId = groupId
+                            selectedMac = null
+                        },
                     )
                 },
                 secondary = {
-                    val mac = selectedMac
-                    if (mac == null) {
-                        EmptyStateView(
-                            icon = Icons.AutoMirrored.Filled.Chat,
-                            title = stringResource(id = R.string.chat_no_selection_title),
-                            message = stringResource(id = R.string.chat_no_selection_message),
-                        )
-                    } else {
-                        ChatScreen(deviceMac = mac)
+                    when {
+                        selectedGroupId != null -> {
+                            GroupChatScreen(
+                                groupId = selectedGroupId!!,
+                                onBack = { selectedGroupId = null },
+                            )
+                        }
+                        selectedMac != null -> {
+                            ChatScreen(
+                                deviceMac = selectedMac!!,
+                                onBack = { selectedMac = null },
+                            )
+                        }
+                        else -> {
+                            EmptyStateView(
+                                icon = Icons.AutoMirrored.Filled.Chat,
+                                title = stringResource(id = R.string.chat_no_selection_title),
+                                message = stringResource(id = R.string.chat_no_selection_message),
+                            )
+                        }
                     }
                 },
             )
@@ -235,15 +216,18 @@ private fun EnsureBluetoothEnabled() {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_RESUME -> {
+                    BlueWaveLogger.d("EnsureBluetoothEnabled", "ON_RESUME probe")
                     if (adapter == null) return@LifecycleEventObserver
                     if (alreadyPromptedThisResume) return@LifecycleEventObserver
                     if (adapter.isEnabled) return@LifecycleEventObserver
+                    BlueWaveLogger.i("EnsureBluetoothEnabled", "Bluetooth off — launching enable dialog")
                     alreadyPromptedThisResume = true
                     runCatching {
                         enableLauncher.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
                     }
                 }
                 Lifecycle.Event.ON_STOP -> {
+                    BlueWaveLogger.d("EnsureBluetoothEnabled", "ON_STOP")
                     alreadyPromptedThisResume = false
                 }
                 else -> Unit
@@ -254,26 +238,4 @@ private fun EnsureBluetoothEnabled() {
     }
 }
 
-/**
- * One-time side-effect that requests Bluetooth discoverability
- * on the very first app launch. Subsequent launches skip the
- * prompt — the user manages visibility from Settings.
- */
-@Composable
-private fun OneTimeBluetoothVisibilityPrompt(
-    prefs: UserPreferencesRepository,
-) {
-    val shown by prefs.isBtVisibilityPromptShown.collectAsStateWithLifecycle(initialValue = true)
-    val discoverableLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult(),
-    ) { /* result ignored — flag is set regardless */ }
 
-    LaunchedEffect(shown) {
-        if (!shown) {
-            val intent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE)
-                .putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120)
-            runCatching { discoverableLauncher.launch(intent) }
-            launch { prefs.setBtVisibilityPromptShown() }
-        }
-    }
-}

@@ -52,13 +52,17 @@ interface MessageDao {
      *
      * @return A reactive [Flow] emitting one message per device (the most recent).
      */
-    @Query("""
-        SELECT * FROM messages 
-        WHERE id IN (
-            SELECT MAX(id) FROM messages GROUP BY macAddress
-        )
-        ORDER BY timestamp DESC
-    """)
+    @Query(
+        """
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT macAddress, MAX(timestamp) AS maxTs
+            FROM messages
+            GROUP BY macAddress
+        ) latest ON m.macAddress = latest.macAddress AND m.timestamp = latest.maxTs
+        ORDER BY m.timestamp DESC
+        """,
+    )
     fun getLatestMessagePerDevice(): Flow<List<MessageEntity>>
 
     /**
@@ -107,6 +111,12 @@ interface MessageDao {
 
     @Query("UPDATE messages SET deliveryStatus = :status WHERE messageUuid = :uuid")
     suspend fun updateDeliveryStatus(uuid: String, status: Int)
+
+    @Query("UPDATE messages SET transferStatus = :status WHERE messageUuid = :uuid")
+    suspend fun updateTransferStatus(uuid: String, status: Int)
+
+    @Query("DELETE FROM messages WHERE id = :id")
+    suspend fun deleteMessageById(id: Long)
 }
 
 /**

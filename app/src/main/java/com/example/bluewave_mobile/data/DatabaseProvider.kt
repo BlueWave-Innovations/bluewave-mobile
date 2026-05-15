@@ -1,9 +1,11 @@
 package com.example.bluewave_mobile.data
 
 import android.content.Context
+import android.os.Build
 import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.bluewave_mobile.utils.BlueWaveLogger
 
 /**
  * Singleton provider for the [AppDatabase] instance.
@@ -188,6 +190,32 @@ object DatabaseProvider {
     }
 
     /**
+     * v7 → v8: adds file-attachment columns to messages.
+     *  * `attachmentPath` — local path where the received file is stored.
+     *  * `attachmentName` — original file name from the sender.
+     *  * `attachmentMimeType` — MIME type for rendering previews.
+     *  * `attachmentSize` — file size in bytes.
+     */
+    private val MIGRATION_7_8: Migration = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE messages ADD COLUMN attachmentPath TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE messages ADD COLUMN attachmentName TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE messages ADD COLUMN attachmentMimeType TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE messages ADD COLUMN attachmentSize INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+
+    /**
+     * v8 → v9: adds media transfer status tracking.
+     *  * `transferStatus` — 0 = pending, 1 = uploading, 2 = completed, 3 = failed.
+     */
+    private val MIGRATION_8_9: Migration = object : Migration(8, 9) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE messages ADD COLUMN transferStatus INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+
+    /**
      * Returns the singleton [AppDatabase] instance, creating it if necessary.
      *
      * @param context Application context (not Activity context) to prevent memory leaks.
@@ -195,19 +223,27 @@ object DatabaseProvider {
      */
     fun getDatabase(context: Context): AppDatabase {
         return INSTANCE ?: synchronized(this) {
-            val instance = Room.databaseBuilder(
-                context.applicationContext,
-                AppDatabase::class.java,
-                "bluewave_messages.db",
-            )
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
-                // Destructive fallback as a last-resort net for older
-                // unreleased schema revisions; production v2+ → v6 always
-                // uses the explicit migrations above.
-                .fallbackToDestructiveMigration(dropAllTables = true)
-                .build()
-            INSTANCE = instance
-            instance
+            INSTANCE ?: run {
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    "bluewave_messages.db",
+                )
+                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+                    .setQueryCallback(
+                        { sqlQuery, bindArgs ->
+                            BlueWaveLogger.d("Room", "SQL: $sqlQuery | args: $bindArgs")
+                        },
+                        context.mainExecutor,
+                    )
+                    // Last-resort safety net: if an ancient dev build (pre-v2)
+                    // is still installed, wipe rather than crash.  All production
+                    // paths use the explicit migrations above.
+                    .fallbackToDestructiveMigration(true)
+                    .build()
+                INSTANCE = instance
+                instance
+            }
         }
     }
 }

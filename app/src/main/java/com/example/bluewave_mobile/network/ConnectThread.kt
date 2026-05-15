@@ -4,7 +4,7 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
-import android.util.Log
+import com.example.bluewave_mobile.utils.BlueWaveLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
@@ -79,7 +79,7 @@ class ConnectThread(
                     localAdapter.cancelDiscovery()
                 }
             } catch (e: SecurityException) {
-                Log.w(TAG, "cancelDiscovery() denied by permissions", e)
+                BlueWaveLogger.w(TAG, "cancelDiscovery() denied by permissions", e)
             }
 
             val socket: BluetoothSocket = try {
@@ -94,7 +94,7 @@ class ConnectThread(
                 socket.connect()
                 onConnected(socket)
             } catch (e: IOException) {
-                Log.w(TAG, "connect() failed for ${device.address}: ${e.message}")
+                BlueWaveLogger.w(TAG, "connect() failed for ${device.address}: ${e.message}")
                 try { socket.close() } catch (_: IOException) { /* best effort */ }
                 clientSocket = null
                 onConnectionFailed(e)
@@ -117,7 +117,7 @@ class ConnectThread(
             try {
                 clientSocket?.close()
             } catch (e: IOException) {
-                Log.w(TAG, "Error closing client socket", e)
+                BlueWaveLogger.w(TAG, "Error closing client socket", e)
             }
         } finally {
             clientSocket = null

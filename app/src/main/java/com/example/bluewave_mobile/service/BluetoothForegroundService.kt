@@ -9,9 +9,11 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import com.example.bluewave_mobile.utils.BlueWaveLogger
 import com.example.bluewave_mobile.BlueWaveApplication
 import com.example.bluewave_mobile.MainActivity
 import com.example.bluewave_mobile.R
@@ -35,6 +37,15 @@ class BluetoothForegroundService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // Re-verify permissions on every start (system restart after
+        // user revocation must not crash with SecurityException).
+        val hasBtPermission = ContextCompat.checkSelfPermission(
+            this, Manifest.permission.BLUETOOTH_CONNECT,
+        ) == PackageManager.PERMISSION_GRANTED
+        if (!hasBtPermission) {
+            stopSelf(startId)
+            return START_NOT_STICKY
+        }
         val notification = buildForegroundNotification()
         startForeground(FOREGROUND_NOTIFICATION_ID, notification)
 
@@ -42,6 +53,11 @@ class BluetoothForegroundService : Service() {
         app.container.messageRepository.onMessageReceived = { senderMac, senderName, text ->
             postMessageNotification(senderMac, senderName, text)
         }
+
+        // If the system restarted us (START_STICKY) we may have lost
+        // sessions while the process was dead. Re-connect immediately
+        // so the user does not have to open the app to become online.
+        app.triggerAutoConnect()
 
         return START_STICKY
     }
@@ -100,9 +116,10 @@ class BluetoothForegroundService : Service() {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
             putExtra(EXTRA_OPEN_CHAT_MAC, senderMac)
         }
+        val notificationId = stableNotificationId(senderMac)
         val pendingIntent = PendingIntent.getActivity(
             this,
-            senderMac.hashCode(),
+            notificationId,
             openChatIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
@@ -116,22 +133,50 @@ class BluetoothForegroundService : Service() {
             .build()
 
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.notify(senderMac.hashCode(), notification)
+        try {
+            manager.notify(notificationId, notification)
+        } catch (e: SecurityException) {
+            // POST_NOTIFICATIONS was revoked while the service was running.
+            BlueWaveLogger.w(TAG, "Cannot post message notification — permission revoked", e)
+        }
+    }
+
+    /**
+     * Derives a stable, positive notification ID from a MAC address.
+     * Uses the low 31 bits of the MAC hex value so the same peer
+     * always maps to the same ID (updates instead of duplicates).
+     */
+    private fun stableNotificationId(mac: String): Int {
+        val hex = mac.uppercase().replace(":", "").replace("-", "")
+        return (hex.toLongOrNull(16) ?: 0L).toInt() and 0x7FFFFFFF
     }
 
     companion object {
+        private const val TAG = "BluetoothFgService"
         const val CHANNEL_SERVICE = "bluewave_service"
         const val CHANNEL_MESSAGES = "bluewave_messages"
         const val FOREGROUND_NOTIFICATION_ID = 1
         const val EXTRA_OPEN_CHAT_MAC = "open_chat_mac"
 
         fun start(context: Context) {
-            val hasPermission = ContextCompat.checkSelfPermission(
+            val hasBtPermission = ContextCompat.checkSelfPermission(
                 context, Manifest.permission.BLUETOOTH_CONNECT,
             ) == PackageManager.PERMISSION_GRANTED
-            if (!hasPermission) return
+            if (!hasBtPermission) return
+            // Android 13+ requires POST_NOTIFICATIONS for foreground service
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val hasNotifPermission = ContextCompat.checkSelfPermission(
+                    context, Manifest.permission.POST_NOTIFICATIONS,
+                ) == PackageManager.PERMISSION_GRANTED
+                if (!hasNotifPermission) return
+            }
             val intent = Intent(context, BluetoothForegroundService::class.java)
-            context.startForegroundService(intent)
+            try {
+                context.startForegroundService(intent)
+            } catch (e: IllegalStateException) {
+                // Android 12+: app is not in a valid foreground state.
+                BlueWaveLogger.w(TAG, "Cannot start foreground service from background", e)
+            }
         }
     }
 }

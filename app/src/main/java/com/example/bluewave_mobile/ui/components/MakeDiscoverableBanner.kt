@@ -22,8 +22,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -61,6 +63,7 @@ fun MakeDiscoverableBanner(
     viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory),
 ) {
     val visibility: BluetoothVisibility by viewModel.bluetoothVisibility.collectAsStateWithLifecycle()
+    val bannerDismissed: Boolean by viewModel.discoverableBannerDismissed.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     val discoverableLauncher = rememberLauncherForActivityResult(
@@ -72,7 +75,7 @@ fun MakeDiscoverableBanner(
     }
 
     AnimatedVisibility(
-        visible = visibility == BluetoothVisibility.OFF,
+        visible = visibility == BluetoothVisibility.OFF && !bannerDismissed,
         enter = expandVertically() + fadeIn(),
         exit = shrinkVertically() + fadeOut(),
         modifier = modifier,
@@ -112,7 +115,7 @@ fun MakeDiscoverableBanner(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(4.dp))
                 TextButton(
                     onClick = {
                         viewModel.setBluetoothVisibility(BluetoothVisibility.MIN_30)
@@ -127,6 +130,17 @@ fun MakeDiscoverableBanner(
                     Text(
                         text = stringResource(id = R.string.discoverable_banner_cta),
                         color = BrandBlue,
+                    )
+                }
+                IconButton(
+                    onClick = { viewModel.setDiscoverableBannerDismissed() },
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = stringResource(id = R.string.discoverable_banner_dismiss),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp),
                     )
                 }
             }

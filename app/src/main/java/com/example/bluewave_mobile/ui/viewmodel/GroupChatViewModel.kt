@@ -80,7 +80,7 @@ class GroupChatViewModel(
         optimistic,
     ) { persisted, members, group, pending ->
         if (group == null) {
-            return@combine GroupChatUiState.Loading as GroupChatUiState
+            return@combine GroupChatUiState.Error("Group not found") as GroupChatUiState
         }
         val merged: List<GroupChatMessage> = (persisted + pending)
             .distinctBy(GroupChatMessage::id)

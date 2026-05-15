@@ -1,7 +1,7 @@
 package com.example.bluewave_mobile.network
 
 import android.bluetooth.BluetoothSocket
-import android.util.Log
+import com.example.bluewave_mobile.utils.BlueWaveLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -60,7 +60,7 @@ class ConnectedThread(
             val input = try {
                 socket.inputStream
             } catch (e: IOException) {
-                Log.w(TAG, "Unable to obtain input stream", e)
+                BlueWaveLogger.w(TAG, "Unable to obtain input stream", e)
                 return@launch
             }
             val buffer = ByteArray(readBufferSize)
@@ -68,7 +68,7 @@ class ConnectedThread(
                 val read: Int = try {
                     input.read(buffer)
                 } catch (e: IOException) {
-                    Log.d(TAG, "Read loop terminated: ${e.message}")
+                    BlueWaveLogger.d(TAG, "Read loop terminated: ${e.message}")
                     break
                 }
                 if (read <= 0) {
@@ -92,11 +92,21 @@ class ConnectedThread(
         withContext(Dispatchers.IO) {
             try {
                 val output: OutputStream = socket.outputStream
-                output.write(bytes)
+                // RFCOMM socket buffers are small on many chipsets;
+                // writing the entire frame at once can overflow the TX
+                // queue and cause silent truncation. We stream in 8 KiB
+                // slices so the Bluetooth stack can pace the transfer.
+                val chunkSize = 8192
+                var offset = 0
+                while (offset < bytes.size) {
+                    val end = minOf(offset + chunkSize, bytes.size)
+                    output.write(bytes, offset, end - offset)
+                    offset = end
+                }
                 output.flush()
                 true
             } catch (e: IOException) {
-                Log.w(TAG, "Write failed: ${e.message}")
+                BlueWaveLogger.w(TAG, "Write failed: ${e.message}")
                 false
             }
         }
@@ -118,17 +128,17 @@ class ConnectedThread(
             try {
                 socket.inputStream?.close()
             } catch (e: IOException) {
-                Log.w(TAG, "Error closing input stream", e)
+                BlueWaveLogger.w(TAG, "Error closing input stream", e)
             }
             try {
                 socket.outputStream?.close()
             } catch (e: IOException) {
-                Log.w(TAG, "Error closing output stream", e)
+                BlueWaveLogger.w(TAG, "Error closing output stream", e)
             }
             try {
                 socket.close()
             } catch (e: IOException) {
-                Log.w(TAG, "Error closing socket", e)
+                BlueWaveLogger.w(TAG, "Error closing socket", e)
             }
         } finally {
             scope.cancel()
@@ -137,6 +147,6 @@ class ConnectedThread(
 
     private companion object {
         const val TAG = "ConnectedThread"
-        const val DEFAULT_BUFFER_BYTES = 1024
+        const val DEFAULT_BUFFER_BYTES = 32768
     }
 }

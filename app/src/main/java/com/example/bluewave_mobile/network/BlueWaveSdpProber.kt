@@ -9,7 +9,9 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.ParcelUuid
 import android.os.Parcelable
-import android.util.Log
+import com.example.bluewave_mobile.utils.parcelableExtra
+import com.example.bluewave_mobile.utils.parcelableArrayExtra
+import com.example.bluewave_mobile.utils.BlueWaveLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -59,9 +61,9 @@ class BlueWaveSdpProber(
         override fun onReceive(receiverContext: Context, intent: Intent) {
             if (intent.action != BluetoothDevice.ACTION_UUID) return
             val device: BluetoothDevice = intent
-                .getParcelableExtra(BluetoothDevice.EXTRA_DEVICE) ?: return
+                .parcelableExtra(BluetoothDevice.EXTRA_DEVICE) ?: return
             val parcelUuids: Array<Parcelable>? =
-                intent.getParcelableArrayExtra(BluetoothDevice.EXTRA_UUID)
+                intent.parcelableArrayExtra(BluetoothDevice.EXTRA_UUID)
             val hasOurUuid: Boolean = parcelUuids?.any { p ->
                 (p as? ParcelUuid)?.uuid == BluetoothConstants.APP_UUID
             } ?: false
@@ -89,7 +91,7 @@ class BlueWaveSdpProber(
         try {
             context.unregisterReceiver(receiver)
         } catch (e: IllegalArgumentException) {
-            Log.w(TAG, "Receiver was already unregistered", e)
+            BlueWaveLogger.w(TAG, "Receiver was already unregistered", e)
         } finally {
             registered = false
         }
@@ -132,7 +134,7 @@ class BlueWaveSdpProber(
         try {
             device.fetchUuidsWithSdp()
         } catch (e: SecurityException) {
-            Log.w(TAG, "fetchUuidsWithSdp denied for ${device.address}", e)
+            BlueWaveLogger.w(TAG, "fetchUuidsWithSdp denied for ${device.address}", e)
         }
     }
 
@@ -148,7 +150,7 @@ class BlueWaveSdpProber(
         val device = try {
             localAdapter.getRemoteDevice(macAddress)
         } catch (e: IllegalArgumentException) {
-            Log.w(TAG, "Refusing to probe invalid MAC '$macAddress'", e)
+            BlueWaveLogger.w(TAG, "Refusing to probe invalid MAC '$macAddress'", e)
             return
         }
         probe(device)

@@ -1,7 +1,9 @@
 package com.example.bluewave_mobile.network
 
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothSocket
-import android.util.Log
+import android.os.SystemClock
+import com.example.bluewave_mobile.utils.BlueWaveLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -60,6 +62,7 @@ internal class BluetoothSession(
      * key into per-peer maps without having to re-resolve the address
      * (which costs a binder call on real Android).
      */
+    @SuppressLint("MissingPermission")
     val remoteMacAddress: String = socket.remoteDevice?.address?.uppercase().orEmpty()
 
     /**
@@ -69,10 +72,10 @@ internal class BluetoothSession(
      * has not been granted yet).
      */
     val remoteName: String = try {
-        @Suppress("MissingPermission")
+        @SuppressLint("MissingPermission")
         socket.remoteDevice?.name?.takeIf { it.isNotBlank() } ?: remoteMacAddress
     } catch (e: SecurityException) {
-        Log.d(TAG, "BluetoothDevice.name denied by permissions, falling back to MAC", e)
+        BlueWaveLogger.d(TAG, "BluetoothDevice.name denied by permissions, falling back to MAC", e)
         remoteMacAddress
     }
 
@@ -81,13 +84,32 @@ internal class BluetoothSession(
     private var watchdogJob: Job? = null
 
     /**
-     * Timestamp (`System.currentTimeMillis`) of the most recent byte
-     * chunk read from the peer — refreshed by the read loop and
-     * polled by the liveness watchdog. Volatile because the two
-     * jobs run on different threads.
+     * Elapsed-realtime timestamp of the most recent byte chunk read
+     * from the peer — refreshed by the read loop and polled by the
+     * liveness watchdog. Uses [SystemClock.elapsedRealtime] so NTP
+     * skew cannot cause false-positive watchdog trips.
      */
     @Volatile
-    private var lastInboundMs: Long = System.currentTimeMillis()
+    private var lastInboundElapsedMs: Long = SystemClock.elapsedRealtime()
+
+    /**
+     * Elapsed-realtime timestamp of the last heartbeat *send*.
+     * Reset to `0L` after an RTT sample is taken so [lastPingMs]
+     * only measures the interval between a heartbeat and the
+     * *next* inbound frame, not every arbitrary chunk.
+     */
+    @Volatile
+    private var lastHeartbeatSendElapsedMs: Long = 0L
+
+    /**
+     * Most recently measured round-trip latency in milliseconds.
+     * Updated every time the watchdog observes a fresh inbound
+     * frame after a heartbeat was sent. Zero until the first
+     * measurement. Negative values are clamped to zero.
+     */
+    @Volatile
+    var lastPingMs: Long = 0L
+        private set
 
     /**
      * Stream of byte chunks straight from the underlying
@@ -98,32 +120,45 @@ internal class BluetoothSession(
     private val incomingBytes: SharedFlow<ByteArray>
         get() = connectedThread.incomingBytes
 
+    private val startLock = Any()
+
     /**
      * Launches the read loop and forwards each fully-reassembled frame
      * to [onFrame]. Returns immediately. The session is idempotent —
      * calling [start] twice is a no-op.
      */
     fun start(scope: CoroutineScope, onFrame: suspend (ByteArray) -> Unit, onClosed: suspend () -> Unit) {
-        if (pumpJob != null) return
-        connectedThread.start()
-        lastInboundMs = System.currentTimeMillis()
+        synchronized(startLock) {
+            if (pumpJob != null) return
+            connectedThread.start()
+            lastInboundElapsedMs = SystemClock.elapsedRealtime()
+        }
         pumpJob = scope.launch {
             try {
                 incomingBytes.collect { chunk ->
                     // Any byte from the peer — even a partial frame
                     // header — proves the link is alive, so refresh
                     // the watchdog timestamp before parsing.
-                    lastInboundMs = System.currentTimeMillis()
+                    val now = SystemClock.elapsedRealtime()
+                    lastInboundElapsedMs = now
+                    // Approximate RTT: time between our last heartbeat
+                    // send and the next inbound frame (which should be
+                    // the peer's heartbeat reply or data).
+                    val hbSend = lastHeartbeatSendElapsedMs
+                    if (hbSend > 0L) {
+                        lastPingMs = (now - hbSend).coerceAtLeast(0L)
+                        lastHeartbeatSendElapsedMs = 0L
+                    }
                     val frames = try {
                         accumulator.append(chunk)
                     } catch (e: IllegalStateException) {
-                        Log.w(TAG, "Protocol error from $remoteMacAddress: ${e.message}; tearing down session")
+                        BlueWaveLogger.w(TAG, "Protocol error from $remoteMacAddress: ${e.message}; tearing down session")
                         cancel()
                         return@collect
                     }
                     for (frame in frames) {
                         if (isHeartbeat(frame)) {
-                            // `lastInboundMs` already refreshed above;
+                            // `lastInboundElapsedMs` already refreshed above;
                             // drop the frame so the application layer
                             // never has to know heartbeats exist.
                             continue
@@ -136,7 +171,7 @@ internal class BluetoothSession(
                 heartbeatJob = null
                 watchdogJob?.cancel()
                 watchdogJob = null
-                onClosed()
+                runCatching { onClosed() }
             }
         }
         heartbeatJob = scope.launch { runHeartbeatSender() }
@@ -156,18 +191,19 @@ internal class BluetoothSession(
         val pingFrame = BlueWaveFrame.encode(BlueWaveFrame.Type.HEARTBEAT, EMPTY_PAYLOAD)
         while (true) {
             delay(BluetoothConstants.HEARTBEAT_INTERVAL_MS)
+            lastHeartbeatSendElapsedMs = SystemClock.elapsedRealtime()
             val framed = try {
                 MessageFraming.frame(pingFrame)
             } catch (e: IllegalArgumentException) {
                 // The heartbeat is a constant 1-byte payload so this
                 // branch is unreachable in practice — log defensively
                 // and stop pinging if it ever fires.
-                Log.e(TAG, "Refusing to frame heartbeat for $remoteMacAddress: ${e.message}")
+                BlueWaveLogger.e(TAG, "Refusing to frame heartbeat for $remoteMacAddress: ${e.message}")
                 return
             }
             val ok = connectedThread.write(framed)
             if (!ok) {
-                Log.d(TAG, "Heartbeat write failed for $remoteMacAddress; tearing down session")
+                BlueWaveLogger.d(TAG, "Heartbeat write failed for $remoteMacAddress; tearing down session")
                 cancel()
                 return
             }
@@ -185,12 +221,12 @@ internal class BluetoothSession(
     private suspend fun runLivenessWatchdog() {
         while (true) {
             delay(BluetoothConstants.HEARTBEAT_INTERVAL_MS)
-            val now = System.currentTimeMillis()
-            if (now - lastInboundMs > BluetoothConstants.LIVENESS_TIMEOUT_MS) {
-                Log.d(
+            val now = SystemClock.elapsedRealtime()
+            if (now - lastInboundElapsedMs > BluetoothConstants.LIVENESS_TIMEOUT_MS) {
+                BlueWaveLogger.d(
                     TAG,
                     "Liveness watchdog tripped for $remoteMacAddress " +
-                        "(${now - lastInboundMs} ms since last inbound byte); tearing down session",
+                        "(${now - lastInboundElapsedMs} ms since last inbound byte); tearing down session",
                 )
                 cancel()
                 return
@@ -208,7 +244,7 @@ internal class BluetoothSession(
         val framed = try {
             MessageFraming.frame(payload)
         } catch (e: IllegalArgumentException) {
-            Log.w(TAG, "Refusing oversized payload to $remoteMacAddress: ${e.message}")
+            BlueWaveLogger.w(TAG, "Refusing oversized payload to $remoteMacAddress: ${e.message}")
             return false
         }
         return connectedThread.write(framed)

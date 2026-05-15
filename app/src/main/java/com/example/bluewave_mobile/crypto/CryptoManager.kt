@@ -1,5 +1,6 @@
 package com.example.bluewave_mobile.crypto
 
+import java.security.SecureRandom
 import javax.crypto.AEADBadTagException
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
@@ -34,14 +35,16 @@ class CryptoManager(private val keyManager: KeyManager = KeyManager()) {
      */
     fun encrypt(plaintext: ByteArray): Pair<ByteArray, ByteArray> {
         val key: SecretKey = keyManager.getOrCreateAesKey()
+        // Explicitly generate a random IV — we disabled Keystore's
+        // internal randomization (setRandomizedEncryptionRequired(false))
+        // so that we control the nonce. Re-using an IV with the same
+        // GCM key is catastrophic: it collapses both confidentiality
+        // and authenticity.
+        val iv = ByteArray(GCM_IV_LENGTH_BYTES).apply { SecureRandom().nextBytes(this) }
+        val spec = GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv)
         val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.ENCRYPT_MODE, key)
+        cipher.init(Cipher.ENCRYPT_MODE, key, spec)
         val ciphertext = cipher.doFinal(plaintext)
-        // Read the IV that the provider generated for this single use.
-        val iv = cipher.iv
-        check(iv.size == GCM_IV_LENGTH_BYTES) {
-            "Unexpected GCM IV length: ${iv.size}"
-        }
         return iv to ciphertext
     }
 

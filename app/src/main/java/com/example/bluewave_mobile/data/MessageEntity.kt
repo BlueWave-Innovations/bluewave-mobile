@@ -60,10 +60,26 @@ data class MessageEntity(
     val deliveryStatus: Int = 0,
     @ColumnInfo(defaultValue = "")
     val messageUuid: String = "",
+    @ColumnInfo(defaultValue = "")
+    val attachmentPath: String = "",
+    @ColumnInfo(defaultValue = "")
+    val attachmentName: String = "",
+    @ColumnInfo(defaultValue = "")
+    val attachmentMimeType: String = "",
+    @ColumnInfo(defaultValue = "0")
+    val attachmentSize: Long = 0L,
+    @ColumnInfo(defaultValue = "0")
+    val transferStatus: Int = 0,
 ) {
     companion object {
         const val STATUS_SENT = 0
         const val STATUS_DELIVERED = 1
+
+        // Media transfer lifecycle
+        const val TRANSFER_PENDING = 0
+        const val TRANSFER_UPLOADING = 1
+        const val TRANSFER_COMPLETED = 2
+        const val TRANSFER_FAILED = 3
     }
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -81,6 +97,11 @@ data class MessageEntity(
         if (isRead != other.isRead) return false
         if (deliveryStatus != other.deliveryStatus) return false
         if (messageUuid != other.messageUuid) return false
+        if (attachmentPath != other.attachmentPath) return false
+        if (attachmentName != other.attachmentName) return false
+        if (attachmentMimeType != other.attachmentMimeType) return false
+        if (attachmentSize != other.attachmentSize) return false
+        if (transferStatus != other.transferStatus) return false
 
         return true
     }
@@ -96,6 +117,11 @@ data class MessageEntity(
         result = 31 * result + isRead.hashCode()
         result = 31 * result + deliveryStatus.hashCode()
         result = 31 * result + messageUuid.hashCode()
+        result = 31 * result + attachmentPath.hashCode()
+        result = 31 * result + attachmentName.hashCode()
+        result = 31 * result + attachmentMimeType.hashCode()
+        result = 31 * result + attachmentSize.hashCode()
+        result = 31 * result + transferStatus.hashCode()
         return result
     }
 }

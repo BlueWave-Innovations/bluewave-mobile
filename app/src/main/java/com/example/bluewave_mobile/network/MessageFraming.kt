@@ -96,9 +96,15 @@ internal class FrameAccumulator {
      */
     fun append(chunk: ByteArray): List<ByteArray> {
         if (chunk.isEmpty()) return emptyList()
-        ensureCapacity(size + chunk.size)
+        val newSize = size + chunk.size
+        if (newSize > MAX_BUFFER_SIZE) {
+            throw IllegalStateException(
+                "Accumulator buffer exceeded $MAX_BUFFER_SIZE bytes"
+            )
+        }
+        ensureCapacity(newSize)
         System.arraycopy(chunk, 0, buffer, size, chunk.size)
-        size += chunk.size
+        size = newSize
         return drainCompleteFrames()
     }
 
@@ -138,7 +144,15 @@ internal class FrameAccumulator {
     private fun ensureCapacity(required: Int) {
         if (buffer.size >= required) return
         var newCapacity = if (buffer.isEmpty()) INITIAL_CAPACITY else buffer.size
-        while (newCapacity < required) newCapacity *= 2
+        while (newCapacity < required) {
+            val next = newCapacity * 2
+            if (next < 0 || next > MAX_BUFFER_SIZE) {
+                // Int overflow or exceeds hard cap — clamp
+                newCapacity = MAX_BUFFER_SIZE.coerceAtLeast(required)
+                break
+            }
+            newCapacity = next
+        }
         val grown = ByteArray(newCapacity)
         if (size > 0) System.arraycopy(buffer, 0, grown, 0, size)
         buffer = grown
@@ -147,5 +161,7 @@ internal class FrameAccumulator {
     private companion object {
         val EMPTY: ByteArray = ByteArray(0)
         const val INITIAL_CAPACITY: Int = 1024
+        /** Hard cap on the total bytes buffered across incomplete frames. */
+        const val MAX_BUFFER_SIZE: Int = 1 shl 22 // 4 MiB
     }
 }

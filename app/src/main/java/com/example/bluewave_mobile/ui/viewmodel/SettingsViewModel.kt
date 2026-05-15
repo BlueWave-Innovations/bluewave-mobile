@@ -12,6 +12,7 @@ import com.example.bluewave_mobile.preferences.ThemeMode
 import com.example.bluewave_mobile.preferences.UserPreferencesRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import com.example.bluewave_mobile.utils.BlueWaveLogger
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -61,15 +62,30 @@ class SettingsViewModel(
     )
 
     fun setThemeMode(value: ThemeMode) {
+        BlueWaveLogger.i("SettingsViewModel", "setThemeMode: $value")
         viewModelScope.launch { preferences.setThemeMode(value) }
     }
 
     fun setAppLanguage(value: AppLanguage) {
+        BlueWaveLogger.i("SettingsViewModel", "setAppLanguage: $value")
         viewModelScope.launch { preferences.setAppLanguage(value) }
     }
 
     fun setBluetoothVisibility(value: BluetoothVisibility) {
+        BlueWaveLogger.i("SettingsViewModel", "setBluetoothVisibility: $value")
         viewModelScope.launch { preferences.setBluetoothVisibility(value) }
+    }
+
+    val discoverableBannerDismissed: StateFlow<Boolean> =
+        preferences.isDiscoverableBannerDismissed.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000L),
+            initialValue = false,
+        )
+
+    fun setDiscoverableBannerDismissed() {
+        BlueWaveLogger.i("SettingsViewModel", "setDiscoverableBannerDismissed")
+        viewModelScope.launch { preferences.setDiscoverableBannerDismissed() }
     }
 
     companion object {

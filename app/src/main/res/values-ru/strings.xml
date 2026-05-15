@@ -25,6 +25,10 @@
     <string name="discoverable_banner_title">Вас не видят другие телефоны</string>
     <string name="discoverable_banner_message">Сделайте телефон видимым на 30 минут — соседи увидят вас при первом сканировании.</string>
     <string name="discoverable_banner_cta">Сделать видимым</string>
+    <string name="discoverable_banner_dismiss">Скрыть</string>
+    <string name="peer_profile_title">Профиль</string>
+    <string name="peer_profile_default_name">Неизвестный пользователь</string>
+    <string name="peer_profile_no_bio">Нет описания</string>
 
     <!-- Chat screen -->
     <string name="chat_title">Чат</string>
@@ -195,6 +199,9 @@
     <string name="settings_language_short">Язык</string>
     <string name="settings_bt_visibility_short">Видимость Bluetooth</string>
     <string name="settings_bt_visibility_short_summary">Разрешить находящимся рядом пользователям находить ваш профиль и отправлять сообщения без подключения к Интернету.</string>
+    <string name="settings_export_logs">Экспорт отладочных логов</string>
+    <string name="settings_export_logs_success">Логи сохранены в Downloads/BlueWave</string>
+    <string name="settings_export_logs_failed">Не удалось экспортировать логи</string>
     <string name="settings_theme_picker_title">Выберите тему</string>
     <string name="settings_language_picker_title">Выберите язык</string>
     <string name="settings_qr_share">Показать QR-код</string>
@@ -205,7 +212,11 @@
     <string name="chats_filter_family">Семья</string>
     <string name="chat_status_online_bt">В сети через Bluetooth</string>
     <string name="chat_today">Сегодня</string>
+    <string name="chat_typing">печатает…</string>
+    <string name="chat_menu_cd">Настройки чата</string>
+    <string name="chat_delete_history">Удалить чат</string>
     <string name="chat_input_placeholder_bt">Сообщение через Bluetooth…</string>
+    <string name="chat_attachment_cd">Прикрепить файл</string>
     <string name="profile_section_about">О себе</string>
     <string name="profile_action_edit_name">Изменить имя</string>
     <string name="profile_action_edit_handle">Изменить тег</string>

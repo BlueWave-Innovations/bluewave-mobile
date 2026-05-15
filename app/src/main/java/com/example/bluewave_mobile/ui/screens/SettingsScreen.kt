@@ -25,6 +25,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.QrCode2
@@ -42,6 +44,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -72,9 +75,12 @@ import com.example.bluewave_mobile.ui.components.SettingsCard
 import com.example.bluewave_mobile.ui.components.SettingsRow
 import com.example.bluewave_mobile.ui.components.SettingsRowDivider
 import com.example.bluewave_mobile.ui.components.pressScale
+import com.example.bluewave_mobile.ui.theme.AccentCyan
 import com.example.bluewave_mobile.ui.theme.AccentIndigo
 import com.example.bluewave_mobile.ui.theme.BrandBlue
 import com.example.bluewave_mobile.ui.theme.SuccessGreen
+import com.example.bluewave_mobile.utils.BlueWaveLogger
+import com.example.bluewave_mobile.utils.LogExporter
 import com.example.bluewave_mobile.ui.viewmodel.SettingsViewModel
 
 /**
@@ -100,7 +106,6 @@ import com.example.bluewave_mobile.ui.viewmodel.SettingsViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onOpenFolders: () -> Unit = {},
     onOpenProfile: () -> Unit = {},
     viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory),
 ) {
@@ -204,6 +209,31 @@ fun SettingsScreen(
                             runCatching { discoverableLauncher.launch(intent) }
                         } else {
                             viewModel.setBluetoothVisibility(BluetoothVisibility.OFF)
+                        }
+                    },
+                )
+                SettingsRowDivider()
+                val context = androidx.compose.ui.platform.LocalContext.current
+                var exportSnackbar by rememberSaveable { mutableStateOf<String?>(null) }
+                LaunchedEffect(exportSnackbar) {
+                    exportSnackbar?.let { msg ->
+                        // In a real app we'd use a SnackbarHost, but a
+                        // simple Toast via a helper keeps the diff small.
+                        android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
+                        exportSnackbar = null
+                    }
+                }
+                SettingsRow(
+                    icon = Icons.Filled.Description,
+                    title = stringResource(id = R.string.settings_export_logs),
+                    iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    onClick = {
+                        BlueWaveLogger.i("Settings", "User requested log export")
+                        val exported = LogExporter.exportToDownloads(context)
+                        exportSnackbar = if (exported != null) {
+                            context.getString(R.string.settings_export_logs_success)
+                        } else {
+                            context.getString(R.string.settings_export_logs_failed)
                         }
                     },
                 )

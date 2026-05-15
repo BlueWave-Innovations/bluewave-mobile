@@ -22,20 +22,20 @@ import kotlinx.coroutines.flow.Flow
  * names and the SQL they map to.
  */
 @Dao
-interface ChatGroupDao {
+abstract class ChatGroupDao {
 
     // ---------------------------------------------------------------
     // Groups
     // ---------------------------------------------------------------
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertGroup(group: ChatGroupEntity)
+    abstract suspend fun upsertGroup(group: ChatGroupEntity)
 
     @Query("SELECT * FROM chat_group WHERE id = :groupId LIMIT 1")
-    suspend fun findGroup(groupId: String): ChatGroupEntity?
+    abstract suspend fun findGroup(groupId: String): ChatGroupEntity?
 
     @Query("DELETE FROM chat_group WHERE id = :groupId")
-    suspend fun deleteGroup(groupId: String)
+    abstract suspend fun deleteGroup(groupId: String)
 
     /**
      * Stream of every locally-known group, sorted by recency
@@ -43,39 +43,42 @@ interface ChatGroupDao {
      * list's group section.
      */
     @Query("SELECT * FROM chat_group ORDER BY createdAt DESC")
-    fun observeGroups(): Flow<List<ChatGroupEntity>>
+    abstract fun observeGroups(): Flow<List<ChatGroupEntity>>
 
     // ---------------------------------------------------------------
     // Memberships
     // ---------------------------------------------------------------
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertMember(member: GroupMemberEntity)
+    abstract suspend fun upsertMember(member: GroupMemberEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertMembers(members: List<GroupMemberEntity>)
+    abstract suspend fun upsertMembers(members: List<GroupMemberEntity>)
 
     @Query("DELETE FROM group_member WHERE groupId = :groupId AND peerMac = :peerMac")
-    suspend fun deleteMember(groupId: String, peerMac: String)
+    abstract suspend fun deleteMember(groupId: String, peerMac: String)
 
     @Query("SELECT * FROM group_member WHERE groupId = :groupId ORDER BY joinedAt ASC")
-    fun observeMembers(groupId: String): Flow<List<GroupMemberEntity>>
+    abstract fun observeMembers(groupId: String): Flow<List<GroupMemberEntity>>
 
     @Query("SELECT * FROM group_member ORDER BY joinedAt ASC")
-    fun observeAllMemberships(): Flow<List<GroupMemberEntity>>
+    abstract fun observeAllMemberships(): Flow<List<GroupMemberEntity>>
 
     @Query("SELECT peerMac FROM group_member WHERE groupId = :groupId")
-    suspend fun memberMacs(groupId: String): List<String>
+    abstract suspend fun memberMacs(groupId: String): List<String>
 
     // ---------------------------------------------------------------
     // Messages
     // ---------------------------------------------------------------
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMessage(message: GroupMessageEntity): Long
+    abstract suspend fun insertMessage(message: GroupMessageEntity): Long
 
     @Query("SELECT * FROM group_message WHERE groupId = :groupId ORDER BY timestamp ASC")
-    fun observeMessages(groupId: String): Flow<List<GroupMessageEntity>>
+    abstract fun observeMessages(groupId: String): Flow<List<GroupMessageEntity>>
+
+    @Query("SELECT * FROM group_message ORDER BY timestamp DESC")
+    abstract fun observeAllGroupMessages(): Flow<List<GroupMessageEntity>>
 
     @Query(
         """
@@ -85,7 +88,7 @@ interface ChatGroupDao {
         LIMIT 1
         """,
     )
-    suspend fun latestMessage(groupId: String): GroupMessageEntity?
+    abstract suspend fun latestMessage(groupId: String): GroupMessageEntity?
 
     @Query(
         """
@@ -93,7 +96,7 @@ interface ChatGroupDao {
         WHERE groupId = :groupId AND isOutgoing = 0 AND isRead = 0
         """,
     )
-    suspend fun unreadCount(groupId: String): Int
+    abstract suspend fun unreadCount(groupId: String): Int
 
     @Query(
         """
@@ -102,16 +105,20 @@ interface ChatGroupDao {
         WHERE groupId = :groupId AND isOutgoing = 0 AND isRead = 0
         """,
     )
-    suspend fun markAllRead(groupId: String)
+    abstract suspend fun markAllRead(groupId: String)
 
     /**
      * One-shot snapshot of every group with a stitched member /
      * latest-message preview. Used to seed the chat list when the
      * user first opens the app — afterwards the list re-renders off
      * the [observeGroups] stream.
+     *
+     * Marked [Transaction] so the four constituent queries run
+     * atomically and cannot see interleaved mutations from other
+     * coroutines.
      */
     @Transaction
-    suspend fun groupSummaries(): List<GroupSummary> {
+    open suspend fun groupSummaries(): List<GroupSummary> {
         val groups = allGroups()
         return groups.map { group ->
             GroupSummary(
@@ -124,7 +131,21 @@ interface ChatGroupDao {
     }
 
     @Query("SELECT * FROM chat_group ORDER BY createdAt DESC")
-    suspend fun allGroups(): List<ChatGroupEntity>
+    abstract suspend fun allGroups(): List<ChatGroupEntity>
+
+    /**
+     * Atomically inserts a group and its members. Used by
+     * [GroupRepositoryImpl.createGroup] so the two writes are
+     * never observed partially (group without members).
+     */
+    @Transaction
+    open suspend fun createGroupWithMembers(
+        group: ChatGroupEntity,
+        members: List<GroupMemberEntity>,
+    ) {
+        upsertGroup(group)
+        upsertMembers(members)
+    }
 }
 
 /**

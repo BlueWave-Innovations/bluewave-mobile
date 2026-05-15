@@ -64,6 +64,9 @@ object BlueWaveFrame {
         GROUP_MESSAGE(0x06),
         HEARTBEAT(0x07),
         MESSAGE_ACK(0x08),
+        MEDIA_MESSAGE(0x09),
+        TYPING_INDICATOR(0x0A),
+        PROFILE_ACK(0x0B),
         ;
 
         companion object {
@@ -236,6 +239,155 @@ object BlueWaveFrame {
             val ciphertext = ByteArray(body.size - 1)
             System.arraycopy(body, 1, ciphertext, 0, ciphertext.size)
             return Inner(subtype, ciphertext)
+        }
+    }
+
+    /**
+     * Inner codec for the body of a [Type.MEDIA_MESSAGE] frame when
+     * end-to-end encryption is active.
+     *
+     * The encoding is identical to [ProfileEnvelope]'s — a single
+     * subtype byte (0x02 for `SignalMessage`, 0x03 for
+     * `PreKeySignalMessage`) followed by the libsignal ciphertext.
+     * It is split into a separate object so the call sites in
+     * `MessageRepositoryImpl` read naturally and so the unit tests can
+     * pin every media-related round-trip independently.
+     */
+    object MediaEnvelope {
+
+        /** Subtypes a media frame body can hold. */
+        enum class Subtype(val tag: Byte) {
+            SIGNAL_MESSAGE(Type.SIGNAL_MESSAGE.tag),
+            PREKEY_SIGNAL_MESSAGE(Type.PREKEY_SIGNAL_MESSAGE.tag),
+            ;
+
+            companion object {
+                fun fromTag(tag: Byte): Subtype? = entries.firstOrNull { it.tag == tag }
+            }
+        }
+
+        /** Decoded view of a media frame body. */
+        data class Inner(val subtype: Subtype, val ciphertext: ByteArray) {
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (other !is Inner) return false
+                return subtype == other.subtype && ciphertext.contentEquals(other.ciphertext)
+            }
+
+            override fun hashCode(): Int = 31 * subtype.hashCode() + ciphertext.contentHashCode()
+        }
+
+        /** Encode `[subtype][ciphertext]`. */
+        fun encode(subtype: Subtype, ciphertext: ByteArray): ByteArray {
+            val out = ByteArray(ciphertext.size + 1)
+            out[0] = subtype.tag
+            System.arraycopy(ciphertext, 0, out, 1, ciphertext.size)
+            return out
+        }
+
+        /**
+         * Decode `[subtype][ciphertext]`. Returns `null` for empty
+         * bodies and for unknown subtype tags.
+         */
+        fun decode(body: ByteArray): Inner? {
+            if (body.isEmpty()) return null
+            val subtype = Subtype.fromTag(body[0]) ?: return null
+            val ciphertext = ByteArray(body.size - 1)
+            System.arraycopy(body, 1, ciphertext, 0, ciphertext.size)
+            return Inner(subtype, ciphertext)
+        }
+    }
+
+    /**
+     * Inner codec for the body of a [Type.MEDIA_MESSAGE] frame.
+     *
+     * Encoding: `[4B metadataLen big-endian][JSON metadata UTF-8][raw file bytes]`.
+     * The JSON metadata object carries the original file name, MIME type,
+     * size in bytes, and an optional UUID for ACK correlation:
+     * `{"n":"file.jpg","m":"image/jpeg","s":12345,"u":"uuid"}`.
+     *
+     * The 4-byte length prefix lets the receiver split metadata from
+     * payload without scanning for a delimiter, and the 32-bit ceiling
+     * (≈ 4 GiB) is far above the practical Bluetooth RFCOMM frame size.
+     */
+    object MediaPayload {
+
+        /** Decoded view of a `MEDIA_MESSAGE` body. */
+        data class Inner(
+            val name: String,
+            val mimeType: String,
+            val size: Long,
+            val uuid: String,
+            val bytes: ByteArray,
+        ) {
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (other !is Inner) return false
+                return name == other.name &&
+                    mimeType == other.mimeType &&
+                    size == other.size &&
+                    uuid == other.uuid &&
+                    bytes.contentEquals(other.bytes)
+            }
+
+            override fun hashCode(): Int {
+                var result = name.hashCode()
+                result = 31 * result + mimeType.hashCode()
+                result = 31 * result + size.hashCode()
+                result = 31 * result + uuid.hashCode()
+                result = 31 * result + bytes.contentHashCode()
+                return result
+            }
+        }
+
+        /** Encode `[4B metadataLen][metadata JSON][bytes]`. */
+        fun encode(name: String, mimeType: String, size: Long, uuid: String, bytes: ByteArray): ByteArray {
+            val meta = org.json.JSONObject().apply {
+                put("n", name)
+                put("m", mimeType)
+                put("s", size)
+                put("u", uuid)
+            }.toString().toByteArray(Charsets.UTF_8)
+            val out = ByteArray(4 + meta.size + bytes.size)
+            out[0] = ((meta.size ushr 24) and 0xFF).toByte()
+            out[1] = ((meta.size ushr 16) and 0xFF).toByte()
+            out[2] = ((meta.size ushr 8) and 0xFF).toByte()
+            out[3] = (meta.size and 0xFF).toByte()
+            System.arraycopy(meta, 0, out, 4, meta.size)
+            System.arraycopy(bytes, 0, out, 4 + meta.size, bytes.size)
+            return out
+        }
+
+        /**
+         * Decode `[4B metadataLen][metadata JSON][bytes]`. Returns `null`
+         * when the body is too short to contain the advertised metadata
+         * length or when the JSON is malformed.
+         */
+        fun decode(body: ByteArray): Inner? {
+            if (body.size < 4) return null
+            val metaLen = (
+                ((body[0].toInt() and 0xFF) shl 24) or
+                    ((body[1].toInt() and 0xFF) shl 16) or
+                    ((body[2].toInt() and 0xFF) shl 8) or
+                    (body[3].toInt() and 0xFF)
+                )
+            if (body.size < 4 + metaLen) return null
+            val metaBytes = ByteArray(metaLen)
+            System.arraycopy(body, 4, metaBytes, 0, metaLen)
+            val fileBytes = ByteArray(body.size - 4 - metaLen)
+            System.arraycopy(body, 4 + metaLen, fileBytes, 0, fileBytes.size)
+            return try {
+                val json = org.json.JSONObject(String(metaBytes, Charsets.UTF_8))
+                Inner(
+                    name = json.optString("n", ""),
+                    mimeType = json.optString("m", ""),
+                    size = json.optLong("s", 0L),
+                    uuid = json.optString("u", ""),
+                    bytes = fileBytes,
+                )
+            } catch (_: org.json.JSONException) {
+                null
+            }
         }
     }
 

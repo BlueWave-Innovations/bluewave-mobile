@@ -78,7 +78,9 @@ fun CreateGroupScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(uiState) {
+    val isCreated = uiState is CreateGroupUiState.Created
+    val errorMessage = (uiState as? CreateGroupUiState.Error)?.message
+    LaunchedEffect(isCreated, errorMessage) {
         when (val state = uiState) {
             is CreateGroupUiState.Created -> onGroupCreated(state.groupId)
             is CreateGroupUiState.Error -> {

@@ -1,9 +1,7 @@
 package com.example.bluewave_mobile.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,7 +20,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -53,16 +50,14 @@ import com.example.bluewave_mobile.ui.components.EmptyStateView
 import com.example.bluewave_mobile.ui.components.MakeDiscoverableBanner
 import com.example.bluewave_mobile.ui.intent.DeviceListIntent
 import com.example.bluewave_mobile.ui.model.ContactRow
+import java.util.Locale
 import com.example.bluewave_mobile.ui.permissions.PermissionGateView
 import com.example.bluewave_mobile.ui.permissions.rememberBluetoothPermissionState
 import com.example.bluewave_mobile.ui.state.DeviceListUiState
 import com.example.bluewave_mobile.ui.viewmodel.DeviceListViewModel
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalContext
-import com.example.bluewave_mobile.preferences.BluetoothVisibility
 import com.example.bluewave_mobile.service.BluetoothForegroundService
-import com.example.bluewave_mobile.ui.viewmodel.SettingsViewModel
 
 /**
  * Scaffold-based screen that lists Bluetooth peers as a sectioned
@@ -109,13 +104,11 @@ fun DeviceListScreen(
     onShareQrClick: () -> Unit = {},
     onGroupClick: (String) -> Unit = {},
     viewModel: DeviceListViewModel = viewModel(factory = DeviceListViewModel.Factory),
-    settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val permissions = rememberBluetoothPermissionState()
     val snackbarHostState = remember { SnackbarHostState() }
     var searchQuery: String by rememberSaveable { mutableStateOf("") }
-    val btVisibility by settingsViewModel.bluetoothVisibility.collectAsStateWithLifecycle()
 
     // Auto-start the first scan once permissions come back as granted —
     // the user shouldn't have to tap the FAB after dismissing the
@@ -367,13 +360,13 @@ internal fun applySearchFilter(
 ): List<ContactRow> {
     val needle = query.trim()
     if (needle.isEmpty()) return rows
-    val lowered = needle.lowercase()
+    val lowered = needle.lowercase(Locale.ROOT)
     return rows.filter { row ->
-        if (row.displayName.lowercase().contains(lowered)) return@filter true
-        if (row.macAddress.lowercase().contains(lowered)) return@filter true
+        if (row.displayName.lowercase(Locale.ROOT).contains(lowered)) return@filter true
+        if (row.macAddress.lowercase(Locale.ROOT).contains(lowered)) return@filter true
         when (row) {
-            is ContactRow.ExistingChat -> row.lastMessagePreview.lowercase().contains(lowered)
-            is ContactRow.GroupChat -> row.lastMessagePreview.lowercase().contains(lowered)
+            is ContactRow.ExistingChat -> row.lastMessagePreview.lowercase(Locale.ROOT).contains(lowered)
+            is ContactRow.GroupChat -> row.lastMessagePreview.lowercase(Locale.ROOT).contains(lowered)
             else -> false
         }
     }

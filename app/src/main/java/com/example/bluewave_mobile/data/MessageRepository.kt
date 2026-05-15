@@ -186,11 +186,46 @@ interface MessageRepository {
     suspend fun sendMessage(macAddress: String, plaintext: String)
 
     /**
+     * Sends a media file to a remote device.
+     *
+     * The file is read from [localPath], wrapped in a [MEDIA_MESSAGE]
+     * wire frame, and pushed over RFCOMM. A local DB row is inserted
+     * with the attachment metadata so the chat UI can render a preview.
+     *
+     * @param macAddress MAC address of the target device.
+     * @param attachmentName Original file name (shown in the UI).
+     * @param mimeType MIME type for preview rendering.
+     * @param localPath Absolute path to the file in app-private storage.
+     */
+    suspend fun sendMediaMessage(
+        macAddress: String,
+        attachmentName: String,
+        mimeType: String,
+        localPath: String,
+    )
+
+    /**
+     * Sends a typing-indicator ping to the peer so they can render
+     * "… is typing" in their chat header. Fire-and-forget — no ACK
+     * is expected and failures are silently swallowed.
+     */
+    suspend fun sendTyping(macAddress: String)
+
+    /**
+     * Reactive stream that emits `true` while the remote peer is
+     * currently typing. Auto-resets to `false` after a short timeout.
+     */
+    fun observePeerTyping(macAddress: String): kotlinx.coroutines.flow.Flow<Boolean>
+
+    /**
      * Deletes all messages for a specific device.
      *
      * @param macAddress MAC address of the device.
      */
     suspend fun deleteMessagesByDevice(macAddress: String)
+
+    /** Deletes a single message by its Room row id. */
+    suspend fun deleteMessageById(id: Long)
 
     /**
      * Suspends all network activity towards a peer whose bond/encryption
@@ -222,6 +257,14 @@ interface MessageRepository {
      *                   a valid encryption key.
      */
     suspend fun resumeNetworkOperations(macAddress: String)
+
+    /**
+     * Re-send the latest local profile to every connected peer whose
+     * last [PROFILE_ACK] is stale. Called periodically by
+     * [BlueWaveApplication] so that a missed profile frame is
+     * eventually re-delivered.
+     */
+    suspend fun syncProfilesToConnectedPeers()
 
     /**
      * Callback invoked after an incoming text message is persisted.

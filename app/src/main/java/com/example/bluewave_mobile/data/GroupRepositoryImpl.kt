@@ -1,6 +1,6 @@
 package com.example.bluewave_mobile.data
 
-import android.util.Log
+import com.example.bluewave_mobile.utils.BlueWaveLogger
 import com.example.bluewave_mobile.crypto.CryptoManager
 import com.example.bluewave_mobile.crypto.SignalEngine
 import com.example.bluewave_mobile.crypto.SignalEngineException
@@ -87,6 +87,10 @@ class GroupRepositoryImpl(
         return chatGroupDao.observeMessages(groupId)
     }
 
+    override fun observeAllGroupMessages(): Flow<List<GroupMessageEntity>> {
+        return chatGroupDao.observeAllGroupMessages()
+    }
+
     override suspend fun groupSummaries(): List<GroupSummary> {
         return chatGroupDao.groupSummaries()
     }
@@ -96,8 +100,11 @@ class GroupRepositoryImpl(
     }
 
     override suspend fun createGroup(name: String, memberMacs: List<String>): String {
-        val groupId = UUID.randomUUID().toString().uppercase()
         val ownerMac = localMacProvider().uppercase()
+        if (ownerMac.isBlank()) {
+            throw IllegalStateException("Cannot create group — local MAC unavailable (BT permission missing?)")
+        }
+        val groupId = UUID.randomUUID().toString().uppercase()
         val now = System.currentTimeMillis()
         val normalizedMembers: List<String> = (memberMacs + ownerMac)
             .map { it.uppercase() }
@@ -109,9 +116,9 @@ class GroupRepositoryImpl(
             ownerMac = ownerMac,
             createdAt = now,
         )
-        chatGroupDao.upsertGroup(group)
-        chatGroupDao.upsertMembers(
-            normalizedMembers.map { mac ->
+        chatGroupDao.createGroupWithMembers(
+            group = group,
+            members = normalizedMembers.map { mac ->
                 GroupMemberEntity(groupId = groupId, peerMac = mac, joinedAt = now)
             },
         )
@@ -129,7 +136,7 @@ class GroupRepositoryImpl(
 
     override suspend fun sendGroupMessage(groupId: String, plaintext: String) {
         val group = chatGroupDao.findGroup(groupId) ?: run {
-            Log.w(TAG, "sendGroupMessage: unknown group $groupId")
+            BlueWaveLogger.w(TAG, "sendGroupMessage: unknown group $groupId")
             return
         }
         val ownerMac = localMacProvider().uppercase()
@@ -179,7 +186,7 @@ class GroupRepositoryImpl(
         val invite = runCatching {
             JSON_FORMAT.decodeFromString(GroupInvitePayload.serializer(), plaintext.toString(Charsets.UTF_8))
         }.getOrNull() ?: run {
-            Log.w(TAG, "Dropping malformed group invite from $fromMac")
+            BlueWaveLogger.w(TAG, "Dropping malformed group invite from $fromMac")
             return
         }
         val now = System.currentTimeMillis()
@@ -208,7 +215,7 @@ class GroupRepositoryImpl(
         plaintext: ByteArray,
     ) {
         val inner = BlueWaveFrame.GroupMessageBody.decode(plaintext) ?: run {
-            Log.w(TAG, "Dropping malformed group message body from $fromMac")
+            BlueWaveLogger.w(TAG, "Dropping malformed group message body from $fromMac")
             return
         }
         // Encrypt-at-rest with the local AES key. The wire-level
@@ -275,7 +282,7 @@ class GroupRepositoryImpl(
         val ciphertext = try {
             engine.encrypt(peerMac, body)
         } catch (e: SignalEngineException) {
-            Log.w(TAG, "Group encrypt failed for $peerMac: ${e.message}")
+            BlueWaveLogger.w(TAG, "Group encrypt failed for $peerMac: ${e.message}")
             return
         }
         val subtype = when (ciphertext.type) {
@@ -348,6 +355,7 @@ class NoOpGroupRepository : GroupRepository {
     override fun observeAllMemberships(): Flow<List<GroupMemberEntity>> = flowOf(emptyList())
     override fun observeMembers(groupId: String): Flow<List<GroupMemberEntity>> = flowOf(emptyList())
     override fun observeMessages(groupId: String): Flow<List<GroupMessageEntity>> = flowOf(emptyList())
+    override fun observeAllGroupMessages(): Flow<List<GroupMessageEntity>> = flowOf(emptyList())
     override suspend fun groupSummaries(): List<GroupSummary> = emptyList()
     override suspend fun findGroup(groupId: String): ChatGroupEntity? = null
     override suspend fun createGroup(name: String, memberMacs: List<String>): String = ""

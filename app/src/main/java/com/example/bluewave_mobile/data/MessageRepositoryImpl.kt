@@ -1,6 +1,6 @@
 package com.example.bluewave_mobile.data
 
-import android.util.Log
+import com.example.bluewave_mobile.utils.BlueWaveLogger
 import com.example.bluewave_mobile.crypto.CryptoManager
 import com.example.bluewave_mobile.crypto.SignalEngine
 import com.example.bluewave_mobile.crypto.SignalEngineException
@@ -8,6 +8,9 @@ import com.example.bluewave_mobile.network.BlueWaveFrame
 import com.example.bluewave_mobile.network.MessageTransport
 import com.example.bluewave_mobile.preferences.LocalProfile
 import com.example.bluewave_mobile.preferences.LocalProfileCodec
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,8 +18,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import java.io.File
 import java.util.UUID
 
 /**
@@ -62,9 +68,66 @@ class MessageRepositoryImpl(
     private val peerProfileDao: PeerProfileDao? = null,
     private val localProfileProvider: suspend () -> LocalProfile = { LocalProfile.EMPTY },
     private val groupRepository: GroupRepository? = null,
+    private val mediaStorageDir: java.io.File? = null,
+    private val appContext: android.content.Context? = null,
 ) : MessageRepository {
 
+    @Volatile
     override var onMessageReceived: ((String, String, String) -> Unit)? = null
+
+    private val typingTimestamps: MutableMap<String, Long> = mutableMapOf()
+    private val typingFlows: MutableMap<String, kotlinx.coroutines.flow.MutableStateFlow<Boolean>> = mutableMapOf()
+
+    /** Version stamp of the latest local profile (bumped on every edit). */
+    private var latestProfileVersion: Long = System.currentTimeMillis()
+
+    /** Per-peer last-ACKed profile version. Guarded by its own lock. */
+    private val profileAckVersions: MutableMap<String, Long> = mutableMapOf()
+
+    /** Per-peer last-sent profile version. Guarded by its own lock. */
+    private val lastSentProfileVersion: MutableMap<String, Long> = mutableMapOf()
+
+    override suspend fun sendTyping(macAddress: String) {
+        val key = macAddress.uppercase()
+        val activeTransport = transport ?: return
+        if (isPausedFor(key)) return
+        val frame = BlueWaveFrame.encode(BlueWaveFrame.Type.TYPING_INDICATOR, ByteArray(0))
+        withContext(Dispatchers.IO) {
+            runCatching {
+                activeTransport.send(key, frame)
+            }.onFailure { e ->
+                BlueWaveLogger.w(TAG, "sendTyping failed for $key: ${e.message}")
+            }
+        }
+    }
+
+    override fun observePeerTyping(macAddress: String): kotlinx.coroutines.flow.Flow<Boolean> {
+        val key = macAddress.uppercase()
+        return synchronized(typingFlows) {
+            typingFlows.getOrPut(key) { kotlinx.coroutines.flow.MutableStateFlow(false) }
+        }
+    }
+
+    private fun markPeerTyping(macAddress: String) {
+        val key = macAddress.uppercase()
+        val now = System.currentTimeMillis()
+        synchronized(typingTimestamps) { typingTimestamps[key] = now }
+        synchronized(typingFlows) {
+            typingFlows[key]?.value = true
+        }
+        // Auto-reset after 3 seconds.
+        GlobalScope.launch(kotlinx.coroutines.Dispatchers.Default) {
+            delay(3_000L)
+            synchronized(typingTimestamps) {
+                if (typingTimestamps[key] == now) {
+                    typingTimestamps.remove(key)
+                    synchronized(typingFlows) {
+                        typingFlows[key]?.value = false
+                    }
+                }
+            }
+        }
+    }
 
     override fun getMessagesByDevice(macAddress: String): Flow<List<MessageEntity>> {
         return messageDao.getMessagesByDevice(macAddress)
@@ -125,9 +188,27 @@ class MessageRepositoryImpl(
         }
         if (peers.isEmpty()) return
         val profile = runCatching { localProfileProvider() }.getOrNull() ?: return
-        val payload = LocalProfileCodec.encode(profile)
+        latestProfileVersion = System.currentTimeMillis()
+        val payload = LocalProfileCodec.encode(profile, appContext, latestProfileVersion)
         for (peer in peers) {
-            shipProfilePayload(engine, activeTransport, peer, payload)
+            shipProfilePayload(engine, activeTransport, peer, payload, latestProfileVersion)
+        }
+    }
+
+    override suspend fun syncProfilesToConnectedPeers() {
+        val engine = signalEngine ?: return
+        val activeTransport = transport ?: return
+        val peers: List<String> = synchronized(sessionStates) {
+            sessionStates.entries.filter { it.value.value == E2EEState.SECURE }.map { it.key }
+        }
+        if (peers.isEmpty()) return
+        val profile = runCatching { localProfileProvider() }.getOrNull() ?: return
+        val payload = LocalProfileCodec.encode(profile, appContext, latestProfileVersion)
+        for (peer in peers) {
+            val acked = synchronized(profileAckVersions) { profileAckVersions[peer] ?: 0L }
+            if (acked != latestProfileVersion) {
+                shipProfilePayload(engine, activeTransport, peer, payload, latestProfileVersion)
+            }
         }
     }
 
@@ -191,7 +272,7 @@ class MessageRepositoryImpl(
         // very-first PreKeySignalMessage that bootstraps a session.
         val frame = BlueWaveFrame.decode(rawData)
         if (frame == null) {
-            Log.w(TAG, "Dropping undecodable frame from $key (size=${rawData.size})")
+            BlueWaveLogger.w(TAG, "Dropping undecodable frame from $key (size=${rawData.size})")
             return
         }
         when (frame.type) {
@@ -214,7 +295,10 @@ class MessageRepositoryImpl(
             BlueWaveFrame.Type.HEARTBEAT -> {
                 // Heartbeats are transport-internal — silently dropped.
             }
-            BlueWaveFrame.Type.MESSAGE_ACK -> handleIncomingAck(frame.payload)
+            BlueWaveFrame.Type.MESSAGE_ACK -> handleIncomingAck(engine, key, frame.payload)
+            BlueWaveFrame.Type.MEDIA_MESSAGE -> handleIncomingMediaMessage(key, frame.payload)
+            BlueWaveFrame.Type.TYPING_INDICATOR -> markPeerTyping(key)
+            BlueWaveFrame.Type.PROFILE_ACK -> handleIncomingProfileAck(key, frame.payload)
         }
     }
 
@@ -225,7 +309,7 @@ class MessageRepositoryImpl(
         val uuid = UUID.randomUUID().toString()
         messageDao.insertMessage(
             MessageEntity(
-                macAddress = macAddress,
+                macAddress = key,
                 encryptedPayload = ciphertext,
                 iv = iv,
                 isOutgoing = true,
@@ -238,50 +322,147 @@ class MessageRepositoryImpl(
         // Suppress radio writes when the peer is paused due to a
         // bond-loss event — the message stays in the local DB and will
         // be re-sent manually by the user once the link is restored.
-        if (isPausedFor(macAddress)) return
+        if (isPausedFor(key)) return
 
         val activeTransport = transport ?: return
 
-        // Make sure we have an RFCOMM session before we try to ship
-        // anything. `connect` is idempotent on the manager side (it
-        // early-returns when a session for this MAC already exists)
-        // and on the transport's accept loop side (the symmetric
-        // peer's listener will be reused), so this is effectively
-        // a no-op on the happy path. When the peer was unreachable
-        // a moment ago, the user reopens the chat and the auto-connect
-        // fan-out in [BlueWaveApplication] hasn't completed yet, this
-        // is what unblocks the very next message — instead of failing
-        // silently we wait for the connect to settle and then push
-        // the bytes. The auto-connect on cold launch + on adapter
-        // STATE_ON is best-effort; this synchronous attempt is the
-        // final safety net for "user just typed something, deliver
-        // it now even if the link hasn't been pre-warmed".
-        if (!activeTransport.isConnected(key)) {
-            runCatching { activeTransport.connect(key) }
-                .onFailure { e ->
-                    Log.w(TAG, "send-side connect attempt failed for $key: ${e.message}")
-                }
+        withContext(Dispatchers.IO) {
+            // Make sure we have an RFCOMM session before we try to ship
+            // anything. `connect` is idempotent on the manager side (it
+            // early-returns when a session for this MAC already exists)
+            // and on the transport's accept loop side (the symmetric
+            // peer's listener will be reused), so this is effectively
+            // a no-op on the happy path.
+            if (!activeTransport.isConnected(key)) {
+                runCatching { activeTransport.connect(key) }
+                    .onFailure { e ->
+                        BlueWaveLogger.w(TAG, "send-side connect attempt 1 failed for $key: ${e.message}")
+                    }
+            }
+            if (!activeTransport.isConnected(key)) {
+                delay(500L)
+                runCatching { activeTransport.connect(key) }
+                    .onFailure { e ->
+                        BlueWaveLogger.w(TAG, "send-side connect attempt 2 failed for $key: ${e.message}")
+                    }
+            }
+
+            // Prepend the message UUID so the receiver can ACK it.
+            val wirePayload = (uuid + "\n").toByteArray(Charsets.UTF_8) + plaintextBytes
+
+            val engine = signalEngine
+            if (engine == null) {
+                activeTransport.send(key, wirePayload)
+                return@withContext
+            }
+
+            if (engine.hasSession(key)) {
+                shipEncrypted(engine, activeTransport, key, wirePayload)
+            } else {
+                enqueuePending(key, wirePayload)
+                sendLocalKeyBundleIfNeeded(key)
+            }
         }
+    }
 
-        // Prepend the message UUID so the receiver can ACK it.
-        val wirePayload = (uuid + "\n").toByteArray(Charsets.UTF_8) + plaintextBytes
-
-        val engine = signalEngine
-        if (engine == null) {
-            activeTransport.send(macAddress, wirePayload)
+    override suspend fun sendMediaMessage(
+        macAddress: String,
+        attachmentName: String,
+        mimeType: String,
+        localPath: String,
+    ) {
+        val key = macAddress.uppercase()
+        val file = java.io.File(localPath)
+        if (!file.exists() || !file.isFile) {
+            BlueWaveLogger.w(TAG, "sendMediaMessage: file not found at $localPath")
             return
         }
-
-        if (engine.hasSession(key)) {
-            shipEncrypted(engine, activeTransport, key, wirePayload)
-        } else {
-            enqueuePending(key, wirePayload)
-            sendLocalKeyBundleIfNeeded(key)
+        if (file.length() > MAX_MEDIA_BYTES) {
+            BlueWaveLogger.w(TAG, "sendMediaMessage: file too large (${file.length()} bytes)")
+            return
+        }
+        val fileBytes = withContext(Dispatchers.IO) { file.readBytes() }
+        val uuid = UUID.randomUUID().toString()
+        messageDao.insertMessage(
+            MessageEntity(
+                macAddress = key,
+                encryptedPayload = ByteArray(0),
+                iv = ByteArray(0),
+                isOutgoing = true,
+                senderName = "Me",
+                isRead = true,
+                deliveryStatus = MessageEntity.STATUS_SENT,
+                messageUuid = uuid,
+                attachmentPath = localPath,
+                attachmentName = attachmentName,
+                attachmentMimeType = mimeType,
+                attachmentSize = file.length(),
+                transferStatus = MessageEntity.TRANSFER_UPLOADING,
+            )
+        )
+        if (isPausedFor(key)) return
+        val activeTransport = transport ?: return
+        withContext(Dispatchers.IO) {
+            if (!activeTransport.isConnected(key)) {
+                runCatching { activeTransport.connect(key) }
+                    .onFailure { e -> BlueWaveLogger.w(TAG, "media connect attempt 1 failed for $key: ${e.message}") }
+            }
+            if (!activeTransport.isConnected(key)) {
+                delay(500L)
+                runCatching { activeTransport.connect(key) }
+                    .onFailure { e -> BlueWaveLogger.w(TAG, "media connect attempt 2 failed for $key: ${e.message}") }
+            }
+            val payload = BlueWaveFrame.MediaPayload.encode(
+                name = attachmentName,
+                mimeType = mimeType,
+                size = file.length(),
+                uuid = uuid,
+                bytes = fileBytes,
+            )
+            val engine = signalEngine
+            if (engine == null) {
+                val ok = activeTransport.send(key, BlueWaveFrame.encode(BlueWaveFrame.Type.MEDIA_MESSAGE, payload))
+                messageDao.updateTransferStatus(
+                    uuid,
+                    if (ok) MessageEntity.TRANSFER_COMPLETED else MessageEntity.TRANSFER_FAILED,
+                )
+                return@withContext
+            }
+            if (engine.hasSession(key)) {
+                val ciphertext = try {
+                    engine.encrypt(key, payload)
+                } catch (e: SignalEngineException) {
+                    BlueWaveLogger.w(TAG, "Media encrypt failed for $key: ${e.message}")
+                    sessionStateFor(key).value = E2EEState.FAILED
+                    return@withContext
+                }
+                val subtype = when (ciphertext.type) {
+                    SignalEngine.Ciphertext.Type.SIGNAL_MESSAGE ->
+                        BlueWaveFrame.MediaEnvelope.Subtype.SIGNAL_MESSAGE
+                    SignalEngine.Ciphertext.Type.PREKEY_SIGNAL_MESSAGE ->
+                        BlueWaveFrame.MediaEnvelope.Subtype.PREKEY_SIGNAL_MESSAGE
+                }
+                val body = BlueWaveFrame.MediaEnvelope.encode(subtype, ciphertext.bytes)
+                val framed = BlueWaveFrame.encode(BlueWaveFrame.Type.MEDIA_MESSAGE, body)
+                val ok = activeTransport.send(key, framed)
+                messageDao.updateTransferStatus(
+                    uuid,
+                    if (ok) MessageEntity.TRANSFER_COMPLETED else MessageEntity.TRANSFER_FAILED,
+                )
+                sessionStateFor(key).value = E2EEState.SECURE
+            } else {
+                enqueuePending(key, payload)
+                sendLocalKeyBundleIfNeeded(key)
+            }
         }
     }
 
     override suspend fun deleteMessagesByDevice(macAddress: String) {
         messageDao.deleteMessagesByDevice(macAddress)
+    }
+
+    override suspend fun deleteMessageById(id: Long) {
+        messageDao.deleteMessageById(id)
     }
 
     /**
@@ -360,7 +541,7 @@ class MessageRepositoryImpl(
         val ciphertext = try {
             engine.encrypt(macAddress, plaintextBytes)
         } catch (e: SignalEngineException) {
-            Log.w(TAG, "Encrypt failed for $macAddress: ${e.message}")
+            BlueWaveLogger.w(TAG, "Encrypt failed for $macAddress: ${e.message}")
             sessionStateFor(macAddress).value = E2EEState.FAILED
             return
         }
@@ -388,7 +569,7 @@ class MessageRepositoryImpl(
         val bundle = try {
             engine.localKeyBundle()
         } catch (e: SignalEngineException) {
-            Log.w(TAG, "Local key bundle generation failed: ${e.message}")
+            BlueWaveLogger.w(TAG, "Local key bundle generation failed: ${e.message}")
             sessionStateFor(macAddress).value = E2EEState.FAILED
             return
         }
@@ -404,7 +585,7 @@ class MessageRepositoryImpl(
         try {
             engine.processPeerKeyBundle(macAddress, bundle)
         } catch (e: SignalEngineException) {
-            Log.w(TAG, "Failed to process peer key bundle from $macAddress: ${e.message}")
+            BlueWaveLogger.w(TAG, "Failed to process peer key bundle from $macAddress: ${e.message}")
             sessionStateFor(macAddress).value = E2EEState.FAILED
             return
         }
@@ -430,7 +611,7 @@ class MessageRepositoryImpl(
                 engine.decryptSignalMessage(macAddress, ciphertext)
             }
         } catch (e: SignalEngineException) {
-            Log.w(TAG, "Decrypt failed for $macAddress: ${e.message}")
+            BlueWaveLogger.w(TAG, "Decrypt failed for $macAddress: ${e.message}")
             sessionStateFor(macAddress).value = E2EEState.FAILED
             return
         }
@@ -465,12 +646,12 @@ class MessageRepositoryImpl(
     ) {
         val groups = groupRepository
         if (groups == null) {
-            Log.w(TAG, "Dropping group frame from $macAddress — no GroupRepository wired")
+            BlueWaveLogger.w(TAG, "Dropping group frame from $macAddress — no GroupRepository wired")
             return
         }
         val inner = BlueWaveFrame.GroupEnvelope.decode(body)
         if (inner == null) {
-            Log.w(TAG, "Dropping malformed group envelope from $macAddress (size=${body.size})")
+            BlueWaveLogger.w(TAG, "Dropping malformed group envelope from $macAddress (size=${body.size})")
             return
         }
         val plaintext = try {
@@ -481,7 +662,7 @@ class MessageRepositoryImpl(
                     engine.decryptPreKeyMessage(macAddress, inner.ciphertext)
             }
         } catch (e: SignalEngineException) {
-            Log.w(TAG, "Group decrypt failed for $macAddress: ${e.message}")
+            BlueWaveLogger.w(TAG, "Group decrypt failed for $macAddress: ${e.message}")
             sessionStateFor(macAddress).value = E2EEState.FAILED
             return
         }
@@ -515,7 +696,7 @@ class MessageRepositoryImpl(
         val dao = peerProfileDao ?: return
         val inner = BlueWaveFrame.ProfileEnvelope.decode(body)
         if (inner == null) {
-            Log.w(TAG, "Dropping malformed profile envelope from $macAddress (size=${body.size})")
+            BlueWaveLogger.w(TAG, "Dropping malformed profile envelope from $macAddress (size=${body.size})")
             return
         }
         val plaintext = try {
@@ -526,7 +707,7 @@ class MessageRepositoryImpl(
                     engine.decryptPreKeyMessage(macAddress, inner.ciphertext)
             }
         } catch (e: SignalEngineException) {
-            Log.w(TAG, "Failed to decrypt profile metadata from $macAddress: ${e.message}")
+            BlueWaveLogger.w(TAG, "Failed to decrypt profile metadata from $macAddress: ${e.message}")
             sessionStateFor(macAddress).value = E2EEState.FAILED
             return
         }
@@ -537,11 +718,15 @@ class MessageRepositoryImpl(
             drainPendingQueue(engine, macAddress)
             pushLocalProfileIfReady(engine, macAddress)
         }
-        val profile = LocalProfileCodec.decode(plaintext)
-        if (profile == null) {
-            Log.w(TAG, "Dropping malformed profile JSON from $macAddress")
+        val avatarDir = mediaStorageDir?.let { File(it, "avatars") }
+        avatarDir?.mkdirs()
+        val destAvatarFile = avatarDir?.let { File(it, "${macAddress}_avatar.jpg") }
+        val decoded = LocalProfileCodec.decode(plaintext, destAvatarFile)
+        if (decoded == null) {
+            BlueWaveLogger.w(TAG, "Dropping malformed profile JSON from $macAddress")
             return
         }
+        val (profile, version) = decoded
         dao.upsert(
             PeerProfileEntity(
                 macAddress = macAddress,
@@ -552,6 +737,8 @@ class MessageRepositoryImpl(
                 updatedAt = System.currentTimeMillis(),
             ),
         )
+        // Acknowledge receipt so the sender knows this profile arrived.
+        sendProfileAck(macAddress, version)
     }
 
     /**
@@ -570,8 +757,8 @@ class MessageRepositoryImpl(
         val activeTransport = transport ?: return
         if (peerProfileDao == null) return
         val profile = runCatching { localProfileProvider() }.getOrNull() ?: return
-        val payload = LocalProfileCodec.encode(profile)
-        shipProfilePayload(engine, activeTransport, macAddress, payload)
+        val payload = LocalProfileCodec.encode(profile, appContext, latestProfileVersion)
+        shipProfilePayload(engine, activeTransport, macAddress, payload, latestProfileVersion)
     }
 
     /**
@@ -586,11 +773,12 @@ class MessageRepositoryImpl(
         transport: MessageTransport,
         macAddress: String,
         payload: ByteArray,
+        version: Long,
     ) {
         val ciphertext = try {
             engine.encrypt(macAddress, payload)
         } catch (e: SignalEngineException) {
-            Log.w(TAG, "Profile encrypt failed for $macAddress: ${e.message}")
+            BlueWaveLogger.w(TAG, "Profile encrypt failed for $macAddress: ${e.message}")
             return
         }
         val subtype = when (ciphertext.type) {
@@ -602,6 +790,41 @@ class MessageRepositoryImpl(
         val body = BlueWaveFrame.ProfileEnvelope.encode(subtype, ciphertext.bytes)
         val framed = BlueWaveFrame.encode(BlueWaveFrame.Type.PROFILE_METADATA, body)
         transport.send(macAddress, framed)
+        val key = macAddress.uppercase()
+        synchronized(lastSentProfileVersion) { lastSentProfileVersion[key] = version }
+    }
+
+    private suspend fun sendProfileAck(macAddress: String, version: Long) {
+        val activeTransport = transport ?: return
+        val payload = ByteArray(8).apply {
+            this[0] = ((version ushr 56) and 0xFF).toByte()
+            this[1] = ((version ushr 48) and 0xFF).toByte()
+            this[2] = ((version ushr 40) and 0xFF).toByte()
+            this[3] = ((version ushr 32) and 0xFF).toByte()
+            this[4] = ((version ushr 24) and 0xFF).toByte()
+            this[5] = ((version ushr 16) and 0xFF).toByte()
+            this[6] = ((version ushr 8) and 0xFF).toByte()
+            this[7] = (version and 0xFF).toByte()
+        }
+        val ackFrame = BlueWaveFrame.encode(BlueWaveFrame.Type.PROFILE_ACK, payload)
+        activeTransport.send(macAddress, ackFrame)
+    }
+
+    private fun handleIncomingProfileAck(macAddress: String, body: ByteArray) {
+        if (body.size < 8) return
+        val version = (
+            (body[0].toInt() and 0xFF).toLong() shl 56 or
+                (body[1].toInt() and 0xFF).toLong() shl 48 or
+                (body[2].toInt() and 0xFF).toLong() shl 40 or
+                (body[3].toInt() and 0xFF).toLong() shl 32 or
+                (body[4].toInt() and 0xFF).toLong() shl 24 or
+                (body[5].toInt() and 0xFF).toLong() shl 16 or
+                (body[6].toInt() and 0xFF).toLong() shl 8 or
+                (body[7].toInt() and 0xFF).toLong()
+            )
+        val key = macAddress.uppercase()
+        synchronized(profileAckVersions) { profileAckVersions[key] = version }
+        BlueWaveLogger.d(TAG, "Profile ACK from $key for version $version")
     }
 
     private suspend fun drainPendingQueue(engine: SignalEngine, macAddress: String) {
@@ -611,8 +834,83 @@ class MessageRepositoryImpl(
             pending.toList()
         }
         for (plaintext in toShip) {
-            shipEncrypted(engine, activeTransport, macAddress, plaintext)
+            runCatching {
+                shipEncrypted(engine, activeTransport, macAddress, plaintext)
+            }.onFailure { e ->
+                BlueWaveLogger.w(TAG, "Failed to ship pending message to $macAddress: ${e.message}")
+            }
         }
+    }
+
+    private suspend fun handleIncomingMediaMessage(
+        macAddress: String,
+        payload: ByteArray,
+    ) {
+        val dir = mediaStorageDir ?: return
+        val engine = signalEngine
+        val fileBytes: ByteArray
+        val meta: BlueWaveFrame.MediaPayload.Inner
+        if (engine != null) {
+            val envelope = BlueWaveFrame.MediaEnvelope.decode(payload)
+            if (envelope == null) {
+                BlueWaveLogger.w(TAG, "Dropping malformed encrypted MEDIA_MESSAGE from $macAddress")
+                return
+            }
+            val decrypted = try {
+                when (envelope.subtype) {
+                    BlueWaveFrame.MediaEnvelope.Subtype.PREKEY_SIGNAL_MESSAGE ->
+                        engine.decryptPreKeyMessage(macAddress, envelope.ciphertext)
+                    BlueWaveFrame.MediaEnvelope.Subtype.SIGNAL_MESSAGE ->
+                        engine.decryptSignalMessage(macAddress, envelope.ciphertext)
+                }
+            } catch (e: SignalEngineException) {
+                BlueWaveLogger.w(TAG, "Media decrypt failed for $macAddress: ${e.message}")
+                sessionStateFor(macAddress).value = E2EEState.FAILED
+                return
+            }
+            sessionStateFor(macAddress).value = E2EEState.SECURE
+            if (envelope.subtype == BlueWaveFrame.MediaEnvelope.Subtype.PREKEY_SIGNAL_MESSAGE) {
+                drainPendingQueue(engine, macAddress)
+                pushLocalProfileIfReady(engine, macAddress)
+            }
+            val decryptedPayload = BlueWaveFrame.MediaPayload.decode(decrypted)
+            if (decryptedPayload == null) {
+                BlueWaveLogger.w(TAG, "Dropping malformed inner MEDIA_MESSAGE from $macAddress")
+                return
+            }
+            fileBytes = decryptedPayload.bytes
+            meta = decryptedPayload
+        } else {
+            val inner = BlueWaveFrame.MediaPayload.decode(payload)
+            if (inner == null) {
+                BlueWaveLogger.w(TAG, "Dropping malformed MEDIA_MESSAGE from $macAddress")
+                return
+            }
+            fileBytes = inner.bytes
+            meta = inner
+        }
+        val safeName = meta.name.replace("[^a-zA-Z0-9._-]".toRegex(), "_")
+        val destDir = java.io.File(dir, "inbound").apply { mkdirs() }
+        val destFile = java.io.File(destDir, "${meta.uuid}_$safeName")
+        withContext(Dispatchers.IO) {
+            destFile.writeBytes(fileBytes)
+        }
+        messageDao.insertMessage(
+            MessageEntity(
+                macAddress = macAddress.uppercase(),
+                encryptedPayload = ByteArray(0),
+                iv = ByteArray(0),
+                isOutgoing = false,
+                senderName = "",
+                messageUuid = meta.uuid,
+                attachmentPath = destFile.absolutePath,
+                attachmentName = meta.name,
+                attachmentMimeType = meta.mimeType,
+                attachmentSize = meta.size,
+                transferStatus = MessageEntity.TRANSFER_COMPLETED,
+            )
+        )
+        onMessageReceived?.invoke(macAddress, "", meta.name)
     }
 
     private suspend fun persistInboundPlaintext(
@@ -620,28 +918,21 @@ class MessageRepositoryImpl(
         senderName: String,
         plaintext: ByteArray,
     ) {
-        // Extract the UUID prefix if present: "<uuid>\n<message>"
-        val raw = String(plaintext, Charsets.UTF_8)
-        val nlIdx = raw.indexOf('\n')
-        val messageUuid: String
-        val messageText: String
-        if (nlIdx == UUID_LENGTH) {
-            messageUuid = raw.substring(0, UUID_LENGTH)
-            messageText = raw.substring(UUID_LENGTH + 1)
-        } else {
-            messageUuid = ""
-            messageText = raw
-        }
+        // Extract the UUID prefix if present: 36 ASCII bytes + '\n' + message.
+        // We work with raw bytes so multi-byte UTF-8 characters in the
+        // message body cannot confuse a String-based indexOf search.
+        val (messageUuid, messageText) = extractUuidAndText(plaintext)
 
         val messageBytes = messageText.toByteArray(Charsets.UTF_8)
         val (iv, ciphertext) = cryptoManager.encrypt(messageBytes)
         messageDao.insertMessage(
             MessageEntity(
-                macAddress = macAddress,
+                macAddress = macAddress.uppercase(),
                 encryptedPayload = ciphertext,
                 iv = iv,
                 isOutgoing = false,
                 senderName = senderName,
+                messageUuid = messageUuid,
             )
         )
 
@@ -653,6 +944,20 @@ class MessageRepositoryImpl(
         onMessageReceived?.invoke(macAddress, senderName, messageText)
     }
 
+    /**
+     * Splits [plaintext] into a (UUID, text) pair.
+     * The wire format is exactly 36 US-ASCII UUID bytes, one '\n' byte,
+     * then arbitrary UTF-8 message bytes. Anything else yields ("", full).
+     */
+    private fun extractUuidAndText(plaintext: ByteArray): Pair<String, String> {
+        if (plaintext.size >= UUID_LENGTH + 1 && plaintext[UUID_LENGTH] == '\n'.code.toByte()) {
+            val uuid = String(plaintext, 0, UUID_LENGTH, Charsets.US_ASCII)
+            val text = String(plaintext, UUID_LENGTH + 1, plaintext.size - UUID_LENGTH - 1, Charsets.UTF_8)
+            return uuid to text
+        }
+        return "" to String(plaintext, Charsets.UTF_8)
+    }
+
     private suspend fun sendAckForMessage(macAddress: String, messageUuid: String) {
         val activeTransport = transport ?: return
         val payload = messageUuid.toByteArray(Charsets.UTF_8)
@@ -661,7 +966,7 @@ class MessageRepositoryImpl(
             val ct = try {
                 engine.encrypt(macAddress, payload)
             } catch (e: SignalEngineException) {
-                Log.w(TAG, "ACK encrypt failed for $macAddress")
+                BlueWaveLogger.w(TAG, "ACK encrypt failed for $macAddress")
                 return
             }
             val frameType = when (ct.type) {
@@ -677,9 +982,41 @@ class MessageRepositoryImpl(
         }
     }
 
-    private suspend fun handleIncomingAck(body: ByteArray) {
-        val uuid = String(body, Charsets.UTF_8)
-        if (uuid.isNotBlank()) {
+    private suspend fun handleIncomingAck(
+        engine: SignalEngine,
+        macAddress: String,
+        body: ByteArray,
+    ) {
+        // The ACK payload may be:
+        //  * plaintext UUID (legacy / no E2EE) — 36 ASCII bytes
+        //  * an inner BlueWaveFrame wrapping the encrypted UUID
+        //    (sent by sendAckForMessage when a Signal session exists)
+        val inner = BlueWaveFrame.decode(body)
+        val plaintext: ByteArray = if (inner != null) {
+            val decrypted = try {
+                when (inner.type) {
+                    BlueWaveFrame.Type.PREKEY_SIGNAL_MESSAGE ->
+                        engine.decryptPreKeyMessage(macAddress, inner.payload)
+                    BlueWaveFrame.Type.SIGNAL_MESSAGE ->
+                        engine.decryptSignalMessage(macAddress, inner.payload)
+                    else -> null
+                }
+            } catch (e: SignalEngineException) {
+                BlueWaveLogger.w(TAG, "ACK decrypt failed for $macAddress: ${e.message}")
+                null
+            }
+            if (decrypted != null) {
+                decrypted
+            } else {
+                // Encrypted frame that failed to decrypt — do NOT fall back
+                // to treating raw bytes as plaintext (avoids decryption oracle).
+                return
+            }
+        } else {
+            body
+        }
+        val uuid = String(plaintext, Charsets.UTF_8).trim()
+        if (uuid.isNotBlank() && uuid.length == UUID_LENGTH) {
             messageDao.updateDeliveryStatus(uuid, MessageEntity.STATUS_DELIVERED)
         }
     }
@@ -687,5 +1024,7 @@ class MessageRepositoryImpl(
     private companion object {
         const val TAG = "MessageRepository"
         const val UUID_LENGTH = 36
+        /** Hard ceiling for media files shipped in a single MEDIA_MESSAGE frame (3.5 MiB). */
+        const val MAX_MEDIA_BYTES = 3_500_000L
     }
 }

@@ -43,21 +43,15 @@ object PermissionManager {
      *         that MUST be granted before any RFCOMM operation is started.
      */
     fun requiredBluetoothPermissions(): Array<String> {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // API 31+ : Bluetooth permissions are no longer location-derived.
-            arrayOf(
-                Manifest.permission.BLUETOOTH_CONNECT,
-                Manifest.permission.BLUETOOTH_SCAN,
-                Manifest.permission.BLUETOOTH_ADVERTISE
-            )
-        } else {
-            // API 28..30 : legacy permissions + ACCESS_FINE_LOCATION for discovery.
-            arrayOf(
-                Manifest.permission.BLUETOOTH,
-                Manifest.permission.BLUETOOTH_ADMIN,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            )
-        }
+        // minSdk is 31 (Android 12) so we only ever need the modern
+        // split permissions.  BLUETOOTH_ADVERTISE is not required for
+        // classic RFCOMM; POST_NOTIFICATIONS is needed on API 33+ but
+        // is harmless to request on 31-32 (system auto-grants).
+        return arrayOf(
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.POST_NOTIFICATIONS,
+        )
     }
 
     /**

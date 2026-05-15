@@ -4,7 +4,7 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothServerSocket
 import android.bluetooth.BluetoothSocket
-import android.util.Log
+import com.example.bluewave_mobile.utils.BlueWaveLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
@@ -47,7 +47,7 @@ class AcceptThread(
     fun start() {
         scope.launch {
             val localAdapter = adapter ?: run {
-                Log.w(TAG, "BluetoothAdapter unavailable; cannot listen for incoming connections")
+                BlueWaveLogger.w(TAG, "BluetoothAdapter unavailable; cannot listen for incoming connections")
                 return@launch
             }
             try {
@@ -60,7 +60,7 @@ class AcceptThread(
                     val accepted: BluetoothSocket = try {
                         socket.accept()
                     } catch (e: IOException) {
-                        Log.d(TAG, "Server socket closed: ${e.message}")
+                        BlueWaveLogger.d(TAG, "Server socket closed: ${e.message}")
                         break
                     }
                     // Stop accepting further connections — only one peer at a time.
@@ -69,7 +69,7 @@ class AcceptThread(
                     break
                 }
             } catch (e: IOException) {
-                Log.e(TAG, "Failed to open RFCOMM server socket", e)
+                BlueWaveLogger.e(TAG, "Failed to open RFCOMM server socket", e)
             }
         }
     }
@@ -89,7 +89,7 @@ class AcceptThread(
             try {
                 serverSocket?.close()
             } catch (e: IOException) {
-                Log.w(TAG, "Error while closing server socket", e)
+                BlueWaveLogger.w(TAG, "Error while closing server socket", e)
             }
         } finally {
             serverSocket = null

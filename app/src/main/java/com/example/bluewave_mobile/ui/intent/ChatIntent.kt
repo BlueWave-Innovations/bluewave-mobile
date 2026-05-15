@@ -30,4 +30,18 @@ sealed interface ChatIntent {
 
     /** User cleared the entire conversation for the active peer. */
     data object ClearHistory : ChatIntent
+
+    /**
+     * Submit a media file to the encrypt → persist → transmit pipeline.
+     * [localPath] must be an absolute path in app-private storage where
+     * the file has already been copied by the UI layer.
+     */
+    data class SendMedia(
+        val attachmentName: String,
+        val mimeType: String,
+        val localPath: String,
+    ) : ChatIntent
+
+    /** Cancels an in-flight outgoing media upload and deletes the row. */
+    data class CancelSend(val messageId: Long) : ChatIntent
 }

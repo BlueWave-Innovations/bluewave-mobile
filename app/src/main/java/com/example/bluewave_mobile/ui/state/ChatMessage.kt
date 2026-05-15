@@ -31,4 +31,9 @@ data class ChatMessage(
     val timestamp: Long,
     val isCorrupted: Boolean = false,
     val deliveryStatus: Int = 0,
+    val attachmentPath: String = "",
+    val attachmentName: String = "",
+    val attachmentMimeType: String = "",
+    val attachmentSize: Long = 0L,
+    val transferStatus: Int = 0,
 )

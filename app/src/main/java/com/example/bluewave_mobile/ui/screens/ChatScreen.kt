@@ -1,7 +1,9 @@
 package com.example.bluewave_mobile.ui.screens
 
+import android.net.Uri
 import android.text.format.DateUtils
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,10 +13,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -28,7 +33,10 @@ import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -39,6 +47,8 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -48,6 +58,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,6 +72,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bluewave_mobile.R
 import com.example.bluewave_mobile.data.E2EEState
+import com.example.bluewave_mobile.utils.ImageCompressor
 import com.example.bluewave_mobile.ui.components.BondLossBanner
 import com.example.bluewave_mobile.ui.components.ChatInputRow
 import com.example.bluewave_mobile.ui.components.EmptyStateView
@@ -69,7 +81,14 @@ import com.example.bluewave_mobile.ui.intent.ChatIntent
 import com.example.bluewave_mobile.ui.state.ChatMessage
 import com.example.bluewave_mobile.ui.state.ChatUiState
 import com.example.bluewave_mobile.ui.viewmodel.ChatViewModel
+import com.example.bluewave_mobile.ui.viewmodel.ConnectionQuality
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.ui.unit.Dp
 import java.text.DateFormat
 import java.util.Calendar
 import java.util.Date
@@ -101,6 +120,7 @@ import java.util.Locale
 fun ChatScreen(
     deviceMac: String,
     onBack: () -> Unit = {},
+    onPeerProfileClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ChatViewModel = viewModel(
         factory = ChatViewModel.Factory,
@@ -111,11 +131,69 @@ fun ChatScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val bannerVisible by viewModel.bondLossBannerVisible.collectAsStateWithLifecycle()
     val peerProfile by viewModel.peerProfile.collectAsStateWithLifecycle()
+    val connQuality by viewModel.connectionQuality.collectAsStateWithLifecycle()
+    val isPeerTyping by viewModel.isPeerTyping.collectAsStateWithLifecycle()
 
     var draft: String by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    // Debounced typing indicator: only hit the wire when the user
+    // has been continuously typing for 400 ms.
+    LaunchedEffect(draft) {
+        if (draft.isNotBlank()) {
+            delay(400L)
+            viewModel.sendTyping()
+        }
+    }
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val filePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+    ) { uri: Uri? ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val resolver = context.contentResolver
+            val mimeType = resolver.getType(uri) ?: "application/octet-stream"
+            var displayName = "file"
+            resolver.query(uri, null, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                    if (nameIndex >= 0) {
+                        displayName = cursor.getString(nameIndex) ?: displayName
+                    }
+                }
+            }
+            val safeName = displayName.replace("[^a-zA-Z0-9._-]".toRegex(), "_")
+            val uuid = java.util.UUID.randomUUID().toString()
+            val destDir = context.filesDir.resolve("media/outbound").apply { mkdirs() }
+            val destFile = destDir.resolve("${uuid}_$safeName")
+            try {
+                resolver.openInputStream(uri)?.use { input ->
+                    destFile.outputStream().use { output -> input.copyTo(output) }
+                }
+                val compressed = ImageCompressor.compressIfNeeded(context, uri, destFile)
+                val finalMime = if (compressed) "image/jpeg" else mimeType
+                val finalName = if (compressed) {
+                    if (displayName.endsWith(".png", true) || displayName.endsWith(".webp", true)) {
+                        displayName.substringBeforeLast(".") + ".jpg"
+                    } else {
+                        displayName
+                    }
+                } else displayName
+                viewModel.handleIntent(
+                    ChatIntent.SendMedia(
+                        attachmentName = finalName,
+                        mimeType = finalMime,
+                        localPath = destFile.absolutePath,
+                    )
+                )
+            } catch (e: Exception) {
+                snackbarHostState.showSnackbar("Failed to attach file")
+            }
+        }
+    }
 
     // `derivedStateOf` collapses every scroll-position change inside
     // the LazyColumn into a single boolean. Without it, every pixel of
@@ -129,6 +207,7 @@ fun ChatScreen(
     val isPaused = (uiState as? ChatUiState.Success)?.isPeerPaused == true
     val e2eeState: E2EEState = (uiState as? ChatUiState.Success)?.e2eeState ?: E2EEState.PENDING
     var lastSeenBanner: Boolean? by remember { mutableStateOf<Boolean?>(null) }
+    var showChatMenu by remember { mutableStateOf(false) }
     val connectionRestoredMessage = stringResource(id = R.string.chat_connection_restored)
     LaunchedEffect(bannerVisible, deviceMac) {
         if (lastSeenBanner != null && lastSeenBanner != bannerVisible && !bannerVisible) {
@@ -157,10 +236,12 @@ fun ChatScreen(
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.semantics(mergeDescendants = true) {
-                            heading()
-                            contentDescription = chatWithCd
-                        },
+                        modifier = Modifier
+                            .clickable(onClick = onPeerProfileClick)
+                            .semantics(mergeDescendants = true) {
+                                heading()
+                                contentDescription = chatWithCd
+                            },
                     ) {
                         ChatAvatar(
                             displayName = displayName,
@@ -175,21 +256,14 @@ fun ChatScreen(
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
                             )
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Filled.Bluetooth,
-                                    contentDescription = null,
-                                    tint = com.example.bluewave_mobile.ui.theme.BrandBlue,
-                                    modifier = Modifier.size(12.dp),
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
+                            ConnectionQualityRow(quality = connQuality)
+                            if (isPeerTyping) {
                                 Text(
-                                    text = stringResource(id = R.string.chat_status_online_bt).uppercase(),
-                                    style = MaterialTheme.typography.labelSmall,
+                                    text = stringResource(id = R.string.chat_typing),
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = com.example.bluewave_mobile.ui.theme.BrandBlue,
                                 )
-                            }
-                            if (handle != null) {
+                            } else if (handle != null) {
                                 Text(
                                     text = handle,
                                     style = MaterialTheme.typography.bodySmall,
@@ -198,6 +272,27 @@ fun ChatScreen(
                             }
                         }
                         E2EEIndicator(state = e2eeState)
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showChatMenu = true }) {
+                        Icon(
+                            imageVector = Icons.Filled.MoreVert,
+                            contentDescription = stringResource(id = R.string.chat_menu_cd),
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showChatMenu,
+                        onDismissRequest = { showChatMenu = false },
+                        properties = PopupProperties(focusable = true),
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(id = R.string.chat_delete_history)) },
+                            onClick = {
+                                showChatMenu = false
+                                viewModel.handleIntent(ChatIntent.ClearHistory)
+                            },
+                        )
                     }
                 },
             )
@@ -220,6 +315,7 @@ fun ChatScreen(
                     state = uiState,
                     messages = messages,
                     listState = listState,
+                    onCancelSend = { id -> viewModel.handleIntent(ChatIntent.CancelSend(id)) },
                 )
                 if (showJumpToBottom) {
                     val jumpToBottomCd = stringResource(id = R.string.chat_jump_to_bottom_cd)
@@ -241,6 +337,7 @@ fun ChatScreen(
                 }
             }
 
+            var showEmojiPanel by rememberSaveable { mutableStateOf(false) }
             ChatInputRow(
                 draft = draft,
                 enabled = !isPaused,
@@ -249,10 +346,19 @@ fun ChatScreen(
                     val outgoing = draft
                     if (outgoing.isNotBlank()) {
                         draft = ""
+                        showEmojiPanel = false
                         viewModel.handleIntent(ChatIntent.SendMessage(outgoing))
                     }
                 },
+                onAttachmentClick = { filePicker.launch("*/*") },
+                onEmojiToggle = { showEmojiPanel = !showEmojiPanel },
             )
+            if (showEmojiPanel) {
+                EmojiPanel(
+                    onEmojiSelected = { draft += it },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 }
@@ -271,6 +377,7 @@ private fun ChatBody(
     state: ChatUiState,
     messages: List<ChatMessage>,
     listState: LazyListState,
+    onCancelSend: ((Long) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     when {
@@ -320,7 +427,10 @@ private fun ChatBody(
                         key = { index -> items[index].key },
                     ) { index ->
                         when (val item = items[index]) {
-                            is ChatListItem.Bubble -> MessageBubble(message = item.message)
+                            is ChatListItem.Bubble -> MessageBubble(
+                                message = item.message,
+                                onCancelSend = onCancelSend,
+                            )
                             is ChatListItem.DateHeader -> DateSeparator(label = item.label)
                         }
                     }
@@ -531,4 +641,131 @@ private fun E2EEIndicator(
             .padding(start = 8.dp)
             .size(20.dp),
     )
+}
+
+/**
+ * Compact row showing the peer's connection status: a coloured dot
+ * (green = online, grey = offline), the quality label derived from
+ * the heartbeat RTT, and the raw ping value when available.
+ */
+@Composable
+private fun ConnectionQualityRow(
+    quality: ConnectionQuality,
+    modifier: Modifier = Modifier,
+) {
+    val dotColor = if (quality.isOnline) {
+        com.example.bluewave_mobile.ui.theme.SuccessGreen
+    } else {
+        MaterialTheme.colorScheme.outline
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(dotColor),
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = quality.label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (quality.isOnline) {
+                com.example.bluewave_mobile.ui.theme.BrandBlue
+            } else {
+                MaterialTheme.colorScheme.outline
+            },
+        )
+        if (quality.pingMs != null) {
+            Spacer(modifier = Modifier.width(6.dp))
+            SignalBars(pingMs = quality.pingMs)
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "${quality.pingMs} ms",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * Four tiny vertical bars whose fill colour reflects the heartbeat
+ * ping latency — a familiar "signal strength" metaphor.
+ *
+ *  * <100 ms → 4 green bars
+ *  * <300 ms → 3 green bars
+ *  * <600 ms → 2 yellow bars
+ *  * ≥600 ms → 1 red bar
+ */
+private val QUICK_EMOJIS: List<String> = listOf(
+    "😀","😂","🥰","😍","😎","🤔","😢","😡","👍","👎",
+    "👏","🙏","🔥","❤️","🎉","✅","❌","⭐","🎵","🌟",
+    "😊","😉","😴","🤯","🥳","😱","🤗","🤭","😷","🤒",
+)
+
+@Composable
+private fun EmojiPanel(
+    onEmojiSelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+        columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(8),
+        modifier = modifier
+            .height(220.dp)
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(QUICK_EMOJIS.size) { index ->
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .clickable { onEmojiSelected(QUICK_EMOJIS[index]) }
+                    .padding(4.dp),
+            ) {
+                Text(
+                    text = QUICK_EMOJIS[index],
+                    style = MaterialTheme.typography.titleLarge,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SignalBars(
+    pingMs: Long,
+    modifier: Modifier = Modifier,
+) {
+    val filledBars: Int = when {
+        pingMs < 100L -> 4
+        pingMs < 300L -> 3
+        pingMs < 600L -> 2
+        else -> 1
+    }
+    val activeColor: Color = when {
+        pingMs < 300L -> com.example.bluewave_mobile.ui.theme.SuccessGreen
+        pingMs < 600L -> Color(0xFFFFA726) // orange / yellow
+        else -> Color(0xFFEF5350) // red
+    }
+    val inactiveColor: Color = MaterialTheme.colorScheme.outlineVariant
+    val totalBars = 4
+    Canvas(modifier = modifier.size(width = 16.dp, height = 12.dp)) {
+        val barWidth = size.width / (totalBars * 2f - 1f)
+        val gap = barWidth
+        for (i in 0 until totalBars) {
+            val barHeight = size.height * (i + 1) / totalBars
+            val x = i * (barWidth + gap)
+            val y = size.height - barHeight
+            drawRect(
+                color = if (i < filledBars) activeColor else inactiveColor,
+                topLeft = Offset(x, y),
+                size = Size(barWidth, barHeight),
+            )
+        }
+    }
 }

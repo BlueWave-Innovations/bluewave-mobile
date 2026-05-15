@@ -1,6 +1,6 @@
 package com.example.bluewave_mobile.network
 
-import android.util.Log
+import com.example.bluewave_mobile.utils.BlueWaveLogger
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -38,7 +38,7 @@ object BluetoothScopeFactory {
      */
     val defaultExceptionHandler: CoroutineExceptionHandler =
         CoroutineExceptionHandler { context, throwable ->
-            Log.w(TAG, "Uncaught network coroutine failure: ${context[kotlinx.coroutines.CoroutineName]}", throwable)
+            BlueWaveLogger.w(TAG, "Uncaught network coroutine failure: ${context[kotlinx.coroutines.CoroutineName]}", throwable)
         }
 
     /**

@@ -25,6 +25,10 @@
     <string name="discoverable_banner_title">You\'re invisible to other phones</string>
     <string name="discoverable_banner_message">Make this phone visible for 30 min so peers can find you on their first scan.</string>
     <string name="discoverable_banner_cta">Make visible</string>
+    <string name="discoverable_banner_dismiss">Dismiss</string>
+    <string name="peer_profile_title">Profile</string>
+    <string name="peer_profile_default_name">Unknown user</string>
+    <string name="peer_profile_no_bio">No description</string>
 
     <!-- Chat screen -->
     <string name="chat_title">Chat</string>
@@ -196,6 +200,9 @@
     <string name="settings_language_short">Language</string>
     <string name="settings_bt_visibility_short">Bluetooth visibility</string>
     <string name="settings_bt_visibility_short_summary">Let nearby users find your profile and send messages without an internet connection.</string>
+    <string name="settings_export_logs">Export debug logs</string>
+    <string name="settings_export_logs_success">Logs saved to Downloads/BlueWave</string>
+    <string name="settings_export_logs_failed">Failed to export logs</string>
     <string name="settings_theme_picker_title">Pick a theme</string>
     <string name="settings_language_picker_title">Pick a language</string>
     <string name="settings_qr_share">Show QR code</string>
@@ -206,7 +213,11 @@
     <string name="chats_filter_family">Family</string>
     <string name="chat_status_online_bt">Online via Bluetooth</string>
     <string name="chat_today">Today</string>
+    <string name="chat_typing">typing…</string>
+    <string name="chat_menu_cd">Chat options</string>
+    <string name="chat_delete_history">Delete chat</string>
     <string name="chat_input_placeholder_bt">Message over Bluetooth…</string>
+    <string name="chat_attachment_cd">Attach file</string>
     <string name="profile_section_about">About</string>
     <string name="profile_action_edit_name">Edit name</string>
     <string name="profile_action_edit_handle">Edit tag</string>

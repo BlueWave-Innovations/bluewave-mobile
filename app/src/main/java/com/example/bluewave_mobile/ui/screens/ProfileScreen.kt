@@ -41,7 +41,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -96,7 +96,7 @@ fun ProfileScreen(
     onShareQrClick: () -> Unit,
     viewModel: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory),
 ) {
-    val profile: LocalProfile by viewModel.profile.collectAsState()
+    val profile: LocalProfile by viewModel.profile.collectAsStateWithLifecycle()
 
     val avatarPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -180,13 +180,6 @@ fun ProfileScreen(
                         },
                         iconTint = AccentIndigo,
                         onClick = { editingHandleOpen = true },
-                    )
-                    SettingsRowDivider()
-                    SettingsRow(
-                        icon = Icons.Filled.Lock,
-                        title = stringResource(id = R.string.profile_action_privacy),
-                        iconTint = AccentCyan,
-                        onClick = { /* TODO: privacy screen, kept for future iteration. */ },
                     )
                     SettingsRowDivider()
                     SettingsRow(

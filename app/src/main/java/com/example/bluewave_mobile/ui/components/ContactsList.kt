@@ -47,6 +47,9 @@ import com.example.bluewave_mobile.ui.preview.PreviewLightDark
 import com.example.bluewave_mobile.ui.theme.BlueWaveTheme
 import com.example.bluewave_mobile.ui.theme.BrandBlue
 import com.example.bluewave_mobile.ui.theme.BrandBlueLight
+import com.example.bluewave_mobile.ui.theme.SuccessGreen
+import com.example.bluewave_mobile.ui.theme.WarningAmber
+import com.example.bluewave_mobile.ui.theme.DangerRed
 import java.text.DateFormat
 import java.util.Date
 
@@ -194,6 +197,10 @@ private fun ExistingChatRow(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
+                if (row.rssi != null) {
+                    RssiBadge(rssi = row.rssi)
+                    Spacer(Modifier.width(6.dp))
+                }
                 Text(
                     text = timestampLabel,
                     style = MaterialTheme.typography.labelSmall,
@@ -265,17 +272,24 @@ private fun StartChatRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Text(
-                text = if (row.isBonded) {
-                    stringResource(id = R.string.contacts_paired_label)
-                } else {
-                    row.macAddress
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = if (row.isBonded) {
+                        stringResource(id = R.string.contacts_paired_label)
+                    } else {
+                        row.macAddress
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                if (row.rssi != null) {
+                    Spacer(Modifier.width(6.dp))
+                    RssiBadge(rssi = row.rssi)
+                }
+            }
         }
     }
 }
@@ -464,6 +478,29 @@ private fun Avatar(badgeText: String) {
             )
         }
     }
+}
+
+/**
+ * Compact RSSI badge: shows dBm value with a colour that reflects
+ * signal quality. Typical Bluetooth RSSI ranges:
+ *
+ *  * > −50 dBm → excellent (green)
+ *  * −50…−70 dBm → good (green)
+ *  * −70…−90 dBm → fair (amber)
+ *  * < −90 dBm → poor (red)
+ */
+@Composable
+private fun RssiBadge(rssi: Short) {
+    val color = when {
+        rssi > -70 -> SuccessGreen
+        rssi > -90 -> WarningAmber
+        else -> DangerRed
+    }
+    Text(
+        text = "$rssi dBm",
+        style = MaterialTheme.typography.labelSmall,
+        color = color,
+    )
 }
 
 /**

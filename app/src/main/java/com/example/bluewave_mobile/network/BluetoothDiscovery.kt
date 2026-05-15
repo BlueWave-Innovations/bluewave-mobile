@@ -7,7 +7,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Build
 import com.example.bluewave_mobile.data.BluetoothDeviceInfo
+import com.example.bluewave_mobile.utils.parcelableExtra
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -54,14 +56,19 @@ class BluetoothDiscovery(
                 when (intent?.action) {
                     BluetoothDevice.ACTION_FOUND -> {
                         val device: BluetoothDevice? =
-                            intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+                            intent.parcelableExtra(BluetoothDevice.EXTRA_DEVICE)
                         device?.let {
                             val name = it.name ?: it.address
+                            val rssi = intent.getShortExtra(
+                                BluetoothDevice.EXTRA_RSSI,
+                                Short.MIN_VALUE,
+                            ).takeIf { v -> v != Short.MIN_VALUE }
                             trySend(
                                 BluetoothDeviceInfo(
                                     name = name,
                                     macAddress = it.address,
-                                    isPaired = false
+                                    isPaired = false,
+                                    rssi = rssi,
                                 )
                             )
                         }
@@ -78,7 +85,12 @@ class BluetoothDiscovery(
             addAction(BluetoothDevice.ACTION_FOUND)
             addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
         }
-        context.registerReceiver(receiver, filter)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED)
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            context.registerReceiver(receiver, filter)
+        }
 
         // Cancel any in-flight discovery before kicking a new one off.
         if (localAdapter.isDiscovering) {

@@ -4,11 +4,12 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothServerSocket
 import android.bluetooth.BluetoothSocket
-import android.util.Log
+import com.example.bluewave_mobile.utils.BlueWaveLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -86,14 +87,18 @@ class BluetoothSessionManager(
     @Volatile
     private var acceptJob: Job? = null
 
+    private val startLock = Any()
+
     /**
      * Launches the perpetual accept loop. Calling [start] more than
      * once is a no-op so the application class can call it from
      * `onCreate` without worrying about activity recreations.
      */
     fun start() {
-        if (acceptJob?.isActive == true) return
-        acceptJob = scope.launch { acceptLoop() }
+        synchronized(startLock) {
+            if (acceptJob?.isActive == true) return
+            acceptJob = scope.launch { acceptLoop() }
+        }
     }
 
     /**
@@ -101,25 +106,36 @@ class BluetoothSessionManager(
      * underlying server socket. Idempotent.
      */
     fun shutdown() {
-        acceptJob?.cancel()
-        acceptJob = null
+        synchronized(startLock) {
+            acceptJob?.cancel()
+            acceptJob = null
+        }
         try {
             serverSocket?.close()
         } catch (e: IOException) {
-            Log.w(TAG, "Error closing server socket on shutdown", e)
+            BlueWaveLogger.w(TAG, "Error closing server socket on shutdown", e)
         } finally {
             serverSocket = null
         }
-        for ((_, session) in sessions) {
-            session.cancel()
+        // Cancel all live sessions; onClosed will evict most of them.
+        val snapshot = sessions.keys.toList()
+        for (mac in snapshot) {
+            sessions[mac]?.cancel()
         }
-        sessions.clear()
+        // Forcibly clear any stragglers so isConnected() doesn't lie
+        // after shutdown() returns.
+        val remaining = sessions.keys.toList()
+        for (mac in remaining) {
+            sessions.remove(mac)
+            _connectedPeers.update { current -> current - mac }
+            runCatching { _sessionDetached.tryEmit(mac) }
+        }
     }
 
     @SuppressLint("MissingPermission")
     private suspend fun acceptLoop() {
         val localAdapter = adapter ?: run {
-            Log.w(TAG, "BluetoothAdapter unavailable; accept loop will not start")
+            BlueWaveLogger.w(TAG, "BluetoothAdapter unavailable; accept loop will not start")
             return
         }
         // Outer loop: when the server socket dies (BT toggled off,
@@ -147,12 +163,13 @@ class BluetoothSessionManager(
                     BluetoothConstants.APP_UUID,
                 )
             } catch (e: IOException) {
-                Log.w(TAG, "Failed to open RFCOMM server socket: ${e.message}; retrying")
+                BlueWaveLogger.w(TAG, "Failed to open RFCOMM server socket: ${e.message}; retrying")
                 delay(BluetoothConstants.ACCEPT_RETRY_DELAY_MS)
                 continue
             } catch (e: SecurityException) {
-                Log.e(TAG, "BLUETOOTH_CONNECT permission missing for listen()", e)
-                return
+                BlueWaveLogger.e(TAG, "BLUETOOTH_CONNECT permission missing for listen()", e)
+                delay(BluetoothConstants.ACCEPT_RETRY_DELAY_MS)
+                continue
             }
             serverSocket = socket
 
@@ -161,10 +178,17 @@ class BluetoothSessionManager(
                     val accepted: BluetoothSocket = try {
                         withContext(Dispatchers.IO) { socket.accept() }
                     } catch (e: IOException) {
-                        Log.d(TAG, "Server socket closed: ${e.message}")
+                        BlueWaveLogger.d(TAG, "Server socket closed: ${e.message}")
                         break
                     }
-                    attachSession(accepted)
+                    try {
+                        attachSession(accepted)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Throwable) {
+                        BlueWaveLogger.w(TAG, "attachSession failed for accepted socket", e)
+                        try { accepted.close() } catch (_: IOException) { /* best effort */ }
+                    }
                 }
             } finally {
                 try { socket.close() } catch (_: IOException) { /* already closed */ }
@@ -190,7 +214,7 @@ class BluetoothSessionManager(
         val session = BluetoothSession(socket)
         val mac = session.remoteMacAddress
         if (mac.isBlank()) {
-            Log.w(TAG, "Refusing to attach session with empty MAC; closing socket")
+            BlueWaveLogger.w(TAG, "Refusing to attach session with empty MAC; closing socket")
             session.cancel()
             return
         }
@@ -226,7 +250,10 @@ class BluetoothSessionManager(
                     // that resets libsignal state for this peer) can
                     // perform suspending work without holding up
                     // future attach/detach plumbing.
-                    _sessionDetached.emit(mac)
+                    // tryEmit is used because onClosed runs inside a
+                    // finally block where a suspending emit could throw
+                    // CancellationException and mask the real cause.
+                    _sessionDetached.tryEmit(mac)
                 }
             },
         )
@@ -240,7 +267,7 @@ class BluetoothSessionManager(
         val device = try {
             localAdapter.getRemoteDevice(macAddress)
         } catch (e: IllegalArgumentException) {
-            Log.w(TAG, "Invalid MAC '$macAddress'", e)
+            BlueWaveLogger.w(TAG, "Invalid MAC '$macAddress'", e)
             return
         }
 
@@ -249,8 +276,8 @@ class BluetoothSessionManager(
         // stall or fail intermittently (Google's Bluetooth guide).
         try {
             if (localAdapter.isDiscovering) localAdapter.cancelDiscovery()
-        } catch (e: SecurityException) {
-            Log.w(TAG, "cancelDiscovery() denied by permissions", e)
+        } catch (e: Throwable) {
+            BlueWaveLogger.w(TAG, "cancelDiscovery() failed", e)
         }
 
         // Symmetric with the accept side, which calls
@@ -264,26 +291,33 @@ class BluetoothSessionManager(
         val socket: BluetoothSocket = try {
             device.createInsecureRfcommSocketToServiceRecord(BluetoothConstants.APP_UUID)
         } catch (e: IOException) {
-            Log.w(TAG, "createInsecureRfcommSocketToServiceRecord failed for $key: ${e.message}")
+            BlueWaveLogger.w(TAG, "createInsecureRfcommSocketToServiceRecord failed for $key: ${e.message}")
             return
         } catch (e: SecurityException) {
-            Log.w(TAG, "createInsecureRfcommSocketToServiceRecord denied by permissions for $key", e)
+            BlueWaveLogger.w(TAG, "createInsecureRfcommSocketToServiceRecord denied by permissions for $key", e)
             return
         }
 
         try {
             withContext(Dispatchers.IO) { socket.connect() }
         } catch (e: IOException) {
-            Log.w(TAG, "connect() failed for $key: ${e.message}")
+            BlueWaveLogger.w(TAG, "connect() failed for $key: ${e.message}")
             try { socket.close() } catch (_: IOException) { /* best effort */ }
             return
         } catch (e: SecurityException) {
-            Log.w(TAG, "connect() denied by permissions for $key", e)
+            BlueWaveLogger.w(TAG, "connect() denied by permissions for $key", e)
             try { socket.close() } catch (_: IOException) { /* best effort */ }
             return
         }
 
-        attachSession(socket)
+        try {
+            attachSession(socket)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            BlueWaveLogger.w(TAG, "attachSession failed for outbound socket to $key", e)
+            try { socket.close() } catch (_: IOException) { /* best effort */ }
+        }
     }
 
     override suspend fun send(macAddress: String, payload: ByteArray): Boolean {
@@ -291,12 +325,7 @@ class BluetoothSessionManager(
         val session = sessions[key] ?: return false
         val ok = session.send(payload)
         if (!ok) {
-            // Tear down the dead session so the next connect() starts fresh.
-            sessionLock.withLock {
-                if (sessions[key] === session) {
-                    sessions.remove(key)
-                }
-            }
+            // Let onClosed evict the session and emit sessionDetached.
             session.cancel()
         }
         return ok
@@ -304,7 +333,7 @@ class BluetoothSessionManager(
 
     override fun disconnect(macAddress: String) {
         val key = macAddress.uppercase()
-        val session = sessions.remove(key) ?: return
+        val session = sessions[key] ?: return
         session.cancel()
     }
 
@@ -316,6 +345,17 @@ class BluetoothSessionManager(
      */
     override fun isConnected(macAddress: String): Boolean =
         sessions.containsKey(macAddress.uppercase())
+
+    /**
+     * Returns the most recently measured round-trip heartbeat latency
+     * in milliseconds for [macAddress], or `null` when no session
+     * exists or no measurement has been taken yet.
+     */
+    fun getPingMs(macAddress: String): Long? {
+        val session = sessions[macAddress.uppercase()] ?: return null
+        val ping = session.lastPingMs
+        return if (ping > 0L) ping else null
+    }
 
     private companion object {
         const val TAG = "BluetoothSessionManager"

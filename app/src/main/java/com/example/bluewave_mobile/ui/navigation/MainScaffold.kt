@@ -15,6 +15,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -31,11 +32,12 @@ import com.example.bluewave_mobile.R
 import com.example.bluewave_mobile.ui.screens.ChatScreen
 import com.example.bluewave_mobile.ui.screens.CreateGroupScreen
 import com.example.bluewave_mobile.ui.screens.DeviceListScreen
-import com.example.bluewave_mobile.ui.screens.FoldersManagementScreen
 import com.example.bluewave_mobile.ui.screens.GroupChatScreen
+import com.example.bluewave_mobile.ui.screens.PeerProfileScreen
 import com.example.bluewave_mobile.ui.screens.ProfileScreen
 import com.example.bluewave_mobile.ui.screens.QrShareScreen
 import com.example.bluewave_mobile.ui.screens.SettingsScreen
+import com.example.bluewave_mobile.utils.BlueWaveLogger
 
 /**
  * One descriptor per bottom-nav tab.
@@ -89,6 +91,9 @@ fun MainScaffold() {
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
+    LaunchedEffect(backStack) {
+        currentRoute?.let { BlueWaveLogger.d("Navigation", "Route: $it") }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -134,9 +139,15 @@ fun MainScaffold() {
             modifier = Modifier.padding(contentPadding),
         ) {
             composable<DeviceListRoute> {
+                BlueWaveLogger.d("Navigation", "Screen: DeviceList")
                 DeviceListScreen(
                     onDeviceClick = { mac ->
+                        BlueWaveLogger.i("Navigation", "Navigate to chat: $mac")
                         navController.navigate(ChatRoute(deviceMac = mac))
+                    },
+                    onGroupClick = { groupId ->
+                        BlueWaveLogger.i("Navigation", "Navigate to group chat: $groupId")
+                        navController.navigate(GroupChatRoute(groupId = groupId))
                     },
                     onCreateGroupClick = { navController.navigate(CreateGroupRoute) },
                     onShareQrClick = { navController.navigate(QrShareRoute) },
@@ -154,18 +165,27 @@ fun MainScaffold() {
             }
             composable<ChatRoute> { backStackEntry ->
                 val chatRoute: ChatRoute = backStackEntry.toRoute()
+                BlueWaveLogger.d("Navigation", "Screen: Chat(${chatRoute.deviceMac})")
                 ChatScreen(
                     deviceMac = chatRoute.deviceMac,
+                    onBack = { navController.popBackStack() },
+                    onPeerProfileClick = {
+                        navController.navigate(PeerProfileRoute(deviceMac = chatRoute.deviceMac))
+                    },
+                )
+            }
+            composable<PeerProfileRoute> { backStackEntry ->
+                val route: PeerProfileRoute = backStackEntry.toRoute()
+                PeerProfileScreen(
+                    deviceMac = route.deviceMac,
                     onBack = { navController.popBackStack() },
                 )
             }
             composable<GroupChatRoute> { backStackEntry ->
                 val groupRoute: GroupChatRoute = backStackEntry.toRoute()
-                GroupChatScreen(groupId = groupRoute.groupId)
-            }
-            composable<FoldersManagementRoute> {
-                FoldersManagementScreen(
-                    onClose = { navController.popBackStack() },
+                GroupChatScreen(
+                    groupId = groupRoute.groupId,
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable<CreateGroupRoute> {

@@ -10,14 +10,12 @@ import com.example.bluewave_mobile.BlueWaveApplication
 import com.example.bluewave_mobile.crypto.CryptoManager
 import com.example.bluewave_mobile.crypto.DecryptionResult
 import com.example.bluewave_mobile.data.BluetoothDeviceInfo
-import com.example.bluewave_mobile.data.ChatFolderEntity
 import com.example.bluewave_mobile.data.ChatGroupEntity
 import com.example.bluewave_mobile.data.ConversationSummary
-import com.example.bluewave_mobile.data.FolderRepository
 import com.example.bluewave_mobile.data.GroupMemberEntity
+import com.example.bluewave_mobile.data.GroupMessageEntity
 import com.example.bluewave_mobile.data.GroupRepository
 import com.example.bluewave_mobile.data.MessageRepository
-import com.example.bluewave_mobile.data.PeerFolderAssignmentEntity
 import com.example.bluewave_mobile.data.PeerProfileEntity
 import com.example.bluewave_mobile.network.ApkSender
 import com.example.bluewave_mobile.network.BlueWaveSdpProber
@@ -26,6 +24,7 @@ import com.example.bluewave_mobile.network.MessageTransport
 import com.example.bluewave_mobile.ui.intent.DeviceListIntent
 import com.example.bluewave_mobile.ui.model.ContactRow
 import com.example.bluewave_mobile.ui.state.DeviceListUiState
+import com.example.bluewave_mobile.utils.BlueWaveLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
@@ -93,7 +92,6 @@ class DeviceListViewModel(
     private val messageRepository: MessageRepository,
     private val sdpProber: BlueWaveSdpProber,
     private val apkSender: ApkSender,
-    private val folderRepository: FolderRepository? = null,
     private val groupRepository: GroupRepository? = null,
     private val crypto: CryptoManager? = null,
     private val transport: MessageTransport? = null,
@@ -102,14 +100,6 @@ class DeviceListViewModel(
     private val intents: MutableSharedFlow<DeviceListIntent> = MutableSharedFlow(extraBufferCapacity = 16)
 
     private val _uiState: MutableStateFlow<DeviceListUiState> = MutableStateFlow(DeviceListUiState.Idle)
-
-    /**
-     * Currently-active folder filter. `null` means the synthetic
-     * "All chats" chip — every row is rendered. Any non-null value
-     * is the literal [ChatFolderEntity.id] of a built-in or
-     * user-created folder.
-     */
-    private val _selectedFolderId: MutableStateFlow<String?> = MutableStateFlow(null)
 
     /**
      * One-shot signals fired by intents that don't directly mutate
@@ -135,27 +125,16 @@ class DeviceListViewModel(
             initialValue = DeviceListUiState.Idle,
         )
 
-    /**
-     * Live list of every folder the user can filter by, ordered for
-     * chip-row display. Empty when [folderRepository] is `null` —
-     * unit tests that don't care about folders take that branch.
-     */
-    val availableFolders: StateFlow<List<ChatFolderEntity>> =
-        (folderRepository?.observeFolders() ?: flowOf(emptyList()))
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000L),
-                initialValue = emptyList(),
-            )
-
-    /** Currently-active folder filter; `null` means "All chats". */
-    val selectedFolderId: StateFlow<String?> = _selectedFolderId.asStateFlow()
-
     init {
+        BlueWaveLogger.i("DeviceListViewModel", "Init")
         viewModelScope.launch {
             intents
-                .flatMapLatest { intent -> reduce(intent) }
+                .flatMapLatest { intent ->
+                    BlueWaveLogger.d("DeviceListViewModel", "Intent: $intent")
+                    reduce(intent)
+                }
                 .catch { throwable ->
+                    BlueWaveLogger.e("DeviceListViewModel", "Discovery error", throwable)
                     emit(DeviceListUiState.Error(throwable.message ?: "Discovery failed"))
                 }
                 .collect { newState ->
@@ -181,22 +160,6 @@ class DeviceListViewModel(
     }
 
     /**
-     * Pin the chip-row selection. Pass `null` for the synthetic
-     * "All chats" chip. Any other value MUST be the
-     * [ChatFolderEntity.id] of a folder the user has created or
-     * that we seeded as built-in.
-     *
-     * Folder selection lives outside the [DeviceListIntent] reducer
-     * because we don't want flipping the chip to cancel an in-flight
-     * scan — the active scan picks the new filter up automatically
-     * through its `combine` upstream and re-emits a [Scanning] state
-     * with the filtered rows.
-     */
-    fun setFolder(folderId: String?) {
-        _selectedFolderId.value = folderId
-    }
-
-    /**
      * Pure-function reducer: maps an [intent] to a [Flow] of
      * [DeviceListUiState] emissions. Returning a flow (instead of a
      * single state) lets [DeviceListIntent.StartScan] stream
@@ -204,21 +167,26 @@ class DeviceListViewModel(
      * observation are still live.
      */
     private fun reduce(intent: DeviceListIntent): Flow<DeviceListUiState> = when (intent) {
-        DeviceListIntent.StartScan -> scanFlow()
+        DeviceListIntent.StartScan -> {
+            BlueWaveLogger.i("DeviceListViewModel", "StartScan")
+            scanFlow()
+        }
         DeviceListIntent.StopScan -> {
+            BlueWaveLogger.i("DeviceListViewModel", "StopScan")
             val current = _uiState.value
             val rows = if (current is DeviceListUiState.Scanning) current.rows else emptyList()
             flowOf(DeviceListUiState.Loaded(rows))
         }
-        DeviceListIntent.PermissionsGranted -> flowOf(DeviceListUiState.Idle)
+        DeviceListIntent.PermissionsGranted -> {
+            BlueWaveLogger.i("DeviceListViewModel", "PermissionsGranted")
+            flowOf(DeviceListUiState.Idle)
+        }
         is DeviceListIntent.DeviceSelected -> {
-            // Fire-and-forget: marking-as-read is a side effect that
-            // should not gate the navigation — the screen will fire
-            // the navigation callback regardless.
+            BlueWaveLogger.i("DeviceListViewModel", "DeviceSelected: ${intent.macAddress}")
             viewModelScope.launch {
                 runCatching { messageRepository.markPeerAsRead(intent.macAddress) }
             }
-            flowOf(_uiState.value) // pure navigation; state unchanged
+            flowOf(_uiState.value)
         }
         is DeviceListIntent.SuggestInstall -> {
             viewModelScope.launch {
@@ -304,27 +272,18 @@ class DeviceListViewModel(
             awaitClose { reprobeJob.cancel() }
         }
 
-        // Pre-roll the folder filter signals so a missing repository
-        // (unit-test build) collapses to "no filter" rather than a
-        // never-emitting flow that would stall the combine.
-        val assignments: Flow<List<PeerFolderAssignmentEntity>> =
-            folderRepository?.observeAssignments() ?: flowOf(emptyList())
-        val folderFilter: Flow<FolderFilter> = combine(
-            _selectedFolderId,
-            assignments,
-        ) { id, list ->
-            val byMac: Map<String, Set<String>> = list
-                .groupBy { it.peerId.uppercase() }
-                .mapValues { (_, rows) -> rows.mapTo(HashSet()) { it.folderId } }
-            FolderFilter(selectedFolderId = id, peerToFolders = byMac)
-        }
-
         val groups: Flow<List<ChatGroupEntity>> =
             groupRepository?.observeGroups() ?: flowOf(emptyList())
         val memberships: Flow<List<GroupMemberEntity>> =
             groupRepository?.observeAllMemberships() ?: flowOf(emptyList())
-        val groupSnapshot: Flow<GroupSnapshot> = combine(groups, memberships) { gs, ms ->
-            GroupSnapshot(groups = gs, memberships = ms)
+        val allGroupMessages: Flow<List<GroupMessageEntity>> =
+            groupRepository?.observeAllGroupMessages() ?: flowOf(emptyList())
+        val groupSnapshot: Flow<GroupSnapshot> = combine(
+            groups,
+            memberships,
+            allGroupMessages,
+        ) { gs, ms, msgs ->
+            GroupSnapshot(groups = gs, memberships = ms, messages = msgs)
         }
 
         return combine(
@@ -341,18 +300,16 @@ class DeviceListViewModel(
                     peerProfiles = peerProfiles,
                 )
             },
-            folderFilter,
             groupSnapshot,
-        ) { radio, filter, groupBundle ->
+        ) { radio, groupBundle ->
             buildRows(
                 peers = radio.peers,
                 conversations = radio.conversations,
                 presence = radio.presence,
                 peerProfiles = radio.peerProfiles,
-                selectedFolderId = filter.selectedFolderId,
-                peerToFolders = filter.peerToFolders,
                 groups = groupBundle.groups,
                 memberships = groupBundle.memberships,
+                groupMessages = groupBundle.messages,
             )
         }
             .map<List<ContactRow>, DeviceListUiState> { rows -> DeviceListUiState.Scanning(rows) }
@@ -364,12 +321,6 @@ class DeviceListViewModel(
                 }
             }
     }
-
-    /** Snapshot of the current folder-filter state, fed into [buildRows]. */
-    private data class FolderFilter(
-        val selectedFolderId: String?,
-        val peerToFolders: Map<String, Set<String>>,
-    )
 
     /** Snapshot of every radio + DB observation collapsed for [buildRows]. */
     private data class RadioSnapshot(
@@ -383,6 +334,7 @@ class DeviceListViewModel(
     private data class GroupSnapshot(
         val groups: List<ChatGroupEntity>,
         val memberships: List<GroupMemberEntity>,
+        val messages: List<GroupMessageEntity>,
     )
 
     /**
@@ -400,10 +352,6 @@ class DeviceListViewModel(
      *    precedence over the radio-side device name when populated
      *    so the chat list shows the user-set "Алекс Иванов" rather
      *    than the OS-side device alias.
-     *  * [selectedFolderId] / [peerToFolders] — chip-row filter; see
-     *    [setFolder] kdoc. `null` means "All chats" (no filter); any
-     *    other value drops every section except chats and keeps only
-     *    chats whose peer is in the folder.
      *
      * Visible, "BlueWave-on-board" peers without history go to the
      * "Can start chat" section. Visible peers without the BlueWave
@@ -416,10 +364,9 @@ class DeviceListViewModel(
         conversations: List<ConversationSummary>,
         presence: Map<String, Boolean>,
         peerProfiles: List<PeerProfileEntity> = emptyList(),
-        selectedFolderId: String? = null,
-        peerToFolders: Map<String, Set<String>> = emptyMap(),
         groups: List<ChatGroupEntity> = emptyList(),
         memberships: List<GroupMemberEntity> = emptyList(),
+        groupMessages: List<GroupMessageEntity> = emptyList(),
     ): List<ContactRow> {
         val profilesByMac: Map<String, PeerProfileEntity> =
             peerProfiles.associateBy { it.macAddress.uppercase() }
@@ -440,6 +387,7 @@ class DeviceListViewModel(
                 lastMessagePreview = decryptPreview(summary),
                 lastMessageTimestamp = summary.lastMessage.timestamp,
                 unreadCount = summary.unreadCount,
+                rssi = peers[mac]?.rssi,
             )
         }
 
@@ -477,6 +425,7 @@ class DeviceListViewModel(
                     displayName = name,
                     macAddress = mac,
                     isBonded = peer.isPaired,
+                    rssi = peer.rssi,
                 )
             } else {
                 installRows += ContactRow.InstallSuggestion(
@@ -488,25 +437,40 @@ class DeviceListViewModel(
 
         // Build the group section. Each group row joins:
         //  * [ChatGroupEntity] for the display name + creation time,
-        //  * the membership rows so we can show "4 участника" without
-        //    issuing extra queries,
-        //  * the latest [GroupMessageEntity] read off the matching
-        //    `groupId` if one is staged via the same flow — for now we
-        //    leave the preview empty because the group screen owns
-        //    that summary; the row still re-renders on every group
-        //    addition / removal.
+        //  * the membership rows so we can show member count,
+        //  * the latest [GroupMessageEntity] for preview + unread badge.
         val membersByGroup: Map<String, Int> =
             memberships.groupingBy(GroupMemberEntity::groupId).eachCount()
+        val latestMsgByGroup: Map<String, GroupMessageEntity> =
+            groupMessages.groupBy { it.groupId }
+                .mapValues { it.value.maxByOrNull(GroupMessageEntity::timestamp) }
+                .filterValues { it != null }
+                .mapValues { it.value!! }
+        val unreadByGroup: Map<String, Int> =
+            groupMessages.filter { !it.isOutgoing && !it.isRead }
+                .groupingBy { it.groupId }
+                .eachCount()
         val groupRows: MutableList<ContactRow.GroupChat> = ArrayList(groups.size)
         for (group in groups) {
             val memberCount = (membersByGroup[group.id] ?: 0) + 1 // +1 for the local device
+            val latest = latestMsgByGroup[group.id]
+            val preview = if (latest != null) {
+                val crypto = this.crypto
+                if (crypto != null && latest.iv.isNotEmpty()) {
+                    when (val result = crypto.decrypt(latest.iv, latest.encryptedPayload)) {
+                        is com.example.bluewave_mobile.crypto.DecryptionResult.Success ->
+                            result.plaintext.toString(Charsets.UTF_8)
+                        else -> ""
+                    }
+                } else ""
+            } else ""
             groupRows += ContactRow.GroupChat(
                 displayName = group.name.ifBlank { group.id },
                 groupId = group.id,
                 memberCount = memberCount,
-                lastMessagePreview = "",
-                lastMessageTimestamp = group.createdAt,
-                unreadCount = 0,
+                lastMessagePreview = preview,
+                lastMessageTimestamp = latest?.timestamp ?: group.createdAt,
+                unreadCount = unreadByGroup[group.id] ?: 0,
             )
         }
 
@@ -523,49 +487,27 @@ class DeviceListViewModel(
         )
         installRows.sortWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.displayName })
 
-        // Apply the active chip filter. "All" leaves every row in
-        // place; any other folder id keeps only chats whose peer sits
-        // in that folder — the candidate and install sections are
-        // hidden because peers without chat history can't be assigned
-        // to folders yet.
-        val filteredGroups: List<ContactRow.GroupChat>
-        val filteredChats: List<ContactRow.ExistingChat>
-        val filteredCandidates: List<ContactRow.StartChatCandidate>
-        val filteredInstalls: List<ContactRow.InstallSuggestion>
-        if (selectedFolderId == null) {
-            filteredGroups = groupRows
-            filteredChats = chatRows
-            filteredCandidates = candidateRows
-            filteredInstalls = installRows
-        } else {
-            filteredGroups = emptyList()
-            filteredChats = chatRows.filter { row ->
-                peerToFolders[row.macAddress.uppercase()]
-                    ?.contains(selectedFolderId) == true
-            }
-            filteredCandidates = emptyList()
-            filteredInstalls = emptyList()
-        }
-
         // The result is concatenated in render order so a `LazyColumn`
         // can iterate without a secondary group-by pass.
         val combined: MutableList<ContactRow> = ArrayList(
-            filteredGroups.size + filteredChats.size + filteredCandidates.size + filteredInstalls.size,
+            groupRows.size + chatRows.size + candidateRows.size + installRows.size,
         )
-        combined += filteredGroups
-        combined += filteredChats
-        combined += filteredCandidates
-        combined += filteredInstalls
+        combined += groupRows
+        combined += chatRows
+        combined += candidateRows
+        combined += installRows
         return combined
     }
 
     private fun decryptPreview(summary: ConversationSummary): String {
-        val crypto = this.crypto ?: return ""
         val entity = summary.lastMessage
-        if (entity.iv.isEmpty() || entity.encryptedPayload.isEmpty()) return ""
+        if (entity.iv.isEmpty() || entity.encryptedPayload.isEmpty()) {
+            return entity.senderName.takeUnless { it.isBlank() } ?: ""
+        }
+        val crypto = this.crypto ?: return entity.senderName.takeUnless { it.isBlank() } ?: ""
         return when (val result = crypto.decrypt(entity.iv, entity.encryptedPayload)) {
             is DecryptionResult.Success -> result.plaintext.toString(Charsets.UTF_8)
-            is DecryptionResult.Tampered -> ""
+            is DecryptionResult.Tampered -> entity.senderName.takeUnless { it.isBlank() } ?: ""
         }
     }
 
@@ -609,7 +551,6 @@ class DeviceListViewModel(
                     messageRepository = app.container.messageRepository,
                     sdpProber = app.container.sdpProber,
                     apkSender = app.container.apkSender,
-                    folderRepository = app.container.folderRepository,
                     groupRepository = app.container.groupRepository,
                     crypto = app.container.cryptoManager,
                     transport = app.container.bluetoothSessionManager,

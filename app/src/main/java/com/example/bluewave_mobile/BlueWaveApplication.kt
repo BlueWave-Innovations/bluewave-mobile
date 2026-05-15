@@ -7,7 +7,11 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.util.Log
+import android.os.Build
+import com.example.bluewave_mobile.utils.BlueWaveLogger
+import coil.ImageLoader
+import coil.ImageLoaderFactory
+import coil.disk.DiskCache
 import com.example.bluewave_mobile.di.AppContainer
 import com.example.bluewave_mobile.network.BluetoothConstants
 import com.example.bluewave_mobile.service.BluetoothForegroundService
@@ -46,7 +50,7 @@ import kotlinx.coroutines.launch
  * Registered through `<application android:name=".BlueWaveApplication" />`
  * in `AndroidManifest.xml`.
  */
-class BlueWaveApplication : Application() {
+class BlueWaveApplication : Application(), ImageLoaderFactory {
 
     /**
      * Process-wide DI container. Initialised on [onCreate] before any
@@ -64,7 +68,7 @@ class BlueWaveApplication : Application() {
      */
     private val applicationScope: CoroutineScope = CoroutineScope(
         SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, throwable ->
-            Log.e(TAG, "Uncaught exception in application scope", throwable)
+            BlueWaveLogger.e(TAG, "Uncaught exception in application scope", throwable)
         },
     )
 
@@ -102,6 +106,8 @@ class BlueWaveApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        BlueWaveLogger.init(this)
+        registerActivityLifecycleCallbacks(AppLifecycleLogger())
         container = AppContainer(this)
 
         // Start the RFCOMM accept loop unconditionally on cold launch:
@@ -135,17 +141,18 @@ class BlueWaveApplication : Application() {
             runCatching {
                 container.folderRepository.seedBuiltInsIfNeeded()
             }.onFailure { e ->
-                Log.w(TAG, "Failed to seed built-in folders", e)
+                BlueWaveLogger.w(TAG, "Failed to seed built-in folders", e)
             }
         }
 
         // Stage the running APK in the cache so `ApkSender.suggestInstall`
         // has a FileProvider URI ready when the user taps the
-        // "Send via Bluetooth" CTA on a no-app peer. Cheap I/O on the
-        // app-private cache directory; safe to run on the main thread
-        // for hackathon-scale binaries.
-        runCatching { container.apkSender.stageApk() }
-            .onFailure { e -> Log.w(TAG, "APK staging failed at process start", e) }
+        // "Send via Bluetooth" CTA on a no-app peer. Runs off the main
+        // thread to avoid ANR on large APKs or slow storage.
+        applicationScope.launch {
+            runCatching { container.apkSender.stageApk() }
+                .onFailure { e -> BlueWaveLogger.w(TAG, "APK staging failed at process start", e) }
+        }
 
         // Pump every framed payload received from any peer into the
         // repository. The repository owns at-rest encryption, dedupe
@@ -159,7 +166,7 @@ class BlueWaveApplication : Application() {
                         rawData = incoming.payload,
                     )
                 }.onFailure { e ->
-                    Log.w(TAG, "Failed to persist incoming message from ${incoming.macAddress}", e)
+                    BlueWaveLogger.w(TAG, "Failed to persist incoming message from ${incoming.macAddress}", e)
                 }
             }
         }
@@ -182,12 +189,12 @@ class BlueWaveApplication : Application() {
                 runCatching {
                     container.sdpProber.markPresent(mac)
                 }.onFailure { e ->
-                    Log.w(TAG, "markPresent failed for $mac", e)
+                    BlueWaveLogger.w(TAG, "markPresent failed for $mac", e)
                 }
                 runCatching {
                     container.messageRepository.onPeerLinkUp(mac)
                 }.onFailure { e ->
-                    Log.w(TAG, "onPeerLinkUp failed for $mac", e)
+                    BlueWaveLogger.w(TAG, "onPeerLinkUp failed for $mac", e)
                 }
             }
         }
@@ -206,7 +213,7 @@ class BlueWaveApplication : Application() {
                 runCatching {
                     container.messageRepository.onPeerLinkDown(mac)
                 }.onFailure { e ->
-                    Log.w(TAG, "onPeerLinkDown failed for $mac", e)
+                    BlueWaveLogger.w(TAG, "onPeerLinkDown failed for $mac", e)
                 }
             }
         }
@@ -225,7 +232,7 @@ class BlueWaveApplication : Application() {
                     runCatching {
                         container.messageRepository.onLocalProfileChanged()
                     }.onFailure { e ->
-                        Log.w(TAG, "onLocalProfileChanged failed", e)
+                        BlueWaveLogger.w(TAG, "onLocalProfileChanged failed", e)
                     }
                 }
         }
@@ -260,27 +267,75 @@ class BlueWaveApplication : Application() {
         // its own — this is purely for the outbound side so two
         // phones rediscover each other instantly without the user
         // having to tap into a chat.
-        @Suppress("UnspecifiedRegisterReceiverFlag")
-        registerReceiver(
-            bluetoothStateReceiver,
-            IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED),
-        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(
+                bluetoothStateReceiver,
+                IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED),
+                Context.RECEIVER_EXPORTED,
+            )
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            registerReceiver(
+                bluetoothStateReceiver,
+                IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED),
+            )
+        }
 
         // Re-run the auto-connect probe whenever a session is
         // detached (peer toggled BT, killed the app, …) so the link
         // re-establishes itself the moment the peer comes back, no
-        // user interaction required. We sleep `AUTO_RECONNECT_BACKOFF_MS`
-        // to give the peer's adapter time to settle before
-        // re-attempting; a still-unreachable peer just fails the
-        // connect() call and the next sessionDetached → reconnect
-        // edge will fire when something else brings the link up.
+        // user interaction required. We retry up to three times with
+        // exponential backoff so a transient radio glitch does not
+        // permanently strand the conversation.
         applicationScope.launch {
             container.bluetoothSessionManager.sessionDetached.collect { mac ->
-                delay(AUTO_RECONNECT_BACKOFF_MS)
+                val backoffDelays = listOf(
+                    AUTO_RECONNECT_BACKOFF_MS,
+                    AUTO_RECONNECT_BACKOFF_MS * 2,
+                    AUTO_RECONNECT_BACKOFF_MS * 4,
+                )
+                for ((attempt, delayMs) in backoffDelays.withIndex()) {
+                    delay(delayMs)
+                    if (container.bluetoothSessionManager.isConnected(mac)) break
+                    val success = runCatching {
+                        container.bluetoothSessionManager.connect(mac)
+                        container.bluetoothSessionManager.isConnected(mac)
+                    }.getOrDefault(false)
+                    if (success) {
+                        BlueWaveLogger.i(TAG, "auto-reconnect succeeded for $mac on attempt ${attempt + 1}")
+                        break
+                    } else {
+                        BlueWaveLogger.w(TAG, "auto-reconnect attempt ${attempt + 1} failed for $mac")
+                    }
+                }
+            }
+        }
+
+        // Periodic health-check: every 15 seconds we scan the known-peer
+        // list and attempt to connect to anyone who is not currently
+        // online. This keeps the "users are online for each other" UX
+        // even when both phones sit in a pocket with the screen off.
+        applicationScope.launch {
+            while (true) {
+                delay(AUTO_CONNECT_PERIODIC_INTERVAL_MS)
+                val adapter = container.bluetoothAdapter
+                if (adapter?.isEnabled != true) continue
+                connectToKnownPeers(onlyMissing = true)
+            }
+        }
+
+        // Periodic profile re-sync: every 60 seconds we re-send the
+        // local profile to any connected peer whose PROFILE_ACK is
+        // stale. This guarantees eventual delivery even when a
+        // PROFILE_METADATA frame is dropped due to Bluetooth buffer
+        // overflow or a transient disconnect.
+        applicationScope.launch {
+            while (true) {
+                delay(PROFILE_SYNC_INTERVAL_MS)
                 runCatching {
-                    container.bluetoothSessionManager.connect(mac)
+                    container.messageRepository.syncProfilesToConnectedPeers()
                 }.onFailure { e ->
-                    Log.w(TAG, "auto-reconnect attempt failed for $mac", e)
+                    BlueWaveLogger.w(TAG, "Periodic profile sync failed", e)
                 }
             }
         }
@@ -302,30 +357,21 @@ class BlueWaveApplication : Application() {
 
     /**
      * Fires a non-blocking outbound `connect()` attempt against every
-     * known peer:
+     * known peer.
      *
      *  * **Bonded devices** — picked from `BluetoothAdapter.bondedDevices`.
-     *    Catches anyone we've ever paired with at the system level,
-     *    including the no-pairing era because Android occasionally
-     *    bonds opportunistically.
-     *  * **Chat-history peers** — every MAC we have at least one
-     *    persisted message for. This is the channel the user cares
-     *    about most: once two people have talked once, the next cold
-     *    launch reconnects them without any tap.
+     *  * **Chat-history peers** — every MAC with at least one persisted
+     *    message.
      *
-     * The session manager dedupes inbound + outbound connects per
-     * MAC so the worst case is a racing accept on the peer side that
-     * gets evicted as soon as our outbound socket lands.
+     * When [onlyMissing] is `true` (the periodic health-check path) we
+     * skip peers that already have an active session, avoiding useless
+     * socket churn. When `false` (cold-launch / BT-toggle fan-out) we
+     * hit everyone because the caller wants a full refresh.
      *
-     * Peers that do not run BlueWave (e.g. bonded headphones or smart
-     * watches) fail with `IOException` inside `connect()` and are
-     * logged at DEBUG once — no further retries. Unbonded peers
-     * discovered through scanning are picked up by
-     * `DeviceListViewModel`, which calls `connect()` directly when
-     * the user taps the row.
+     * The session manager dedupes inbound + outbound connects per MAC.
      */
     @SuppressLint("MissingPermission")
-    private suspend fun connectToKnownPeers() {
+    private suspend fun connectToKnownPeers(onlyMissing: Boolean = false) {
         val adapter = container.bluetoothAdapter ?: return
         if (!adapter.isEnabled) return
 
@@ -337,30 +383,65 @@ class BlueWaveApplication : Application() {
                 device.address?.takeIf { it.isNotBlank() }?.let { targets.add(it.uppercase()) }
             }
         } catch (e: SecurityException) {
-            Log.w(TAG, "bondedDevices denied by permissions; skipping bonded auto-connect", e)
+            BlueWaveLogger.w(TAG, "bondedDevices denied by permissions; skipping bonded auto-connect", e)
         }
 
-        // 2) chat-history peers — every MAC with at least one
-        // persisted message gets a connect attempt.
+        // 2) chat-history peers
         runCatching {
             container.messageDao.getLatestMessagePerDevice().first().forEach { row ->
                 row.macAddress.takeIf { it.isNotBlank() }?.let { targets.add(it.uppercase()) }
             }
         }.onFailure { e ->
-            Log.w(TAG, "Failed to enumerate chat-history peers for auto-connect", e)
+            BlueWaveLogger.w(TAG, "Failed to enumerate chat-history peers for auto-connect", e)
         }
 
         if (targets.isEmpty()) return
 
         for (mac in targets) {
+            if (onlyMissing && container.bluetoothSessionManager.isConnected(mac)) continue
             applicationScope.launch {
                 runCatching {
                     container.bluetoothSessionManager.connect(mac)
                 }.onFailure { e ->
-                    Log.d(TAG, "auto-connect skipped for $mac: ${e.message}")
+                    BlueWaveLogger.d(TAG, "auto-connect skipped for $mac: ${e.message}")
                 }
             }
         }
+    }
+
+    /**
+     * Public trigger for the auto-connect fan-out, used by the
+     * foreground service when the system restarts it so we don't
+     * wait for the next periodic tick to re-establish sessions.
+     */
+    fun triggerAutoConnect() {
+        applicationScope.launch {
+            connectToKnownPeers(onlyMissing = true)
+        }
+    }
+
+    override fun newImageLoader(): ImageLoader =
+        ImageLoader.Builder(this)
+            .crossfade(true)
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(cacheDir.resolve("coil_cache"))
+                    .build()
+            }
+            .build()
+
+    private class AppLifecycleLogger : ActivityLifecycleCallbacks {
+        private fun log(state: String, activity: android.app.Activity) {
+            BlueWaveLogger.d("Lifecycle", "$state: ${activity.javaClass.simpleName}")
+        }
+        override fun onActivityCreated(activity: android.app.Activity, savedInstanceState: android.os.Bundle?) =
+            log("onCreate", activity)
+        override fun onActivityStarted(activity: android.app.Activity) = log("onStart", activity)
+        override fun onActivityResumed(activity: android.app.Activity) = log("onResume", activity)
+        override fun onActivityPaused(activity: android.app.Activity) = log("onPause", activity)
+        override fun onActivityStopped(activity: android.app.Activity) = log("onStop", activity)
+        override fun onActivitySaveInstanceState(activity: android.app.Activity, outState: android.os.Bundle) = Unit
+        override fun onActivityDestroyed(activity: android.app.Activity) = log("onDestroy", activity)
     }
 
     override fun onTerminate() {
@@ -392,5 +473,22 @@ class BlueWaveApplication : Application() {
          * radio glitch.
          */
         const val AUTO_RECONNECT_BACKOFF_MS: Long = BluetoothConstants.HEARTBEAT_INTERVAL_MS * 2
+
+        /**
+         * Interval between periodic health-check scans of the
+         * known-peer list. Every tick we attempt to connect to any
+         * peer that does not currently have an active RFCOMM session,
+         * ensuring the "always online" UX without waiting for a user
+         * interaction or a session-detach event.
+         */
+        const val AUTO_CONNECT_PERIODIC_INTERVAL_MS: Long = 15_000L
+
+        /**
+         * Interval between periodic profile re-sync attempts.
+         * Peers who have not yet ACKed the latest profile version
+         * receive a re-send so that missed frames are eventually
+         * delivered.
+         */
+        const val PROFILE_SYNC_INTERVAL_MS: Long = 60_000L
     }
 }

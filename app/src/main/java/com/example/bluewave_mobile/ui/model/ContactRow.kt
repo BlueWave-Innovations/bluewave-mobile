@@ -46,6 +46,7 @@ sealed interface ContactRow {
         val lastMessagePreview: String,
         val lastMessageTimestamp: Long,
         val unreadCount: Int,
+        val rssi: Short? = null,
     ) : ContactRow
 
     /**
@@ -56,6 +57,7 @@ sealed interface ContactRow {
         override val displayName: String,
         override val macAddress: String,
         val isBonded: Boolean,
+        val rssi: Short? = null,
     ) : ContactRow
 
     /**

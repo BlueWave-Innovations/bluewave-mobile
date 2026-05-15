@@ -1,6 +1,8 @@
 package com.example.bluewave_mobile.crypto
 
-import android.util.Log
+import android.content.Context
+import android.util.Base64
+import com.example.bluewave_mobile.utils.BlueWaveLogger
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.signal.libsignal.protocol.IdentityKey
@@ -30,11 +32,11 @@ import java.security.SecureRandom
  *
  * Each instance owns:
  *
- *  * a long-lived **identity key pair** (Curve25519) freshly
- *    generated on construction;
+ *  * a long-lived **identity key pair** (Curve25519) persisted across
+ *    process restarts in encrypted SharedPreferences;
  *  * a registration id;
- *  * a single signed prekey;
- *  * a small ring of one-time prekeys.
+ *  * a single signed prekey rotated every 7 days;
+ *  * a pool of 100 one-time prekeys replenished on creation.
  *
  * Together these populate an [InMemorySignalProtocolStore] which
  * stays in process for the lifetime of the application — enough for
@@ -61,8 +63,8 @@ class LibSignalEngine private constructor(
     private val identityKeyPair: IdentityKeyPair,
     private val registrationId: Int,
     private val store: InMemorySignalProtocolStore,
-    private val signedPreKey: SignedPreKeyRecord,
-    private val oneTimePreKey: PreKeyRecord,
+    private var signedPreKey: SignedPreKeyRecord,
+    private val oneTimePreKeyIds: List<Int>,
 ) : SignalEngine {
 
     /**
@@ -80,11 +82,25 @@ class LibSignalEngine private constructor(
     }
 
     override suspend fun localKeyBundle(): ByteArray = mutex.withLock {
+        rotateSignedPreKeyIfNeeded()
+        // Pick a one-time prekey that still exists in the store.
+        // libsignal removes it when the first inbound PreKeySignalMessage
+        // is decrypted, so we shuffle and iterate until we find a live one.
+        val preKey: PreKeyRecord? = oneTimePreKeyIds.shuffled().firstNotNullOfOrNull { id ->
+            try {
+                store.loadPreKey(id)
+            } catch (_: Exception) {
+                null
+            }
+        }
+        if (preKey == null) {
+            BlueWaveLogger.w(TAG, "No one-time prekeys left — multi-peer handshakes may fail")
+        }
         val bundle = PreKeyBundle(
             registrationId,
             DEVICE_ID,
-            oneTimePreKey.id,
-            oneTimePreKey.keyPair.publicKey,
+            preKey?.id ?: 0,
+            preKey?.keyPair?.publicKey,
             signedPreKey.id,
             signedPreKey.keyPair.publicKey,
             signedPreKey.signature,
@@ -110,7 +126,7 @@ class LibSignalEngine private constructor(
                 // handshake. Without this branch a peer reinstall
                 // would permanently break message flow until both
                 // apps were force-stopped.
-                Log.w(
+                BlueWaveLogger.w(
                     TAG,
                     "Peer $macAddress rotated identity; overwriting stored key and retrying handshake",
                 )
@@ -217,6 +233,31 @@ class LibSignalEngine private constructor(
         SignalProtocolAddress(macAddress.uppercase(), DEVICE_ID)
 
     /**
+     * Rotates the signed prekey if it is older than
+     * [SIGNED_PREKEY_ROTATION_INTERVAL_MS]. Signal Protocol
+     * recommends rotation every 1–4 weeks; we use 7 days.
+     */
+    private fun rotateSignedPreKeyIfNeeded() {
+        val now = System.currentTimeMillis()
+        val age = now - signedPreKey.timestamp
+        if (age <= SIGNED_PREKEY_ROTATION_INTERVAL_MS) return
+        val newKeyPair = Curve.generateKeyPair()
+        val newSignature = Curve.calculateSignature(
+            identityKeyPair.privateKey,
+            newKeyPair.publicKey.serialize(),
+        )
+        val newPreKey = SignedPreKeyRecord(
+            SIGNED_PREKEY_ID,
+            now,
+            newKeyPair,
+            newSignature,
+        )
+        store.storeSignedPreKey(SIGNED_PREKEY_ID, newPreKey)
+        signedPreKey = newPreKey
+        BlueWaveLogger.i(TAG, "Rotated signed prekey (age=${age / 86_400_000} days)")
+    }
+
+    /**
      * Hand-rolled length-prefixed serialisation — libsignal exposes
      * no top-level [PreKeyBundle.serialize] so we build a stable
      * wire format ourselves. The format is symmetric with
@@ -296,22 +337,47 @@ class LibSignalEngine private constructor(
         /** Upper bound for randomly-chosen one-time prekey ids. */
         private const val MAX_PREKEY_ID: Int = 0xFFFFFE
 
+        /** Number of one-time prekeys generated at creation. */
+        private const val ONE_TIME_PREKEY_COUNT: Int = 100
+
+        /** Rotation cadence for the signed prekey (7 days). */
+        private const val SIGNED_PREKEY_ROTATION_INTERVAL_MS: Long = 7 * 24 * 60 * 60 * 1_000L
+
+        private const val PREFS_NAME: String = "bluewave_libsignal_v1"
+        private const val KEY_IDENTITY: String = "identity_key_pair"
+        private const val KEY_REGISTRATION_ID: String = "registration_id"
+
         /**
          * Factory: spins up a fresh engine with brand-new identity
-         * material. The identity is non-persistent — every cold
-         * launch produces a new identity key, which triggers a
-         * `KEY_BUNDLE` re-exchange on the next session.
+         * material. The identity key pair is persisted in encrypted
+         * SharedPreferences so it survives process death — without
+         * persistence every cold launch would produce a new identity
+         * and trigger an unnecessary re-handshake with every peer.
          */
-        fun create(random: SecureRandom = SecureRandom()): LibSignalEngine {
-            val identityKeyPair = IdentityKeyPair.generate()
-            val registrationId = KeyHelper.generateRegistrationId(false)
+        fun create(context: Context, random: SecureRandom = SecureRandom()): LibSignalEngine {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-            // libsignal v0.46 ships only `generateRegistrationId` on
-            // `KeyHelper`; signed and one-time prekeys are produced by
-            // hand from the curve primitives. We sign the
-            // signed-prekey's public point with the long-lived
-            // identity key so receivers can verify authenticity
-            // exactly as X3DH expects.
+            val identityKeyPair: IdentityKeyPair
+            val registrationId: Int
+
+            val savedIdentity = prefs.getString(KEY_IDENTITY, null)
+            val savedRegId = prefs.getInt(KEY_REGISTRATION_ID, 0)
+
+            if (savedIdentity != null && savedRegId != 0) {
+                identityKeyPair = IdentityKeyPair(Base64.decode(savedIdentity, Base64.NO_WRAP))
+                registrationId = savedRegId
+            } else {
+                identityKeyPair = IdentityKeyPair.generate()
+                registrationId = KeyHelper.generateRegistrationId(false)
+                prefs.edit()
+                    .putString(
+                        KEY_IDENTITY,
+                        Base64.encodeToString(identityKeyPair.serialize(), Base64.NO_WRAP),
+                    )
+                    .putInt(KEY_REGISTRATION_ID, registrationId)
+                    .apply()
+            }
+
             val signedKeyPair = Curve.generateKeyPair()
             val signedSignature = Curve.calculateSignature(
                 identityKeyPair.privateKey,
@@ -324,18 +390,22 @@ class LibSignalEngine private constructor(
                 signedSignature,
             )
 
-            val oneTimeId = (random.nextInt(MAX_PREKEY_ID) + 1)
-            val oneTimePreKey = PreKeyRecord(oneTimeId, Curve.generateKeyPair())
-
+            val oneTimePreKeyIds = mutableListOf<Int>()
             val store = InMemorySignalProtocolStore(identityKeyPair, registrationId)
             store.storeSignedPreKey(signedPreKey.id, signedPreKey)
-            store.storePreKey(oneTimePreKey.id, oneTimePreKey)
+
+            repeat(ONE_TIME_PREKEY_COUNT) {
+                val id = random.nextInt(MAX_PREKEY_ID) + 1
+                oneTimePreKeyIds.add(id)
+                store.storePreKey(id, PreKeyRecord(id, Curve.generateKeyPair()))
+            }
+
             return LibSignalEngine(
                 identityKeyPair = identityKeyPair,
                 registrationId = registrationId,
                 store = store,
                 signedPreKey = signedPreKey,
-                oneTimePreKey = oneTimePreKey,
+                oneTimePreKeyIds = oneTimePreKeyIds,
             )
         }
     }

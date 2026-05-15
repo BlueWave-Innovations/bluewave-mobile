@@ -14,12 +14,15 @@ import com.example.bluewave_mobile.data.MessageEntity
 import com.example.bluewave_mobile.data.MessageRepository
 import com.example.bluewave_mobile.data.MessageRepositoryImpl
 import com.example.bluewave_mobile.data.PeerProfileEntity
+import com.example.bluewave_mobile.network.BluetoothSessionManager
 import com.example.bluewave_mobile.network.MessageTransport
 import com.example.bluewave_mobile.ui.intent.ChatIntent
 import com.example.bluewave_mobile.ui.state.ChatMessage
 import com.example.bluewave_mobile.ui.state.ChatUiState
+import com.example.bluewave_mobile.utils.BlueWaveLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -29,6 +32,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -95,7 +99,12 @@ class ChatViewModel(
         repository.getMessagesByDevice(deviceMac).map(::decryptAll).flowOn(Dispatchers.Default),
         repository.observeSessionState(deviceMac).distinctUntilChanged(),
     ) { persisted: List<ChatMessage>, e2eeState: E2EEState ->
-        val merged = (persisted + optimistic.value)
+        val persistedTexts = persisted
+            .filter { it.isOutgoing }
+            .mapTo(HashSet(), ChatMessage::text)
+        val dedupedOptimistic = optimistic.value
+            .filterNot { it.text in persistedTexts }
+        val merged = (persisted + dedupedOptimistic)
             .sortedBy(ChatMessage::timestamp)
         ChatUiState.Success(
             messages = merged.map(::toEntityShim),
@@ -124,6 +133,37 @@ class ChatViewModel(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000L),
             initialValue = null,
+        )
+
+    /**
+     * Reactive typing indicator for the remote peer.
+     * Emits `true` for ~3 seconds after each inbound TYPING_INDICATOR frame.
+     */
+    val isPeerTyping: StateFlow<Boolean> = repository
+        .observePeerTyping(deviceMac)
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000L),
+            initialValue = false,
+        )
+
+    /**
+     * Connection quality snapshot polled every 3 seconds. Contains
+     * the peer's online state and the most recent heartbeat RTT.
+     */
+    val connectionQuality: StateFlow<ConnectionQuality> = flow {
+        while (true) {
+            val sessionManager = transport as? BluetoothSessionManager
+            val isOnline = sessionManager?.isConnected(deviceMac) ?: false
+            val pingMs = sessionManager?.getPingMs(deviceMac)
+            emit(ConnectionQuality(isOnline = isOnline, pingMs = pingMs))
+            delay(CONNECTION_QUALITY_POLL_MS)
+        }
+    }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000L),
+            initialValue = ConnectionQuality(),
         )
 
     /**
@@ -161,14 +201,19 @@ class ChatViewModel(
         .map(::decryptAll)
         .flowOn(Dispatchers.Default)
         .map { persisted ->
-            (persisted + optimistic.value)
+            // Eagerly filter out optimistic items whose text already
+            // appears in the persisted set so the UI never shows the
+            // duplicate, even for a single frame.
+            val persistedTexts = persisted
+                .filter { it.isOutgoing }
+                .mapTo(HashSet(), ChatMessage::text)
+            val dedupedOptimistic = optimistic.value
+                .filterNot { it.text in persistedTexts }
+            (persisted + dedupedOptimistic)
                 .distinctBy(ChatMessage::id)
                 .sortedBy(ChatMessage::timestamp)
         }
         .onEach { combined ->
-            // Drop optimistic items whose plaintext now appears in the
-            // persisted set — naive but sufficient for short messages
-            // typed by the user.
             val persistedTexts = combined
                 .filter { it.id >= 0 }
                 .mapTo(HashSet(), ChatMessage::text)
@@ -183,12 +228,29 @@ class ChatViewModel(
         )
 
     init {
+        BlueWaveLogger.i("ChatViewModel", "Init for $deviceMac")
         viewModelScope.launch {
             intents.collect { intent ->
+                BlueWaveLogger.d("ChatViewModel", "Intent: $intent")
                 when (intent) {
                     is ChatIntent.SendMessage -> sendMessage(intent.plaintext)
+                    is ChatIntent.SendMedia -> sendMediaMessage(
+                        intent.attachmentName,
+                        intent.mimeType,
+                        intent.localPath,
+                    )
+                    is ChatIntent.CancelSend -> {
+                        BlueWaveLogger.i("ChatViewModel", "Cancelling send for message ${intent.messageId}")
+                        optimistic.update { current -> current.filterNot { it.id == intent.messageId } }
+                        viewModelScope.launch {
+                            runCatching { repository.deleteMessageById(intent.messageId) }
+                        }
+                    }
                     ChatIntent.Retry -> Unit
-                    ChatIntent.ClearHistory -> repository.deleteMessagesByDevice(deviceMac)
+                    ChatIntent.ClearHistory -> {
+                        BlueWaveLogger.i("ChatViewModel", "Clearing history for $deviceMac")
+                        repository.deleteMessagesByDevice(deviceMac)
+                    }
                 }
             }
         }
@@ -217,6 +279,16 @@ class ChatViewModel(
     }
 
     /**
+     * Fire-and-forget typing ping to the peer. Callers should debounce
+     * (e.g. 400 ms) so every keystroke does not hit the wire.
+     */
+    fun sendTyping() {
+        viewModelScope.launch {
+            runCatching { repository.sendTyping(deviceMac) }
+        }
+    }
+
+    /**
      * Encrypt + persist + transmit [plaintext] through the repository.
      *
      * The optimistic bubble is appended *before* the suspend call so
@@ -228,6 +300,7 @@ class ChatViewModel(
         if (plaintext.isBlank()) return
         val pendingId = -System.nanoTime() // negative so it never collides with Room ids
         val pendingTimestamp = System.currentTimeMillis()
+        BlueWaveLogger.d("ChatViewModel", "Sending message to $deviceMac")
         val pending = ChatMessage(
             id = pendingId,
             text = plaintext,
@@ -237,7 +310,9 @@ class ChatViewModel(
         optimistic.update { it + pending }
         try {
             repository.sendMessage(deviceMac, plaintext)
+            BlueWaveLogger.i("ChatViewModel", "Message sent to $deviceMac")
         } catch (cause: Exception) {
+            BlueWaveLogger.e("ChatViewModel", "Send failed for $deviceMac", cause)
             optimistic.update { current ->
                 current.map { item ->
                     if (item.id == pendingId) {
@@ -258,6 +333,21 @@ class ChatViewModel(
         entities.map(::toChatMessage)
 
     private fun toChatMessage(entity: MessageEntity): ChatMessage {
+        // Media messages have empty iv/encryptedPayload but carry attachment metadata.
+        if (entity.attachmentPath.isNotBlank()) {
+            return ChatMessage(
+                id = entity.id,
+                text = "",
+                isOutgoing = entity.isOutgoing,
+                timestamp = entity.timestamp,
+                deliveryStatus = entity.deliveryStatus,
+                attachmentPath = entity.attachmentPath,
+                attachmentName = entity.attachmentName,
+                attachmentMimeType = entity.attachmentMimeType,
+                attachmentSize = entity.attachmentSize,
+                transferStatus = entity.transferStatus,
+            )
+        }
         if (entity.iv.isEmpty()) {
             return ChatMessage(
                 id = entity.id,
@@ -295,6 +385,34 @@ class ChatViewModel(
      * the UTF-8 plaintext (the screen now reads from [messages]
      * directly anyway).
      */
+    private suspend fun sendMediaMessage(attachmentName: String, mimeType: String, localPath: String) {
+        val pendingId = -System.nanoTime()
+        BlueWaveLogger.d("ChatViewModel", "Sending media $attachmentName to $deviceMac")
+        val pending = ChatMessage(
+            id = pendingId,
+            text = "",
+            isOutgoing = true,
+            timestamp = System.currentTimeMillis(),
+            attachmentPath = localPath,
+            attachmentName = attachmentName,
+            attachmentMimeType = mimeType,
+            attachmentSize = java.io.File(localPath).length(),
+            transferStatus = MessageEntity.TRANSFER_UPLOADING,
+        )
+        optimistic.update { it + pending }
+        try {
+            repository.sendMediaMessage(deviceMac, attachmentName, mimeType, localPath)
+            BlueWaveLogger.i("ChatViewModel", "Media sent to $deviceMac")
+        } catch (cause: Exception) {
+            BlueWaveLogger.e("ChatViewModel", "Media send failed for $deviceMac", cause)
+            optimistic.update { current ->
+                current.map { item ->
+                    if (item.id == pendingId) item.copy(isCorrupted = true) else item
+                }
+            }
+        }
+    }
+
     private fun toEntityShim(chatMessage: ChatMessage): MessageEntity = MessageEntity(
         id = chatMessage.id.coerceAtLeast(0),
         macAddress = deviceMac,
@@ -302,6 +420,10 @@ class ChatViewModel(
         iv = if (chatMessage.isCorrupted) ByteArray(0) else ByteArray(12),
         timestamp = chatMessage.timestamp,
         isOutgoing = chatMessage.isOutgoing,
+        attachmentPath = chatMessage.attachmentPath,
+        attachmentName = chatMessage.attachmentName,
+        attachmentMimeType = chatMessage.attachmentMimeType,
+        attachmentSize = chatMessage.attachmentSize,
     )
 
     private fun isPaused(): Boolean {
@@ -322,6 +444,9 @@ class ChatViewModel(
          * during a normal re-pair.
          */
         private const val BANNER_DEBOUNCE_MS: Long = 600L
+
+        /** Polling interval for the [connectionQuality] flow. */
+        private const val CONNECTION_QUALITY_POLL_MS: Long = 3_000L
 
         /**
          * `ViewModelProvider.Factory` that pulls dependencies from the
@@ -345,4 +470,27 @@ class ChatViewModel(
             }
         }
     }
+}
+
+/**
+ * Snapshot of the Bluetooth connection health for a single peer.
+ *
+ * @property isOnline `true` when an RFCOMM session is currently active.
+ * @property pingMs Most recently measured heartbeat round-trip time in
+ *   milliseconds. `null` when no measurement is available yet.
+ */
+data class ConnectionQuality(
+    val isOnline: Boolean = false,
+    val pingMs: Long? = null,
+) {
+    /** Human-readable quality label derived from the ping RTT. */
+    val label: String
+        get() = when {
+            !isOnline -> "Offline"
+            pingMs == null -> "Online"
+            pingMs < 100L -> "Excellent"
+            pingMs < 300L -> "Good"
+            pingMs < 600L -> "Fair"
+            else -> "Poor"
+        }
 }

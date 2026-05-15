@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.util.Log
+import com.example.bluewave_mobile.utils.BlueWaveLogger
 import androidx.core.content.FileProvider
 import com.example.bluewave_mobile.R
 import java.io.File
@@ -51,7 +51,8 @@ class ApkSender(private val context: Context) {
      * and refreshed only when [Context.getApplicationInfo].sourceDir
      * changes (i.e. after a self-update).
      */
-    private val stagedFile: File = File(context.cacheDir, "BlueWave-current.apk")
+    private val stagedDir: File = File(context.cacheDir, "apk").apply { mkdirs() }
+    private val stagedFile: File = File(stagedDir, "BlueWave-current.apk")
 
     /**
      * Copies the running APK into the cache so [suggestInstall] has
@@ -69,12 +70,12 @@ class ApkSender(private val context: Context) {
                 .getApplicationInfo(context.packageName, 0)
                 .sourceDir
         } catch (e: PackageManager.NameNotFoundException) {
-            Log.w(TAG, "Cannot locate own package for APK staging", e)
+            BlueWaveLogger.w(TAG, "Cannot locate own package for APK staging", e)
             return false
         }
         val source = File(sourcePath)
         if (!source.exists()) {
-            Log.w(TAG, "Source APK does not exist at $sourcePath")
+            BlueWaveLogger.w(TAG, "Source APK does not exist at $sourcePath")
             return false
         }
         // Skip the copy if the cached file is already an exact mirror.
@@ -85,7 +86,7 @@ class ApkSender(private val context: Context) {
             source.copyTo(stagedFile, overwrite = true)
             true
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to stage APK to cache", e)
+            BlueWaveLogger.w(TAG, "Failed to stage APK to cache", e)
             false
         }
     }
@@ -105,7 +106,7 @@ class ApkSender(private val context: Context) {
      */
     fun suggestInstall(): Result<Unit> {
         if (!stagedFile.exists()) {
-            Log.w(TAG, "Cannot suggest install — APK has not been staged yet")
+            BlueWaveLogger.w(TAG, "Cannot suggest install — APK has not been staged yet")
             return Result.failure(IllegalStateException("APK not staged"))
         }
         val uri: Uri = try {
@@ -144,7 +145,7 @@ class ApkSender(private val context: Context) {
                 context.startActivity(chooser)
                 Result.success(Unit)
             } catch (chooserError: Exception) {
-                Log.w(TAG, "No activity available to handle APK share", chooserError)
+                BlueWaveLogger.w(TAG, "No activity available to handle APK share", chooserError)
                 Result.failure(chooserError)
             }
         }

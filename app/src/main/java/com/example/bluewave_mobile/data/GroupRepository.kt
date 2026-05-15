@@ -38,6 +38,9 @@ interface GroupRepository {
     /** Reactive view of one group's encrypted message history. */
     fun observeMessages(groupId: String): Flow<List<GroupMessageEntity>>
 
+    /** Reactive view of every group message across all groups. */
+    fun observeAllGroupMessages(): Flow<List<GroupMessageEntity>>
+
     /**
      * Returns a one-shot snapshot of every group with a stitched
      * member / latest-message preview. Used to seed the chat list

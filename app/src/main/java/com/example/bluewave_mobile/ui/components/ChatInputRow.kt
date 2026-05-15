@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AttachFile
 import androidx.compose.material.icons.outlined.EmojiEmotions
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -53,6 +55,8 @@ fun ChatInputRow(
     enabled: Boolean,
     onDraftChange: (String) -> Unit,
     onSend: () -> Unit,
+    onAttachmentClick: (() -> Unit)? = null,
+    onEmojiToggle: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -77,14 +81,18 @@ fun ChatInputRow(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.EmojiEmotions,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                            .padding(start = 14.dp, end = 4.dp)
-                            .size(22.dp),
-                    )
+                    IconButton(
+                        onClick = { onEmojiToggle?.invoke() },
+                        enabled = enabled,
+                        modifier = Modifier.size(36.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.EmojiEmotions,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
                     TextField(
                         value = draft,
                         onValueChange = onDraftChange,
@@ -111,6 +119,20 @@ fun ChatInputRow(
                             .weight(1f)
                             .semantics { contentDescription = inputCd },
                     )
+                    if (onAttachmentClick != null) {
+                        IconButton(
+                            onClick = onAttachmentClick,
+                            enabled = enabled,
+                            modifier = Modifier.size(40.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.AttachFile,
+                                contentDescription = stringResource(id = R.string.chat_attachment_cd),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(22.dp),
+                            )
+                        }
+                    }
                 }
             }
             // Replace the inner-Box wrapping default with a tighter

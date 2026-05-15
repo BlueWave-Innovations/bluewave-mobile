@@ -58,3 +58,9 @@ data class ChatRoute(val deviceMac: String)
  */
 @Serializable
 data class GroupChatRoute(val groupId: String)
+
+/**
+ * Read-only profile of a remote peer.
+ */
+@Serializable
+data class PeerProfileRoute(val deviceMac: String)

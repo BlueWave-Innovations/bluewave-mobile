@@ -146,6 +146,11 @@ class AppContainer(applicationContext: Context) {
      * the [MessageTransport] so `sendMessage` actually pushes bytes
      * over RFCOMM and incoming frames flow back into Room.
      */
+    /** Root directory for media file storage (inbound / outbound). */
+    private val mediaStorageDir: java.io.File by lazy {
+        appContext.filesDir.resolve("media").also { it.mkdirs() }
+    }
+
     val messageRepository: MessageRepository by lazy {
         MessageRepositoryImpl(
             messageDao = messageDao,
@@ -163,6 +168,8 @@ class AppContainer(applicationContext: Context) {
             // decrypted via the same pairwise libsignal session and
             // then handed to [groupRepository] for persistence.
             groupRepository = groupRepository,
+            mediaStorageDir = mediaStorageDir,
+            appContext = appContext,
         )
     }
 
@@ -173,7 +180,7 @@ class AppContainer(applicationContext: Context) {
      * [LibSignalEngine] for the persistence trade-off).
      */
     val signalEngine: SignalEngine by lazy {
-        LibSignalEngine.create()
+        LibSignalEngine.create(appContext)
     }
 
     /**

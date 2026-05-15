@@ -2,9 +2,11 @@ package com.example.bluewave_mobile.preferences
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -95,6 +97,15 @@ class UserPreferencesRepository(
         dataStore.edit { it[KEY_BT_VISIBILITY_PROMPT_SHOWN] = true }
     }
 
+    /** Whether the user explicitly dismissed the discoverable banner. */
+    val isDiscoverableBannerDismissed: Flow<Boolean> =
+        dataStore.data.map { prefs -> prefs[KEY_DISCOVERABLE_BANNER_DISMISSED] ?: false }
+
+    /** Mark the discoverable banner as dismissed. */
+    suspend fun setDiscoverableBannerDismissed() {
+        dataStore.edit { it[KEY_DISCOVERABLE_BANNER_DISMISSED] = true }
+    }
+
     private companion object {
         // Keep keys explicit so a future migration or rename does
         // not silently zero out values.
@@ -106,6 +117,7 @@ class UserPreferencesRepository(
         val KEY_PROFILE_AVATAR_URI = stringPreferencesKey("profile_avatar_uri")
         val KEY_BT_VISIBILITY = stringPreferencesKey("bluetooth_visibility")
         val KEY_BT_VISIBILITY_PROMPT_SHOWN = booleanPreferencesKey("bt_visibility_prompt_shown")
+        val KEY_DISCOVERABLE_BANNER_DISMISSED = booleanPreferencesKey("discoverable_banner_dismissed")
     }
 }
 
@@ -118,4 +130,9 @@ class UserPreferencesRepository(
  * the property delegate plumbing into the DI surface.
  */
 internal val Context.bluewavePreferencesDataStore: DataStore<Preferences>
-    by preferencesDataStore(name = "bluewave_user_prefs")
+    by preferencesDataStore(
+        name = "bluewave_user_prefs",
+        corruptionHandler = androidx.datastore.core.handlers.ReplaceFileCorruptionHandler {
+            emptyPreferences()
+        },
+    )

@@ -5,8 +5,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.util.Log
+import android.os.Build
+import com.example.bluewave_mobile.utils.BlueWaveLogger
 import com.example.bluewave_mobile.data.MessageRepository
+import com.example.bluewave_mobile.utils.parcelableExtra
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -45,20 +47,20 @@ class BondLossReceiver(
     override fun onReceive(context: Context?, intent: Intent?) {
         val action = intent?.action ?: return
         val device: BluetoothDevice? =
-            intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+            intent.parcelableExtra(BluetoothDevice.EXTRA_DEVICE)
         val mac = device?.address ?: run {
-            Log.w(TAG, "$action received without EXTRA_DEVICE")
+            BlueWaveLogger.w(TAG, "$action received without EXTRA_DEVICE")
             return
         }
         when (action) {
             ACTION_KEY_MISSING -> {
-                Log.i(TAG, "ACTION_KEY_MISSING for $mac — pausing network operations")
+                BlueWaveLogger.i(TAG, "ACTION_KEY_MISSING for $mac — pausing network operations")
                 scope.launch {
                     repository.pauseNetworkOperations(mac)
                 }
             }
             ACTION_ENCRYPTION_CHANGE -> {
-                Log.i(TAG, "ACTION_ENCRYPTION_CHANGE for $mac — resuming and restarting ConnectThread")
+                BlueWaveLogger.i(TAG, "ACTION_ENCRYPTION_CHANGE for $mac — resuming and restarting ConnectThread")
                 scope.launch {
                     repository.resumeNetworkOperations(mac)
                 }
@@ -78,7 +80,12 @@ class BondLossReceiver(
             addAction(ACTION_KEY_MISSING)
             addAction(ACTION_ENCRYPTION_CHANGE)
         }
-        context.registerReceiver(this, filter)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(this, filter, Context.RECEIVER_EXPORTED)
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            context.registerReceiver(this, filter)
+        }
     }
 
     /**
